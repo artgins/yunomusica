@@ -7,6 +7,15 @@
     <meta name="theme-color" content="#15121B">
     <meta name="description" content="Tu música, como quieras verla. Se lee aquí, en el móvil: nada sale del dispositivo.">
     <link rel="icon" href="./yunomusica-mark.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <!--
+        The manifest is what makes this an INSTALLED app rather than a
+        shortcut, and that distinction decides whether folder permissions
+        survive: Chrome only offers "Allow on every visit" for File System
+        Access to installed apps. Without it, Android re-asks for every
+        folder on every launch.
+    -->
+    <link rel="manifest" href="./manifest.webmanifest">
     <!--
         Theme, resolved before the first paint so there is no flash.
         A music app reads better dark, so that is the default when the OS

@@ -88,6 +88,8 @@ const en = {
             "A folder is taken whole: that folder and every folder below it.",
         "nothing is copied":
             "Nothing is copied and nothing is uploaded. Only a reference to what is already on your disk is stored.",
+        "allow on every visit":
+            "When the browser asks for a folder, choose “Allow on every visit”. Anything else lasts only for this session, and the folder will ask again next time. Installing this app (Add to home screen) is what makes that choice available.",
         "sources persist":
             "This browser remembers your folders between sessions. After a reload one click re-authorises them.",
         "storage may be cleared":

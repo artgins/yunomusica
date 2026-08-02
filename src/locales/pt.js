@@ -73,6 +73,8 @@ const pt = {
             "Uma pasta é lida por inteiro: essa e todas as que estão abaixo dela.",
         "nothing is copied":
             "Nada é copiado nem enviado. Guarda-se apenas uma referência ao que já está no teu disco.",
+        "allow on every visit":
+            "Quando o navegador pedir a pasta, escolhe «Permitir em todas as visitas». Qualquer outra opção dura apenas esta sessão e a pasta voltará a perguntar. Essa opção aparece se instalares a aplicação (Adicionar ao ecrã principal).",
         "sources persist":
             "Este navegador lembra-se das tuas pastas entre sessões. Depois de recarregar, basta um clique para voltar a autorizá-las.",
         "storage may be cleared":

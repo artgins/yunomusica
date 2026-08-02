@@ -78,6 +78,8 @@ const es = {
             "Una carpeta se coge entera: esa y todas las que cuelgan de ella.",
         "nothing is copied":
             "No se copia nada ni se sube nada. Solo se guarda una referencia a lo que ya está en tu disco.",
+        "allow on every visit":
+            "Cuando el navegador pida la carpeta, elige «Permitir en cada visita». Cualquier otra opción dura solo esta sesión y la carpeta te lo volverá a preguntar. Esa opción aparece si instalas la app (Añadir a pantalla de inicio).",
         "sources persist":
             "Este navegador recuerda tus carpetas entre sesiones. Al recargar basta un clic para volver a autorizarlas.",
         "storage may be cleared":

@@ -245,6 +245,14 @@ function build_explainer()
     if(!fsa_supported()) {
         children.push(["p", {class: "MUS_DIM", i18n: "upload warning explained"},
             t("upload warning explained")]);
+    } else {
+        /*  A folder handle survives a restart; its permission does not,
+            unless the user picks the persistent option — which the
+            browser only OFFERS to an installed app. Say which button to
+            press, because the wrong one silently means "ask me again
+            every launch". */
+        children.push(["p", {class: "MUS_DIM", i18n: "allow on every visit"},
+            t("allow on every visit")]);
     }
 
     /*  Say out loud whether what we store is actually safe. Losing your
