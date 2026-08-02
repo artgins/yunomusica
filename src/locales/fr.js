@@ -77,6 +77,8 @@ const fr = {
             "Ce navigateur retient vos dossiers d'une session à l'autre. Après un rechargement, un clic suffit à les réautoriser.",
         "sources do not persist":
             "Ce navigateur ne peut pas conserver l'autorisation d'un dossier ; les fichiers choisis sont donc retenus comme une liste figée. Les morceaux ajoutés ensuite au dossier n'apparaîtront pas.",
+        "upload warning explained":
+            "Votre navigateur va demander s’il faut « téléverser » le dossier. C’est sa formule générique pour « remettre ces fichiers à la page » : rien n’est envoyé nulle part, et il n’y a aucun serveur où l’envoyer.",
         "snapshot warning":
             "C'est un instantané : les fichiers ajoutés ensuite à ce dossier n'apparaîtront pas. Ajoutez-le de nouveau pour le rafraîchir.",
         "authorise":            "Autoriser",

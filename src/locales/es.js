@@ -82,6 +82,8 @@ const es = {
             "Este navegador recuerda tus carpetas entre sesiones. Al recargar basta un clic para volver a autorizarlas.",
         "sources do not persist":
             "Este navegador no puede guardar el permiso sobre una carpeta, así que los ficheros que elijas se recuerdan como una lista fija. Lo que añadas después a la carpeta no aparecerá.",
+        "upload warning explained":
+            "Tu navegador te preguntará si quieres «subir» la carpeta. Es su forma genérica de decir «entregar estos ficheros a la página»: no se envía nada a ninguna parte, y no hay servidor al que enviarlo.",
         "snapshot warning":
             "Es una foto fija: lo que añadas después a esta carpeta no aparecerá. Vuelve a añadirla para refrescarla.",
         "authorise":            "Autorizar",

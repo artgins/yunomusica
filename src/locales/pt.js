@@ -77,6 +77,8 @@ const pt = {
             "Este navegador lembra-se das tuas pastas entre sessões. Depois de recarregar, basta um clique para voltar a autorizá-las.",
         "sources do not persist":
             "Este navegador não consegue guardar a permissão sobre uma pasta, por isso os ficheiros que escolheres ficam como uma lista fixa. As faixas acrescentadas depois à pasta não aparecerão.",
+        "upload warning explained":
+            "O teu navegador vai perguntar se queres «carregar» a pasta. É a forma genérica de dizer «entregar estes ficheiros à página»: não é enviado nada para lado nenhum, e não há servidor para onde enviar.",
         "snapshot warning":
             "É uma fotografia fixa: os ficheiros acrescentados depois a esta pasta não aparecerão. Adiciona-a de novo para a atualizar.",
         "authorise":            "Autorizar",

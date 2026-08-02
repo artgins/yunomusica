@@ -77,6 +77,8 @@ const de = {
             "Dieser Browser merkt sich deine Ordner über Sitzungen hinweg. Nach dem Neuladen genügt ein Klick, um sie wieder freizugeben.",
         "sources do not persist":
             "Dieser Browser kann die Freigabe eines Ordners nicht speichern; die ausgewählten Dateien werden deshalb als feste Liste gemerkt. Später hinzugefügte Titel erscheinen nicht.",
+        "upload warning explained":
+            "Dein Browser fragt, ob der Ordner „hochgeladen“ werden soll. Das ist seine allgemeine Formulierung für „die Dateien an die Seite übergeben“: Es wird nichts irgendwohin gesendet, und es gibt auch keinen Server dafür.",
         "snapshot warning":
             "Eine Momentaufnahme: später in diesen Ordner gelegte Dateien erscheinen nicht. Füge ihn erneut hinzu, um ihn zu aktualisieren.",
         "authorise":            "Freigeben",

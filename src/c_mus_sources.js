@@ -221,19 +221,30 @@ function build_header()
 
 
 /*  What this browser will and will not remember, said before the user
-    invests any effort in it. */
+    invests any effort in it.
+
+    Without the File System Access API the only way to ask for a folder
+    is a <input webkitdirectory>, and Firefox guards those with "Are you
+    sure you want to upload all files from X?". "Upload" is the browser's
+    generic word for handing files to a page, but on a page that reads
+    music it reads as an accusation — so say what that dialog means
+    BEFORE the user meets it, not after. */
 function build_explainer()
 {
     let persists = fsa_supported() && is_persistent();
     let key = persists ? "sources persist" : "sources do not persist";
 
-    return createElement2(
-        ["div", {class: "MUS_EXPLAIN"}, [
-            ["p", {i18n: "nothing is copied"}, t("nothing is copied")],
-            ["p", {i18n: "folders are recursive"}, t("folders are recursive")],
-            ["p", {class: "MUS_DIM", i18n: key}, t(key)]
-        ]]
-    );
+    let children = [
+        ["p", {i18n: "nothing is copied"}, t("nothing is copied")],
+        ["p", {i18n: "folders are recursive"}, t("folders are recursive")],
+        ["p", {class: "MUS_DIM", i18n: key}, t(key)]
+    ];
+    if(!fsa_supported()) {
+        children.push(["p", {class: "MUS_DIM", i18n: "upload warning explained"},
+            t("upload warning explained")]);
+    }
+
+    return createElement2(["div", {class: "MUS_EXPLAIN"}, children]);
 }
 
 

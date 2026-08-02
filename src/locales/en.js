@@ -92,6 +92,8 @@ const en = {
             "This browser remembers your folders between sessions. After a reload one click re-authorises them.",
         "sources do not persist":
             "This browser cannot keep folder permissions, so the files you pick are remembered as a fixed list. Tracks added to the folder later will not appear.",
+        "upload warning explained":
+            "Your browser will ask whether to “upload” the folder. That is its generic wording for handing files to a page: nothing is sent anywhere, and there is no server to send it to.",
         "snapshot warning":
             "A snapshot: files added to this folder later will not appear. Add it again to refresh it.",
         "authorise":            "Authorise",
