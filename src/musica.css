@@ -1,0 +1,536 @@
+/***********************************************************************
+ *          musica.css
+ *
+ *      App-owned styling for yunomúsica: the routed views, the docked
+ *      mini-player and the "now playing" sheet, plus the four custom
+ *      library icons. Shell chrome (zones, toolbar, nav) is styled by
+ *      gobj-ui's c_yui_shell.css; the app does not target shell selectors.
+ *
+ *      Surfaces read Bulma's theme variables so light and dark both work;
+ *      the accent is --mus-accent, a warm gold by default and re-tinted
+ *      from the current cover at run time. The chrome accent (nav active,
+ *      is-primary) is recoloured to the same gold through Bulma's own HSL
+ *      variables — no shell selector is touched.
+ *
+ *          Copyright (c) 2026, ArtGins.
+ *          All Rights Reserved.
+ ***********************************************************************/
+
+:root {
+    --mus-accent: #C9A227;
+    --mus-accent-soft: rgba(201, 162, 39, 0.16);
+    --mus-accent-ink: #191308;
+
+    /*  Recolour Bulma's primary + link to the gold, through its own HSL
+        knobs, so nav-active and is-primary match the app without the app
+        ever naming a shell class. */
+    --bulma-primary-h: 46deg;
+    --bulma-primary-s: 68%;
+    --bulma-primary-l: 47%;
+    --bulma-link-h: 46deg;
+    --bulma-link-s: 68%;
+    --bulma-link-l: 47%;
+}
+
+
+/*======================================================================
+ *      Custom icons (mask pattern, mirroring yui_icons.css)
+ *====================================================================*/
+[class^="mi-"]::before,
+[class*=" mi-"]::before {
+    display: inline-block;
+    content: '';
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    vertical-align: -0.125em;
+}
+
+/*  Album — a compact disc (a filled disc with a centre hole via evenodd). */
+.mi-disc::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill-rule='evenodd' d='M256 8a248 248 0 1 0 0 496 248 248 0 1 0 0-496zm0 192a56 56 0 1 1 0 112 56 56 0 1 1 0-112z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill-rule='evenodd' d='M256 8a248 248 0 1 0 0 496 248 248 0 1 0 0-496zm0 192a56 56 0 1 1 0 112 56 56 0 1 1 0-112z'/%3E%3C/svg%3E");
+}
+
+/*  Folder. */
+.mi-folder::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M0 96C0 60.7 28.7 32 64 32H196.1c19.1 0 37.4 7.6 50.9 21.1L289.9 96H448c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M0 96C0 60.7 28.7 32 64 32H196.1c19.1 0 37.4 7.6 50.9 21.1L289.9 96H448c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96z'/%3E%3C/svg%3E");
+}
+
+/*  Genre — a tag. */
+.mi-tag::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath fill-rule='evenodd' d='M0 80V229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7H48C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath fill-rule='evenodd' d='M0 80V229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7H48C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z'/%3E%3C/svg%3E");
+}
+
+
+/*======================================================================
+ *      Layout frame: the shell is position:fixed inset:0, so the player
+ *      cannot dock "below" it in flow. Instead, while a track is loaded,
+ *      the shell gives up a bottom strip (its own inset) and the player
+ *      is a fixed bar that fills exactly that strip — so on mobile the
+ *      player sits directly under the shell's bottom nav, no overlap.
+ *====================================================================*/
+.MUS_ROOT {
+    --mus-player-h: 0px;
+}
+.MUS_ROOT.has-player {
+    --mus-player-h: calc(69px + env(safe-area-inset-bottom));
+}
+.MUS_ROOT.has-player > .yui-shell {
+    inset: 0 0 var(--mus-player-h) 0;
+    height: auto;
+}
+
+
+/*======================================================================
+ *      View: sticky search header + scrolling content
+ *====================================================================*/
+.MUS_VIEW {
+    width: 100%;
+    color: var(--bulma-text, #1b1b1b);
+}
+.MUS_HEADER {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 0.6rem 0.75rem;
+    background: color-mix(in srgb, var(--bulma-scheme-main, #fff) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--bulma-border-weak, #ededed);
+}
+.MUS_SEARCH_WRAP { max-width: 900px; margin: 0 auto; }
+.MUS_SEARCH.input { border-radius: 11px; }
+
+.MUS_CONTENT {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem 1.5rem;
+}
+
+
+/*======================================================================
+ *      Rows (tracks and groups)
+ *====================================================================*/
+.MUS_ROWS { display: flex; flex-direction: column; }
+
+.MUS_ROW {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.55rem 0.5rem;
+    border: none;
+    background: none;
+    color: inherit;
+    border-radius: 12px;
+    cursor: pointer;
+    font: inherit;
+}
+.MUS_ROW:hover { background: var(--bulma-background, rgba(0, 0, 0, 0.04)); }
+.MUS_ROW.is-playing { background: var(--mus-accent-soft); }
+.MUS_ROW.is-playing .MUS_T1 { color: var(--mus-accent); }
+
+.MUS_ART {
+    width: 46px;
+    height: 46px;
+    flex: none;
+    border-radius: 9px;
+    background: var(--bulma-scheme-main-ter, #e8e8e8);
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    color: var(--bulma-text-weak, #8a8a8a);
+    overflow: hidden;
+    object-fit: cover;
+}
+.MUS_ART.is-round { border-radius: 50%; }
+img.MUS_ART { object-fit: cover; }
+
+.MUS_META { flex: 1; min-width: 0; }
+.MUS_T1 {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.MUS_T2 {
+    font-size: 0.8rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+.MUS_NUM {
+    width: 24px;
+    flex: none;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    font-variant-numeric: tabular-nums;
+}
+
+
+/*======================================================================
+ *      Album grid
+ *====================================================================*/
+.MUS_GRID {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.9rem;
+    padding: 0.3rem;
+}
+@media (min-width: 560px) { .MUS_GRID { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .MUS_GRID { grid-template-columns: repeat(4, 1fr); } }
+
+.MUS_CARD {
+    text-align: left;
+    border: none;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    font: inherit;
+}
+.MUS_COVER {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 13px;
+    background: var(--bulma-scheme-main-ter, #e8e8e8);
+    display: grid;
+    place-items: center;
+    color: var(--bulma-text-weak, #8a8a8a);
+    font-size: 22px;
+    overflow: hidden;
+    object-fit: cover;
+}
+.MUS_CARD .MUS_T1 { margin-top: 0.4rem; font-size: 0.9rem; }
+
+
+/*======================================================================
+ *      Detail
+ *====================================================================*/
+.MUS_BACK.button { margin: 0.25rem 0 0.5rem; }
+.MUS_BACK .MUS_ICO { display: inline-flex; margin-right: 0.15rem; }
+
+.MUS_DHEAD {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    padding: 0.4rem 0.25rem 1rem;
+}
+.MUS_DCOVER {
+    width: 112px;
+    height: 112px;
+    flex: none;
+    font-size: 28px;
+}
+.MUS_DINFO { min-width: 0; }
+.MUS_DTITLE {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 0 0 0.25rem;
+    color: var(--bulma-text-strong, #111);
+}
+.MUS_DMETA {
+    margin: 0 0 0.6rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    font-size: 0.85rem;
+}
+.MUS_PLAYALL.button {
+    border-radius: 999px;
+    font-weight: 600;
+    background: var(--mus-accent);
+    border-color: var(--mus-accent);
+    color: var(--mus-accent-ink);
+}
+.MUS_PLAYALL .MUS_ICO { display: inline-flex; margin-right: 0.3rem; }
+
+.MUS_SECTION_H {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    padding: 1rem 0.5rem 0.25rem;
+}
+
+
+/*======================================================================
+ *      Empty + loading states
+ *====================================================================*/
+.MUS_EMPTY {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.MUS_EMPTY_TITLE {
+    font-size: clamp(2.2rem, 11vw, 3.4rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.6rem;
+    color: var(--bulma-text-strong, #111);
+}
+.MUS_EMPTY_TITLE em { font-style: normal; color: var(--mus-accent); }
+.MUS_EMPTY_LEAD {
+    color: var(--bulma-text-weak, #8a8a8a);
+    margin: 0 0 1.6rem;
+    max-width: 38ch;
+}
+.MUS_PICKERS { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+.MUS_PICK.button {
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    height: auto;
+    font-weight: 600;
+}
+.MUS_PICK.is-primary {
+    background: var(--mus-accent);
+    border-color: var(--mus-accent);
+    color: var(--mus-accent-ink);
+}
+.MUS_HINT {
+    margin-top: 1.6rem;
+    font-size: 0.78rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    line-height: 1.6;
+    max-width: 46ch;
+}
+
+.MUS_LOADING {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.MUS_LOAD_COUNT {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--bulma-text-strong, #111);
+}
+.MUS_BAR {
+    height: 3px;
+    background: var(--bulma-scheme-main-ter, #e0e0e0);
+    border-radius: 2px;
+    margin-top: 1rem;
+    overflow: hidden;
+}
+.MUS_BAR_FILL {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--mus-accent);
+    transition: width 0.18s linear;
+}
+.MUS_LOAD_NAME {
+    font-size: 0.78rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    margin-top: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.MUS_EMPTY_NOTE {
+    color: var(--bulma-text-weak, #8a8a8a);
+    padding: 2.5rem 1rem;
+    text-align: center;
+}
+
+
+/*======================================================================
+ *      Mini-player (docked below the shell)
+ *====================================================================*/
+.MUS_PLAYER {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;               /* above shell base (1), below modal (99) */
+    display: none;
+    background: var(--bulma-scheme-main-bis, #f6f6f6);
+    border-top: 1px solid var(--bulma-border-weak, #ededed);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.MUS_ROOT.has-player .MUS_PLAYER { display: block; }
+
+.MUS_SEEK {
+    height: 3px;
+    background: var(--bulma-scheme-main-ter, #e0e0e0);
+    position: relative;
+    cursor: pointer;
+}
+.MUS_SEEK_FILL {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: var(--mus-accent);
+}
+.MUS_PBAR {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: 66px;
+    padding: 0 0.75rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+.MUS_PART {
+    width: 46px;
+    height: 46px;
+    flex: none;
+    border-radius: 9px;
+    background: var(--bulma-scheme-main-ter, #e0e0e0);
+    display: grid;
+    place-items: center;
+    color: var(--bulma-text-weak, #8a8a8a);
+    overflow: hidden;
+    cursor: pointer;
+}
+.MUS_PART img, .MUS_NOWART img { width: 100%; height: 100%; object-fit: cover; }
+.MUS_PMETA { flex: 1; min-width: 0; cursor: pointer; }
+.MUS_PTITLE {
+    font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.MUS_PARTIST {
+    font-size: 0.8rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.MUS_PCTL { display: flex; align-items: center; gap: 0.15rem; flex: none; }
+.MUS_PCTL button {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border: none; background: none; color: inherit;
+    border-radius: 50%; cursor: pointer;
+}
+.MUS_PCTL button:hover { background: var(--bulma-background, rgba(0,0,0,0.06)); }
+.MUS_PPLAY.is-primary {
+    background: var(--mus-accent) !important;
+    color: var(--mus-accent-ink);
+    width: 44px; height: 44px;
+}
+
+
+/*======================================================================
+ *      "Now playing" sheet (full-screen overlay)
+ *====================================================================*/
+.MUS_NOW {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: var(--bulma-scheme-main, #fff);
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    display: flex;
+    flex-direction: column;
+    padding: 0.9rem 1.5rem calc(1.75rem + env(safe-area-inset-bottom));
+}
+.MUS_NOW.is-open { transform: none; }
+@media (prefers-reduced-motion: reduce) { .MUS_NOW { transition: none; } }
+
+.MUS_GRAB {
+    width: 38px; height: 4px;
+    border-radius: 2px;
+    background: var(--bulma-border, #cfcfcf);
+    margin: 0 auto 0.6rem;
+    flex: none;
+}
+.MUS_NOWART {
+    width: min(74vw, 330px);
+    aspect-ratio: 1;
+    border-radius: 20px;
+    margin: auto auto 1.6rem;
+    background: var(--bulma-scheme-main-ter, #e8e8e8);
+    display: grid;
+    place-items: center;
+    color: var(--bulma-text-weak, #8a8a8a);
+    font-size: 40px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+.MUS_NOWTITLE {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 0 0 0.3rem;
+    color: var(--bulma-text-strong, #111);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.MUS_NOWARTIST {
+    color: var(--bulma-text-weak, #8a8a8a);
+    margin: 0 0 1.2rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.MUS_NOWSEEK {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bulma-scheme-main-ter, #e0e0e0);
+    position: relative;
+    cursor: pointer;
+}
+.MUS_NOWSEEK_FILL {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    border-radius: 2px;
+    background: var(--mus-accent);
+}
+.MUS_TIMES {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    margin-top: 0.45rem;
+    font-variant-numeric: tabular-nums;
+}
+.MUS_NCTL {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9rem;
+    margin-top: 1.4rem;
+}
+.MUS_NCTL button {
+    width: 52px; height: 52px;
+    display: grid; place-items: center;
+    border: none; background: none; color: inherit;
+    border-radius: 50%; cursor: pointer;
+}
+.MUS_NCTL button:hover { background: var(--bulma-background, rgba(0,0,0,0.06)); }
+.MUS_TOG { color: var(--bulma-text-weak, #8a8a8a); }
+.MUS_TOG.is-on { color: var(--mus-accent); }
+.MUS_NPLAY.is-primary {
+    background: var(--mus-accent) !important;
+    color: var(--mus-accent-ink);
+    width: 66px; height: 66px;
+}
+.MUS_NFOOT {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.1rem;
+    font-size: 0.8rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    font-variant-numeric: tabular-nums;
+}
