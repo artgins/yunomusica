@@ -90,6 +90,7 @@ const ja = {
         "this can take a while":
             "しばらくかかることがあります。ブラウザーがファイルを引き渡しているところで、音楽フォルダーが大きいと時間がかかります。どこにも送信されません。",
         "stop":                 "停止",
+        "stopping":                 "停止しています…",
         "stopped":              "フォルダーを読み終える前に停止しました",
         "waiting for permission": "許可を待っています",
         "permission denied":    "許可されませんでした",

@@ -68,6 +68,7 @@ const S = {
     loaded:  false,
     persistent: false,      // IndexedDB actually works here
     preparing: false,       // the browser is still handing over a folder
+    stopping: false,        // Stop pressed, waiting for the loop to break
 };
 
 function rt(id)
@@ -96,6 +97,22 @@ function is_persistent()
 function is_preparing()
 {
     return S.preparing;
+}
+
+/*  Stop the read that is running, from wherever the user pressed it.
+    Acknowledged immediately (see is_stopping) because the loop can only
+    break between files, and a button that takes a moment to visibly do
+    anything reads as a button that does nothing. */
+function stop_scan()
+{
+    S.stopping = true;
+    cancel_ingest();
+    emit();
+}
+
+function is_stopping()
+{
+    return S.stopping;
 }
 
 function all_sources()
@@ -448,6 +465,7 @@ async function scan(id)
 
     source.count = (res && res.count) || 0;
     r.scanning = false;
+    S.stopping = false;
     if(res && res.cancelled) {
         /*  Stopped on purpose: what was read stays, and the source says
             it is only part of the folder rather than pretending it is
@@ -456,6 +474,14 @@ async function scan(id)
     } else if(!source.count) {
         r.error = "no audio here";
     }
+
+    /*  Tell the interface the read is over BEFORE writing to IndexedDB.
+        A "files" source carries every File it was handed, and storing
+        thousands of them takes real time — time during which the scan
+        bar used to stay up with the Stop button still on it. Pressing
+        Stop then looked like it did nothing, when in fact the reading
+        had already stopped and the app was busy saving. */
+    emit();
     await persist(source);
     emit();
     return source.count;
@@ -510,6 +536,8 @@ export {
     fsa_supported,
     is_persistent,
     is_preparing,
+    stop_scan,
+    is_stopping,
     load_sources,
     all_sources,
     source_name,

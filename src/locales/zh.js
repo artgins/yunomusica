@@ -90,6 +90,7 @@ const zh = {
         "this can take a while":
             "这可能需要一些时间：浏览器正在交付文件，音乐文件夹很大时会比较慢。不会向任何地方发送任何内容。",
         "stop":                 "停止",
+        "stopping":                 "正在停止…",
         "stopped":              "在读完该文件夹之前已停止",
         "waiting for permission": "等待授权",
         "permission denied":    "权限被拒绝",

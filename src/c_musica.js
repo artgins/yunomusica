@@ -42,12 +42,13 @@ import {
     subscribe, store_state,
     current_track, is_playing, toggle, step, prev,
     seek_fraction, progress, cover_url, setup_media_session,
-    cancel_ingest, scan_elapsed, fmt_time,
+    cancel_ingest, fmt_time,
 } from "./music_store.js";
 
 import {
     load_sources, add_dir, add_files,
     subscribe_sources, scanning_source, is_preparing,
+    stop_scan, is_stopping,
 } from "./sources_store.js";
 import {load_playlists} from "./playlists_store.js";
 
@@ -90,6 +91,8 @@ let PRIVATE_DATA = {
     $player:  null,
     $scan:    null,     // the "reading your music" bar
     scan_timer: 0,      // ticks the elapsed clock on that bar
+    scan_t0:  0,        // when the wait started, from the user's side
+    strips:   null,     // ResizeObserver keeping the bottom strips honest
     unsub:    null,
     unsub_src: null,
     tint_key: null,     // last cover a tint was computed from
@@ -203,6 +206,10 @@ function mt_stop(gobj)
     if(priv.scan_timer) {
         clearInterval(priv.scan_timer);
         priv.scan_timer = 0;
+    }
+    if(priv.strips) {
+        priv.strips.disconnect();
+        priv.strips = null;
     }
     gobj_stop_children(gobj);
 }
@@ -354,7 +361,7 @@ function build_player(gobj)
                             i18n: "stop",
                             "aria-label": t("stop"),
                             "data-i18n-aria-label": "stop"
-                        }, t("stop"), {click: () => cancel_ingest()}]
+                        }, t("stop"), {click: () => stop_scan()}]
                 ]],
                 ["div", {class: "MUS_BAR"}, [["i", {class: "MUS_BAR_FILL"}]]],
                 ["div", {class: "MUS_SCAN_FILE"}, ""]
@@ -363,6 +370,24 @@ function build_player(gobj)
     );
     priv.$scan = $scan;
     priv.$root.appendChild($scan);
+
+    /*  MEASURE the bottom strips instead of hard-coding how tall they
+        are. The shell gives up exactly this much room, so a guess that
+        is too small clips the strip — which is what happened to the
+        "this can take a while" line, and once before to the player,
+        which ate 5px of the bottom nav. The height also depends on the
+        language: the same sentence wraps to two lines in German and one
+        in Chinese. */
+    if(typeof ResizeObserver !== "undefined") {
+        priv.strips = new ResizeObserver(function() {
+            priv.$root.style.setProperty("--mus-player-h",
+                priv.$player.offsetHeight + "px");
+            priv.$root.style.setProperty("--mus-scan-h",
+                $scan.offsetHeight + "px");
+        });
+        priv.strips.observe($scan);
+        priv.strips.observe(priv.$player);
+    }
 
     /*  Keyboard transport, ignored while typing. */
     document.addEventListener("keydown", (e) => {
@@ -454,14 +479,22 @@ function paint_scan(gobj)
     priv.$scan.classList.toggle("is-preparing", preparing);
 
     /*  The clock has to tick on its own. Repaints are driven by files
-        being read, so a slow file — or a tree still being walked, which
-        reads nothing at all — would freeze the one number that tells
-        the user the app is still alive. */
+        being read, so a slow file — or a folder still being handed over,
+        which reads nothing at all — would freeze the one number that
+        tells the user the app is still alive.
+
+        And it is started HERE, when the bar appears, not when the tag
+        reading starts: the user is waiting from the moment the folder is
+        picked, through the browser handing it over and the tree being
+        walked. Timing only the last phase left it sitting at 0:00 for
+        the whole of the first one. */
     if(on && !priv.scan_timer) {
+        priv.scan_t0 = Date.now();
         priv.scan_timer = setInterval(() => paint_scan_clock(gobj), 500);
     } else if(!on && priv.scan_timer) {
         clearInterval(priv.scan_timer);
         priv.scan_timer = 0;
+        priv.scan_t0 = 0;
     }
     if(!on) {
         return;
@@ -480,6 +513,19 @@ function paint_scan(gobj)
 
     set_text(priv.$scan, ".MUS_SCAN_WHAT", (!preparing && src) ? src.name : "");
 
+    /*  The loop can only break between files, so acknowledge the press
+        at once instead of leaving the button looking untouched. */
+    let stopping = is_stopping();
+    let $stop = priv.$scan.querySelector(".MUS_SCAN_STOP");
+    if($stop) {
+        let key = stopping ? "stopping" : "stop";
+        $stop.textContent = t(key);
+        $stop.setAttribute("data-i18n", key);
+        $stop.setAttribute("data-i18n-aria-label", key);
+        $stop.setAttribute("aria-label", t(key));
+        $stop.disabled = stopping;
+    }
+
     let total = preparing ? 0 : (store_state.total || 0);
     let done = store_state.loaded || 0;
     set_text(priv.$scan, ".MUS_SCAN_COUNT", total ? `${done} / ${total}` : "");
@@ -494,6 +540,7 @@ function paint_scan(gobj)
 
     /*  While there are no numbers to show, warn that the wait is normal
         and can be long — that gap is where the app looked hung. */
+    priv.$scan.classList.toggle("is-waiting", !total);
     let $sub = priv.$scan.querySelector(".MUS_SCAN_FILE");
     if($sub) {
         if(total) {
@@ -509,10 +556,11 @@ function paint_scan(gobj)
 function paint_scan_clock(gobj)
 {
     let priv = gobj.priv;
-    if(!priv.$scan) {
+    if(!priv.$scan || !priv.scan_t0) {
         return;
     }
-    set_text(priv.$scan, ".MUS_SCAN_CLOCK", fmt_time(scan_elapsed() / 1000));
+    set_text(priv.$scan, ".MUS_SCAN_CLOCK",
+        fmt_time((Date.now() - priv.scan_t0) / 1000));
 }
 
 function paint_art($node, url)

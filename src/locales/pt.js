@@ -90,6 +90,7 @@ const pt = {
         "this can take a while":
             "Pode demorar um bocado: o navegador está a entregar os ficheiros, e uma pasta de música grande leva tempo. Não está a ser enviado nada para lado nenhum.",
         "stop":                 "Parar",
+        "stopping":                 "A parar…",
         "stopped":              "Parado antes de acabar a pasta",
         "waiting for permission": "À espera de permissão",
         "permission denied":    "Permissão negada",

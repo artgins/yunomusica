@@ -97,17 +97,14 @@
  *      player is a fixed bar that fills exactly that band — so on mobile
  *      the player sits directly under the shell's bottom nav, no overlap.
  *====================================================================*/
+/*  Both strip heights are MEASURED at run time and written onto this
+    element (see the ResizeObserver in c_musica.js). A hard-coded guess
+    is wrong the moment a string wraps in another language, and being
+    wrong here clips the strip or eats into the bottom nav. The values
+    below are only the hidden state and a fallback. */
 .MUS_ROOT {
     --mus-player-h: 0px;
     --mus-scan-h: 0px;
-}
-/*  Must match what each strip actually measures, or it eats into the
-    bottom nav: the player is 5px seek bar + 68px bar + 1px top border. */
-.MUS_ROOT.has-player {
-    --mus-player-h: calc(74px + env(safe-area-inset-bottom));
-}
-.MUS_ROOT.is-scanning {
-    --mus-scan-h: 62px;
 }
 .MUS_ROOT.has-player > .yui-shell,
 .MUS_ROOT.is-scanning > .yui-shell {
@@ -844,17 +841,22 @@ img.MUS_ART { object-fit: cover; }
     inset-inline: 0;
     bottom: var(--mus-player-h);
     z-index: 31;
-    height: var(--mus-scan-h);
     background: var(--mus-accent);
     color: var(--mus-accent-ink);
     border-top: 1px solid color-mix(in srgb, var(--mus-accent) 70%, #000);
 }
 .MUS_SCANBAR.is-on { display: block; }
 
+/*  With no player below it, this bar IS the bottom of the screen and
+    has to clear the home indicator itself. */
+.MUS_ROOT:not(.has-player) > .MUS_SCANBAR {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
 .MUS_SCAN_BODY {
     max-width: 900px;
     margin: 0 auto;
-    padding: 0.5rem 0.9rem;
+    padding: 0.55rem 0.9rem 0.7rem;
 }
 .MUS_SCAN_LINE {
     display: flex;
@@ -891,16 +893,23 @@ img.MUS_ART { object-fit: cover; }
 }
 .MUS_SCAN_STOP:hover { background: color-mix(in srgb, var(--mus-accent-ink) 20%, transparent); }
 .MUS_SCAN_FILE {
-    font-size: 0.72rem;
-    opacity: 0.8;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    opacity: 0.92;
+    white-space: normal;        /* the long-wait warning has to wrap */
+    margin-top: 0.3rem;
+}
+/*  The current file name is incidental; keep it to one line. The warning
+    is the message, so it gets to wrap and be read. */
+.MUS_SCANBAR:not(.is-waiting) .MUS_SCAN_FILE {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-top: 0.15rem;
+    font-size: 0.72rem;
+    opacity: 0.78;
 }
 /*  Nothing of ours is running yet, so there is nothing to stop. */
 .MUS_SCANBAR.is-preparing .MUS_SCAN_STOP { display: none; }
-.MUS_SCANBAR.is-preparing .MUS_SCAN_FILE { white-space: normal; }
 .MUS_SCANBAR .MUS_BAR {
     margin-top: 0.35rem;
     height: 4px;

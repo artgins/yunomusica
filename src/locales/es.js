@@ -95,6 +95,7 @@ const es = {
         "this can take a while":
             "Puede tardar un rato: el navegador está entregando los ficheros, y una carpeta de música grande lleva su tiempo. No se está enviando nada a ninguna parte.",
         "stop":                 "Parar",
+        "stopping":                 "Parando…",
         "stopped":              "Parado antes de acabar la carpeta",
         "waiting for permission": "Esperando permiso",
         "permission denied":    "Permiso denegado",

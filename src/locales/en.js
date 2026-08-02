@@ -105,6 +105,7 @@ const en = {
         "this can take a while":
             "This can take a while: the browser is handing the files over, and a big music folder takes time. Nothing is being sent anywhere.",
         "stop":                 "Stop",
+        "stopping":                 "Stopping…",
         "stopped":              "Stopped before the end of the folder",
         "waiting for permission": "Waiting for permission",
         "permission denied":    "Permission denied",
