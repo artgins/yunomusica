@@ -107,6 +107,8 @@ const de = {
         "folder":               "Ordner",
         "files":                "Dateien",
         "remove this source":   "Diese Quelle entfernen",
+        "diagnostics":         "Diagnose",
+        "copy":                "Kopieren",
 
         "saved lists":          "Gespeicherte Listen",
         "no saved lists yet":   "Noch keine gespeicherten Listen.",

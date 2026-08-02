@@ -122,6 +122,8 @@ const en = {
         "folder":               "Folder",
         "files":                "Files",
         "remove this source":   "Remove this source",
+        "diagnostics":         "Diagnostics",
+        "copy":                "Copy",
 
         /* ---- the saved lists ---- */
         "saved lists":          "Saved lists",

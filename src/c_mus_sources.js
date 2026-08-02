@@ -32,7 +32,7 @@ import {yui_shell_of} from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {
     subscribe_sources, all_sources, fsa_supported, is_persistent,
-    is_durable, write_failed,
+    is_durable, write_failed, diagnose,
     add_dir, add_files, authorize, scan, remove_source,
 } from "./sources_store.js";
 
@@ -85,6 +85,8 @@ let PRIVATE_DATA = {
     unsub_sources: null,
     unsub_music:   null,
     $content:      null,
+    diag_open:     false,   // the diagnostics panel is unfolded
+    diag_text:     "",      // its last readout, kept across re-renders
 };
 
 let __gclass__ = null;
@@ -200,7 +202,91 @@ function render(gobj)
         $c.appendChild($list);
     }
 
+    $c.appendChild(build_diagnostics(gobj));
+
     refresh_language($c, t);
+}
+
+
+/***************************************************************
+ *  What the browser actually does with file access is invisible
+ *  from the outside and differs by engine, platform and whether
+ *  the app is installed. This turns "it still asks for the
+ *  permission" into a readout that can be acted on — and it is
+ *  worth having permanently in an app whose whole promise is
+ *  about what happens to your files.
+ ***************************************************************/
+function build_diagnostics(gobj)
+{
+    let priv = gobj.priv;
+
+    let $body = createElement2(["pre", {class: "MUS_DIAG_BODY"}, ""]);
+
+    let $wrap = createElement2(
+        ["details", {class: "MUS_DIAG"}, [
+            ["summary", {class: "MUS_DIAG_SUM", i18n: "diagnostics"}, t("diagnostics")],
+            ["div", {class: "MUS_DIAG_ACTIONS"}, [
+                ["button", {class: "MUS_QBTN button is-ghost", type: "button", i18n: "copy"},
+                    t("copy"), {click: (ev) => copy_diag(ev, $body)}]
+            ]],
+            $body
+        ]]
+    );
+
+    /*  Probed only when the panel is OPENED: the readable line touches
+        the disk, and this view re-renders on every scan tick. A rebuild
+        while it is open shows the last readout instead of probing
+        again. */
+    $wrap.addEventListener("toggle", function() {
+        priv.diag_open = $wrap.open;
+        if($wrap.open && !priv.diag_text) {
+            fill_diagnostics(gobj, $body);
+        }
+    });
+    if(priv.diag_open) {
+        $wrap.open = true;
+        $body.textContent = priv.diag_text || "…";
+        if(!priv.diag_text) {
+            fill_diagnostics(gobj, $body);
+        }
+    }
+
+    return $wrap;
+}
+
+function fill_diagnostics(gobj, $body)
+{
+    $body.textContent = "…";
+    diagnose().then(function(lines) {
+        gobj.priv.diag_text = lines
+            .map((l) => l.k.padEnd(22) + " " + l.v)
+            .join("\n");
+        $body.textContent = gobj.priv.diag_text;
+    });
+}
+
+function copy_diag(ev, $body)
+{
+    let text = $body.textContent || "";
+    /*  Captured NOW: by the time the clipboard promise settles the event
+        has been dispatched and currentTarget is null. */
+    let $b = ev.currentTarget;
+    let done = () => {
+        let old = $b.textContent;
+        $b.textContent = "✓";
+        setTimeout(() => { $b.textContent = old; }, 1200);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, () => {});
+        return;
+    }
+    /*  No clipboard API (or no permission): select it so the user can
+        copy it by hand rather than being told nothing happened. */
+    let r = document.createRange();
+    r.selectNodeContents($body);
+    let sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
 }
 
 

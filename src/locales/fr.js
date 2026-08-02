@@ -107,6 +107,8 @@ const fr = {
         "folder":               "Dossier",
         "files":                "Fichiers",
         "remove this source":   "Retirer cette source",
+        "diagnostics":         "Diagnostic",
+        "copy":                "Copier",
 
         "saved lists":          "Listes enregistrées",
         "no saved lists yet":   "Pas encore de liste enregistrée.",

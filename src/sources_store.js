@@ -271,6 +271,89 @@ function is_durable()
     return S.durable;
 }
 
+
+/***************************************************************
+ *      Diagnostics
+ *
+ *  What the browser actually does with file access varies by
+ *  engine, by platform and by whether the app is installed, and
+ *  none of it is visible from the outside. Rather than guess
+ *  from a description of the symptom, ask the environment and
+ *  show the answers.
+ *
+ *  The decisive line is `readable`: it takes one real byte out
+ *  of a stored file. A source that is listed but whose files
+ *  can no longer be opened looks exactly like a permission
+ *  problem, and is not one.
+ ***************************************************************/
+async function diagnose()
+{
+    let lines = [];
+    const add = (k, v) => lines.push({k: k, v: String(v)});
+
+    let mode = "browser";
+    if(typeof matchMedia === "function") {
+        for(const m of ["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"]) {
+            if(matchMedia(`(display-mode: ${m})`).matches) {
+                mode = m;
+                break;
+            }
+        }
+    }
+    add("display-mode", mode);
+    add("showDirectoryPicker", fsa_supported() ? "yes" : "NO");
+    add("indexedDB", S.persistent ? "yes" : "NO");
+    add("storage.persisted", S.durable === null ? "unknown" : S.durable);
+    add("last write", S.write_failed ? "FAILED" : "ok");
+    if(typeof navigator !== "undefined" && navigator.storage && navigator.storage.estimate) {
+        try {
+            let e = await navigator.storage.estimate();
+            add("storage used", Math.round((e.usage || 0) / 1048576) + " MiB / " +
+                Math.round((e.quota || 0) / 1048576) + " MiB");
+        } catch(err) {
+            /*  Not every engine answers; the line is simply omitted. */
+        }
+    }
+    add("userAgent", (typeof navigator !== "undefined" ? navigator.userAgent : "?").slice(0, 90));
+
+    for(const s of S.sources) {
+        let r = rt(s.id);
+        let perm = await query_permission(s);
+        let n = (s.kind === "dir") ? "?" : ((s.files && s.files.length) || 0);
+        add(`source "${s.name}"`,
+            `kind=${s.kind} permission=${perm} stored=${n} tracks=${s.count || 0}` +
+            (r.error ? ` error=${r.error}` : ""));
+
+        /*  The real question: can a stored reference still be READ? */
+        let probe = "n/a";
+        try {
+            let f = null;
+            if(s.kind === "dir") {
+                if(perm === "granted") {
+                    for await (const entry of s.handle.values()) {
+                        if(entry.kind === "file") {
+                            f = await entry.getFile();
+                            break;
+                        }
+                    }
+                } else {
+                    probe = "not authorised";
+                }
+            } else if(s.files && s.files.length) {
+                f = s.files[0];
+            }
+            if(f) {
+                await f.slice(0, 1).arrayBuffer();
+                probe = "YES";
+            }
+        } catch(err) {
+            probe = "NO (" + ((err && err.name) || err) + ")";
+        }
+        add("   readable", probe);
+    }
+    return lines;
+}
+
 /*  A whole folder, recursively. Returns the new source id, or "". */
 async function add_dir()
 {
@@ -581,6 +664,7 @@ export {
     is_persistent,
     is_durable,
     write_failed,
+    diagnose,
     is_preparing,
     stop_scan,
     is_stopping,

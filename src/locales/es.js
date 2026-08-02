@@ -112,6 +112,8 @@ const es = {
         "folder":               "Carpeta",
         "files":                "Ficheros",
         "remove this source":   "Quitar esta fuente",
+        "diagnostics":         "Diagnóstico",
+        "copy":                "Copiar",
 
         /* ---- las listas guardadas ---- */
         "saved lists":          "Listas guardadas",

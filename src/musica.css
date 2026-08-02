@@ -711,6 +711,38 @@ img.MUS_ART { object-fit: cover; }
 
 
 /*======================================================================
+ *      Diagnostics panel
+ *====================================================================*/
+.MUS_DIAG {
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--bulma-border-weak, #ededed);
+    padding-top: 0.8rem;
+}
+.MUS_DIAG_SUM {
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--bulma-text-weak, #8a8a8a);
+}
+.MUS_DIAG_ACTIONS { margin: 0.6rem 0 0.4rem; }
+.MUS_DIAG_BODY {
+    margin: 0;
+    padding: 0.7rem 0.8rem;
+    border-radius: 10px;
+    background: var(--bulma-scheme-main-bis, #f2f2f2);
+    color: var(--bulma-text, #1b1b1b);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    white-space: pre;
+    overflow-x: auto;
+    /*  A readout is data: it must not be mirrored with the interface. */
+    direction: ltr;
+    text-align: left;
+}
+
+
+/*======================================================================
  *      Credits — on the home screen, not only in the dialog
  *====================================================================*/
 .MUS_CREDITS {

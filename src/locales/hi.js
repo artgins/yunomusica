@@ -107,6 +107,8 @@ const hi = {
         "folder":               "फ़ोल्डर",
         "files":                "फ़ाइलें",
         "remove this source":   "यह स्रोत हटाएँ",
+        "diagnostics":         "निदान",
+        "copy":                "कॉपी करें",
 
         "saved lists":          "सहेजी गई सूचियाँ",
         "no saved lists yet":   "अभी कोई सहेजी गई सूची नहीं है।",

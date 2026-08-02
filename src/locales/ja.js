@@ -107,6 +107,8 @@ const ja = {
         "folder":               "フォルダー",
         "files":                "ファイル",
         "remove this source":   "このソースを取り除く",
+        "diagnostics":         "診断情報",
+        "copy":                "コピー",
 
         "saved lists":          "保存したリスト",
         "no saved lists yet":   "保存したリストはまだありません。",

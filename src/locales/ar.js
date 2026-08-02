@@ -111,6 +111,8 @@ const ar = {
         "folder":               "مجلد",
         "files":                "ملفات",
         "remove this source":   "إزالة هذا المصدر",
+        "diagnostics":         "تشخيص",
+        "copy":                "نسخ",
 
         "saved lists":          "القوائم المحفوظة",
         "no saved lists yet":   "لا توجد قوائم محفوظة بعد.",

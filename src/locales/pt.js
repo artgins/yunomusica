@@ -107,6 +107,8 @@ const pt = {
         "folder":               "Pasta",
         "files":                "Ficheiros",
         "remove this source":   "Remover esta fonte",
+        "diagnostics":         "Diagnóstico",
+        "copy":                "Copiar",
 
         "saved lists":          "Listas guardadas",
         "no saved lists yet":   "Ainda não há listas guardadas.",
