@@ -2,16 +2,17 @@
  *          music_store.js
  *
  *      The domain of yunomúsica, with no gobj and no chrome: reading the
- *      files the user picks, parsing their ID3 tags, grouping the library
- *      four ways, and playing a queue through one <audio> element.
+ *      files a source hands over, parsing their ID3 tags, grouping the
+ *      library four ways, and playing a queue the user curates.
  *
- *      The ID3 reader and the play/queue logic are ported verbatim from
- *      the single self-contained page this app grew from, so nothing about
+ *      The ID3 reader and the play logic are ported verbatim from the
+ *      single self-contained page this app grew from, so nothing about
  *      the parsing changes; only its shape does, from inline globals to a
  *      module with a tiny pub/sub the gobj views subscribe to.
  *
- *      Everything runs on the device: a picked file is read with the File
- *      API and played from an object URL. Nothing is uploaded.
+ *      Everything runs on the device: a file is read with the File API
+ *      and played from an object URL. Nothing is uploaded, and nothing is
+ *      copied — see sources_store.js for what "authorised" means.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
@@ -23,7 +24,8 @@
  *
  *  Channels:
  *    "loading"  — ingest progress moved (loaded/total/name).
- *    "library"  — the track list changed (ingest finished).
+ *    "library"  — the track list changed (a source came or went).
+ *    "queue"    — the queue was edited (added, removed, reordered).
  *    "playing"  — the current track or the play/pause state changed.
  *    "time"     — the playback position moved (audio timeupdate).
  *
@@ -232,22 +234,31 @@ function fromPath(file)
 
 /***************************************************************
  *      2. State
+ *
+ *  A track's identity has two halves. `uid` is a per-session
+ *  number, the handle the DOM and the queue use. `source_id` +
+ *  `path` is what SURVIVES: a saved playlist stores those, and
+ *  resolves them back to tracks the next time the source is
+ *  read (see playlists_store.js).
  ***************************************************************/
-const UNKNOWN = "Sin artista";
+const UNKNOWN_ARTIST = "unknown artist";
+const UNKNOWN_ALBUM  = "unknown album";
+const UNKNOWN_GENRE  = "unknown genre";
 
 const norm = (s) => (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-const collator = new Intl.Collator("es", {sensitivity:"base"});
+const collator = new Intl.Collator(undefined, {sensitivity:"base", numeric:true});
 const byTrackNo = (a,b) => (a.track - b.track) || collator.compare(a.title, b.title);
 
 const S = {
     tracks:  [],
     covers:  new Map(),
+    uid_seq: 1,
     /*  ingest progress */
     loading: false,
     loaded:  0,
     total:   0,
     load_name: "",
-    notice:  "",        // a message the view shows in place (bad pick)
+    notice:  "",        // a message the views show in place (bad pick)
     /*  playback */
     audio:   null,
     queue:   [],
@@ -268,15 +279,22 @@ function has_library()
     return S.tracks.length > 0;
 }
 
-async function ingest(files)
+function track_count()
+{
+    return S.tracks.length;
+}
+
+/*  Read `files` into the library, tagging every track with the source
+    they came from. Returns {ok, count}. */
+async function ingest(files, source_id)
 {
     const list = [...files].filter((f) => AUDIO_RE.test(f.name));
     if(!list.length) {
         /*  A pick with nothing playable in it must not dead-end in
             silence: say it in place and let the user pick again. */
-        S.notice = "No he encontrado ficheros de audio ahí.";
+        S.notice = "no audio here";
         emit("library");
-        return {ok:false, reason:"no-audio"};
+        return {ok:false, reason:"no-audio", count:0};
     }
 
     S.notice = "";
@@ -301,8 +319,8 @@ async function ingest(files)
             /*  Unreadable header: fall back to the path guess below. */
         }
 
-        const album  = (tag.album  || guess.album  || "Sin álbum").trim();
-        const artist = (tag.artist || guess.artist || UNKNOWN).trim();
+        const album  = (tag.album  || guess.album  || UNKNOWN_ALBUM).trim();
+        const artist = (tag.artist || guess.artist || UNKNOWN_ARTIST).trim();
         const albumArtist = (tag.albumArtist || artist).trim();
         const key = norm(albumArtist) + "|" + norm(album);
 
@@ -311,10 +329,13 @@ async function ingest(files)
         }
 
         S.tracks.push({
-            id: S.tracks.length, file: f,
+            uid: S.uid_seq++,
+            source_id: source_id || "",
+            path: f.webkitRelativePath || f.name,
+            file: f,
             title: (tag.title || guess.title || f.name).trim(),
             artist, albumArtist, album,
-            genre: cleanGenre(tag.genre) || "Sin género",
+            genre: cleanGenre(tag.genre) || UNKNOWN_GENRE,
             track: parseInt((tag.track || guess.track || "0").split("/")[0], 10) || 0,
             year: (tag.year || "").slice(0,4),
             folder: guess.folder, key
@@ -335,6 +356,41 @@ async function ingest(files)
     return {ok:true, count:list.length};
 }
 
+/*  A source was removed or is being rescanned: forget its tracks, and
+    take them out of the queue too — a queue entry whose file is gone
+    would just fail to play. */
+function drop_source_tracks(source_id)
+{
+    if(!source_id) {
+        return;
+    }
+    let before = S.tracks.length;
+    S.tracks = S.tracks.filter((t) => t.source_id !== source_id);
+    if(S.tracks.length === before) {
+        return;
+    }
+
+    let cur = S.queue[S.qi] || null;
+    let kept = S.queue.filter((t) => t.source_id !== source_id);
+    if(kept.length !== S.queue.length) {
+        S.queue = kept;
+        S.qi = cur ? kept.indexOf(cur) : -1;
+        if(S.qi < 0) {
+            stop_playback();
+        }
+        emit("queue");
+    }
+    emit("library");
+}
+
+function clear_notice()
+{
+    if(S.notice) {
+        S.notice = "";
+        emit("library");
+    }
+}
+
 
 /***************************************************************
  *      4. Groupings and search
@@ -352,11 +408,11 @@ function group_by(fn)
     return [...m.entries()].sort((a,b) => collator.compare(a[0], b[0]));
 }
 
-/*  view: "artistas" | "generos" | "carpetas" -> [{name, tracks}]  */
+/*  view: "artists" | "genres" | "folders" -> [{name, tracks}]  */
 function groups_for(view)
 {
-    const fn = view === "artistas" ? (t => t.albumArtist)
-             : view === "generos"  ? (t => t.genre)
+    const fn = view === "artists" ? (t => t.albumArtist)
+             : view === "genres"  ? (t => t.genre)
              : (t => t.folder);
     return group_by(fn).map(([name, tracks]) => ({name, tracks}));
 }
@@ -387,9 +443,129 @@ function cover_url(key)
     return S.covers.get(key) || null;
 }
 
+function tracks_of_source(source_id)
+{
+    return S.tracks.filter((t) => t.source_id === source_id);
+}
+
+/*  Resolve a saved playlist entry back to a live track. */
+function find_track(source_id, path)
+{
+    return S.tracks.find((t) => t.source_id === source_id && t.path === path) || null;
+}
+
 
 /***************************************************************
- *      5. Playback
+ *      5. The queue — the deck the user curates
+ ***************************************************************/
+function queue_tracks()
+{
+    return S.queue;
+}
+
+function queue_index()
+{
+    return S.qi;
+}
+
+function queue_length()
+{
+    return S.queue.length;
+}
+
+/*  mode: "append" (default) | "next" | "replace" */
+function queue_add(list, mode)
+{
+    if(!list || !list.length) {
+        return 0;
+    }
+    if(mode === "replace") {
+        S.queue = [...list];
+        S.qi = -1;
+        emit("queue");
+        queue_play_at(0);
+        return list.length;
+    }
+    let at;
+    if(mode === "next" && S.qi >= 0) {
+        at = S.qi + 1;
+        S.queue.splice(at, 0, ...list);
+    } else {
+        at = S.queue.length;
+        S.queue.push(...list);
+    }
+    emit("queue");
+    /*  An idle deck gets ARMED, not started: the first added track is
+        cued and waits for Play. Loading a deck and starting it are two
+        deliberate acts, and only "replace" (an explicit Play from the
+        library) is the second one. */
+    if(S.qi < 0) {
+        S.qi = at;
+        load_current(false);
+    }
+    return list.length;
+}
+
+function queue_remove_at(i)
+{
+    if(i < 0 || i >= S.queue.length) {
+        return;
+    }
+    let was_current = (i === S.qi);
+    S.queue.splice(i, 1);
+
+    if(was_current) {
+        if(!S.queue.length) {
+            S.qi = -1;
+            stop_playback();
+        } else {
+            /*  Slide onto whatever took its place (or the new last one). */
+            S.qi = Math.min(i, S.queue.length - 1);
+            load_current(is_playing());
+        }
+    } else if(i < S.qi) {
+        S.qi--;
+    }
+    emit("queue");
+}
+
+function queue_move(from, to)
+{
+    if(from === to) {
+        return;
+    }
+    if(from < 0 || from >= S.queue.length || to < 0 || to >= S.queue.length) {
+        return;
+    }
+    let cur = S.queue[S.qi] || null;
+    let [item] = S.queue.splice(from, 1);
+    S.queue.splice(to, 0, item);
+    if(cur) {
+        S.qi = S.queue.indexOf(cur);
+    }
+    emit("queue");
+}
+
+function queue_clear()
+{
+    S.queue = [];
+    S.qi = -1;
+    stop_playback();
+    emit("queue");
+}
+
+function queue_play_at(i)
+{
+    if(i < 0 || i >= S.queue.length) {
+        return;
+    }
+    S.qi = i;
+    load_current(true);
+}
+
+
+/***************************************************************
+ *      6. Playback
  ***************************************************************/
 function get_audio()
 {
@@ -399,6 +575,12 @@ function get_audio()
         S.audio.addEventListener("ended", () => step(1));
         S.audio.addEventListener("play",  () => emit("playing"));
         S.audio.addEventListener("pause", () => emit("playing"));
+        S.audio.addEventListener("error", () => {
+            /*  A file that moved or was deleted since it was read. Say so
+                and move on rather than stalling on a dead entry. */
+            S.notice = "that file could not be read";
+            emit("library");
+        });
     }
     return S.audio;
 }
@@ -413,20 +595,18 @@ function is_playing()
     return !!S.audio && !S.audio.paused;
 }
 
-function play_list(list, i)
+function stop_playback()
 {
-    S.queue = [...list];
-    if(S.shuffle) {
-        const first = S.queue.splice(i, 1)[0];
-        for(let k = S.queue.length - 1; k > 0; k--) {
-            const j = Math.floor(Math.random() * (k+1));
-            [S.queue[k], S.queue[j]] = [S.queue[j], S.queue[k]];
-        }
-        S.queue.unshift(first);
-        i = 0;
+    if(S.audio) {
+        S.audio.pause();
+        S.audio.removeAttribute("src");
+        S.audio.load();
     }
-    S.qi = i;
-    load_current(true);
+    if(S.url) {
+        URL.revokeObjectURL(S.url);
+        S.url = null;
+    }
+    emit("playing");
 }
 
 function load_current(autoplay)
@@ -453,6 +633,10 @@ function toggle()
     if(!S.queue.length) {
         return;
     }
+    if(S.qi < 0) {
+        queue_play_at(0);
+        return;
+    }
     const audio = get_audio();
     if(audio.paused) {
         audio.play().catch(() => {});
@@ -461,9 +645,29 @@ function toggle()
     }
 }
 
+/*  Shuffle picks the NEXT track at random instead of reordering the
+    queue: what the user sees on the deck stays exactly as they built
+    it, which is the whole point of curating it by hand. */
+function pick_random_index()
+{
+    if(S.queue.length < 2) {
+        return 0;
+    }
+    let i = S.qi;
+    while(i === S.qi) {
+        i = Math.floor(Math.random() * S.queue.length);
+    }
+    return i;
+}
+
 function step(n)
 {
     if(!S.queue.length) {
+        return;
+    }
+    if(S.shuffle && n > 0) {
+        S.qi = pick_random_index();
+        load_current(true);
         return;
     }
     let i = S.qi + n;
@@ -507,10 +711,20 @@ function set_shuffle(on)
     emit("playing");
 }
 
+function get_shuffle()
+{
+    return S.shuffle;
+}
+
 function set_repeat(on)
 {
     S.repeat = !!on;
     emit("playing");
+}
+
+function get_repeat()
+{
+    return S.repeat;
 }
 
 function progress()
@@ -554,7 +768,7 @@ function setup_media_session()
 
 
 /***************************************************************
- *      6. Time formatting
+ *      7. Time formatting
  ***************************************************************/
 function fmt_time(s)
 {
@@ -565,31 +779,46 @@ function fmt_time(s)
 
 
 /***************************************************************
- *      Exports
+ *              Exports
  ***************************************************************/
 export {
     subscribe,
     /*  library */
     has_library,
+    track_count,
     ingest,
+    drop_source_tracks,
+    clear_notice,
     groups_for,
     albums,
     all_tracks_sorted,
     search,
     cover_url,
+    tracks_of_source,
+    find_track,
     /*  ingest progress (read S through getters) */
     S as store_state,
+    /*  queue */
+    queue_tracks,
+    queue_index,
+    queue_length,
+    queue_add,
+    queue_remove_at,
+    queue_move,
+    queue_clear,
+    queue_play_at,
     /*  playback */
     get_audio,
     current_track,
     is_playing,
-    play_list,
     toggle,
     step,
     prev,
     seek_fraction,
     set_shuffle,
+    get_shuffle,
     set_repeat,
+    get_repeat,
     progress,
     queue_position,
     setup_media_session,

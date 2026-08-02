@@ -1,5 +1,5 @@
 {
-    "_comment": "yunomúsica shell. One primary menu with the four ways to look at the library plus the flat track list, rendered as a LEFT vertical rail on desktop and a BOTTOM icon-bar on mobile. Every leaf mounts C_MUS_VIEW with a different `view`, keep_alive so each keeps its scroll and its drill-down while you switch. The toolbar carries the brand and the two ways to load music (a folder or loose files) as events the host acts on. No submenus, no backend: a pure gobj tree with hash routing, and a player the host owns below the shell.",
+    "_comment": "yunomúsica shell. Four destinations, in the order they matter: Player (the deck: transport first, then the queue you curate), Library (five ways to look at the same tracks, switched by chips inside the view rather than by five routes), Sources (the authorised folders, which is where the app explains what it does with your disk), and Lists (the queues you saved). The default route is the player, so the first thing on screen is play/pause/next and what is sounding. Rendered as a LEFT vertical rail on desktop and a BOTTOM icon-bar on mobile. The toolbar carries the brand, the two ways to load music, the language menu, the theme toggle and the help/credits dialog, all as events the host acts on. No backend: a pure gobj tree with hash routing.",
     "shell": {
         "remember_section_position": true,
         "breakpoints": "bulma",
@@ -23,7 +23,7 @@
         "stages": {
             "main": {
                 "zone": "center",
-                "default_route": "/artistas"
+                "default_route": "/player"
             }
         }
     },
@@ -37,19 +37,18 @@
                 "logo": "./yunomusica-mark.svg",
                 "wordmark": "Yunomúsica",
                 "alt": "Yunomúsica",
-                "aria_label": "Inicio",
+                "aria_label": "player",
                 "action": {
                     "type": "navigate",
-                    "route": "/artistas"
+                    "route": "/player"
                 }
             },
             {
                 "id": "pick-dir",
                 "icon": "mi-folder",
-                "name": "Carpeta",
                 "align": "end",
-                "aria_label": "Elegir una carpeta",
-                "tooltip": "Elegir una carpeta de música",
+                "aria_label": "add folder",
+                "tooltip": "add folder",
                 "action": {
                     "type": "event",
                     "event": "EV_PICK_DIR"
@@ -59,22 +58,65 @@
                 "id": "pick-files",
                 "icon": "yi-upload",
                 "align": "end",
-                "aria_label": "Elegir ficheros",
-                "tooltip": "Elegir ficheros sueltos",
+                "aria_label": "add files",
+                "tooltip": "add files",
                 "action": {
                     "type": "event",
                     "event": "EV_PICK_FILES"
                 }
             },
             {
+                "id": "language",
+                "icon": "mi-globe",
+                "align": "end",
+                "aria_label": "language",
+                "tooltip": "language",
+                "action": {
+                    "type": "dropdown",
+                    "items": [
+                        {"id": "lang-es", "name": "Español",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "es"}}},
+                        {"id": "lang-en", "name": "English",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "en"}}},
+                        {"id": "lang-zh", "name": "中文",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "zh"}}},
+                        {"id": "lang-hi", "name": "हिन्दी",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "hi"}}},
+                        {"id": "lang-ar", "name": "العربية",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "ar"}}},
+                        {"id": "lang-pt", "name": "Português",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "pt"}}},
+                        {"id": "lang-ru", "name": "Русский",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "ru"}}},
+                        {"id": "lang-ja", "name": "日本語",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "ja"}}},
+                        {"id": "lang-de", "name": "Deutsch",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "de"}}},
+                        {"id": "lang-fr", "name": "Français",
+                         "action": {"type": "event", "event": "EV_SET_LOCALE", "kw": {"locale": "fr"}}}
+                    ]
+                }
+            },
+            {
                 "id": "theme",
                 "icon": "yi-moon",
                 "align": "end",
-                "aria_label": "Cambiar tema",
-                "tooltip": "Tema claro / oscuro",
+                "aria_label": "theme",
+                "tooltip": "theme",
                 "action": {
                     "type": "event",
                     "event": "EV_TOGGLE_THEME"
+                }
+            },
+            {
+                "id": "help",
+                "icon": "mi-info",
+                "align": "end",
+                "aria_label": "help",
+                "tooltip": "help",
+                "action": {
+                    "type": "event",
+                    "event": "EV_OPEN_ABOUT"
                 }
             }
         ]
@@ -95,82 +137,63 @@
             },
             "items": [
                 {
-                    "id": "artistas",
-                    "name": "Artistas",
-                    "icon": "yi-user",
-                    "tooltip": "La música agrupada por artista",
-                    "route": "/artistas",
-                    "target": {
-                        "stage": "main",
-                        "gclass": "C_MUS_VIEW",
-                        "lifecycle": "keep_alive",
-                        "kw": {
-                            "view": "artistas",
-                            "title": "Artistas"
-                        }
-                    }
-                },
-                {
-                    "id": "albumes",
-                    "name": "Álbumes",
+                    "id": "player",
+                    "name": "player",
                     "icon": "mi-disc",
-                    "tooltip": "La música agrupada por álbum",
-                    "route": "/albumes",
+                    "tooltip": "player",
+                    "route": "/player",
                     "target": {
                         "stage": "main",
-                        "gclass": "C_MUS_VIEW",
+                        "gclass": "C_MUS_DECK",
                         "lifecycle": "keep_alive",
                         "kw": {
-                            "view": "albumes",
-                            "title": "Álbumes"
+                            "title": "player"
                         }
                     }
                 },
                 {
-                    "id": "generos",
-                    "name": "Géneros",
-                    "icon": "mi-tag",
-                    "tooltip": "La música agrupada por género",
-                    "route": "/generos",
-                    "target": {
-                        "stage": "main",
-                        "gclass": "C_MUS_VIEW",
-                        "lifecycle": "keep_alive",
-                        "kw": {
-                            "view": "generos",
-                            "title": "Géneros"
-                        }
-                    }
-                },
-                {
-                    "id": "carpetas",
-                    "name": "Carpetas",
-                    "icon": "mi-folder",
-                    "tooltip": "La música tal como está en las carpetas",
-                    "route": "/carpetas",
-                    "target": {
-                        "stage": "main",
-                        "gclass": "C_MUS_VIEW",
-                        "lifecycle": "keep_alive",
-                        "kw": {
-                            "view": "carpetas",
-                            "title": "Carpetas"
-                        }
-                    }
-                },
-                {
-                    "id": "pistas",
-                    "name": "Todas",
+                    "id": "library",
+                    "name": "library",
                     "icon": "yi-bars",
-                    "tooltip": "Todas las pistas, en una sola lista",
-                    "route": "/pistas",
+                    "tooltip": "library",
+                    "route": "/library",
                     "target": {
                         "stage": "main",
                         "gclass": "C_MUS_VIEW",
                         "lifecycle": "keep_alive",
                         "kw": {
-                            "view": "pistas",
-                            "title": "Todas"
+                            "view": "artists",
+                            "title": "library"
+                        }
+                    }
+                },
+                {
+                    "id": "sources",
+                    "name": "sources",
+                    "icon": "mi-folder",
+                    "tooltip": "sources",
+                    "route": "/sources",
+                    "target": {
+                        "stage": "main",
+                        "gclass": "C_MUS_SOURCES",
+                        "lifecycle": "keep_alive",
+                        "kw": {
+                            "title": "sources"
+                        }
+                    }
+                },
+                {
+                    "id": "lists",
+                    "name": "lists",
+                    "icon": "mi-tag",
+                    "tooltip": "lists",
+                    "route": "/lists",
+                    "target": {
+                        "stage": "main",
+                        "gclass": "C_MUS_LISTS",
+                        "lifecycle": "keep_alive",
+                        "kw": {
+                            "title": "lists"
                         }
                     }
                 }

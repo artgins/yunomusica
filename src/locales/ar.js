@@ -1,0 +1,123 @@
+/***********************************************************************
+ *          ar.js
+ *
+ *          Arabic translations. See en.js for the conventions and for the
+ *          canonical key set.
+ *
+ *          `dir: "rtl"` is what flips the whole interface: locales.js
+ *          writes it onto <html dir>, and the CSS uses logical properties
+ *          so the layout follows without a mirrored stylesheet.
+ *
+ *          Copyright (c) 2026, ArtGins.
+ *          All Rights Reserved.
+ ***********************************************************************/
+const ar = {
+    name: "العربية",
+    dir: "rtl",
+
+    translation: {
+        "player":               "مشغّل الموسيقى",
+        "library":              "المكتبة",
+        "sources":              "المصادر",
+        "lists":                "القوائم",
+        "add folder":           "إضافة مجلد",
+        "add files":            "إضافة ملفات",
+        "theme":                "سمة فاتحة / داكنة",
+        "language":             "اللغة",
+        "help":                 "المساعدة وحقوق العمل",
+
+        "play":                 "تشغيل",
+        "pause":                "إيقاف مؤقت",
+        "previous":             "السابق",
+        "next":                 "التالي",
+        "shuffle":              "عشوائي",
+        "repeat":               "تكرار",
+        "back":                 "رجوع",
+        "close":                "إغلاق",
+        "cancel":               "إلغاء",
+        "save":                 "حفظ",
+        "delete":               "حذف",
+        "remove":               "إزالة",
+        "add to queue":         "إضافة إلى القائمة",
+        "tracks":               "مقطوعات",
+        "n albums":             "ألبومات",
+        "albums":               "ألبومات",
+        "entries":              "مُدخلات",
+        "missing":              "مفقودة",
+        "reading tags":         "جارٍ قراءة الوسوم…",
+
+        "nothing cued":         "لا شيء محمَّل",
+        "load something to start":
+            "أضف مجلدًا أو بعض المقطوعات، وستظهر هنا على المنصة.",
+        "queue":                "قائمة التشغيل",
+        "the queue is empty":   "قائمة التشغيل فارغة.",
+        "clear queue":          "إفراغ القائمة",
+        "save as list":         "حفظ كقائمة",
+        "move up":              "تحريك لأعلى",
+        "move down":            "تحريك لأسفل",
+        "remove from queue":    "إخراج من القائمة",
+        "name for this list":   "اسم هذه القائمة",
+
+        "artists":              "الفنانون",
+        "genres":               "الأنواع",
+        "folders":              "المجلدات",
+        "all":                  "الكل",
+        "search placeholder":   "ابحث عن عنوان أو فنان أو ألبوم…",
+        "search":               "بحث",
+        "nothing here":         "لا شيء هنا.",
+        "unknown artist":       "فنان غير معروف",
+        "unknown album":        "ألبوم غير معروف",
+        "unknown genre":        "نوع غير معروف",
+        "play all":             "تشغيل الكل",
+
+        "authorised sources":   "المجلدات المصرَّح بها",
+        "add a folder":         "إضافة مجلد",
+        "add loose files":      "إضافة ملفات مفردة",
+        "folders are recursive":
+            "يُؤخذ المجلد كاملًا: هو وكل المجلدات التي تحته.",
+        "nothing is copied":
+            "لا يُنسخ شيء ولا يُرفع شيء. يُحفَظ فقط مرجع إلى ما هو موجود أصلًا على قرصك.",
+        "sources persist":
+            "يتذكر هذا المتصفح مجلداتك بين الجلسات. بعد إعادة التحميل تكفي نقرة واحدة لإعادة التصريح.",
+        "sources do not persist":
+            "لا يستطيع هذا المتصفح حفظ إذن الوصول إلى مجلد، لذا تُحفَظ الملفات التي تختارها كقائمة ثابتة. لن تظهر المقطوعات التي تضيفها إلى المجلد لاحقًا.",
+        "snapshot warning":
+            "إنها لقطة ثابتة: لن تظهر الملفات التي تضيفها لاحقًا إلى هذا المجلد. أضف المجلد من جديد لتحديثه.",
+        "authorise":            "تصريح",
+        "rescan":               "إعادة الفحص",
+        "no sources yet":       "لا توجد مصادر بعد.",
+        "reading":              "جارٍ القراءة…",
+        "waiting for permission": "في انتظار الإذن",
+        "permission denied":    "تم رفض الإذن",
+        "no audio here":        "لا توجد ملفات صوتية هناك.",
+        "that file could not be read":
+            "تعذّرت قراءة هذا الملف. ربما نُقل أو حُذف.",
+        "could not be read":    "تعذّرت القراءة",
+        "folder":               "مجلد",
+        "files":                "ملفات",
+        "remove this source":   "إزالة هذا المصدر",
+
+        "saved lists":          "القوائم المحفوظة",
+        "no saved lists yet":   "لا توجد قوائم محفوظة بعد.",
+        "how to save a list":   "جهّز قائمة تشغيل في المشغّل ثم احفظها باسم.",
+        "delete this list":     "هل تريد حذف هذه القائمة؟",
+
+        "your music your way":  "موسيقاك، كما تحب أن تراها.",
+        "about lead":
+            "يقرأ Yunomúsica الموسيقى الموجودة على جهازك ويرتّبها حسب الفنان والألبوم والنوع والمجلد. يعمل بالكامل داخل المتصفح: بلا حساب، وبلا رفع، وبلا تتبّع.",
+        "how it works":         "كيف يعمل",
+        "help pick":
+            "صرّح بمجلد من قسم المصادر. يُقرأ كاملًا مع مجلداته الفرعية، وتعطي وسوم ID3 لكل ملف الفنان والألبوم والنوع.",
+        "help queue":
+            "المشغّل هو المنصة: القائمة هي ما حمّلته، بالترتيب الذي تريده. أضف وأعد الترتيب وأخرج المقطوعات أثناء التشغيل.",
+        "help lists":
+            "احفظ قائمة باسم وستعود إليك في المرة القادمة — كمراجع إلى ملفاتك، لا كنسخ منها.",
+        "help privacy":
+            "ملفاتك لا تغادر الجهاز. لا يوجد خادم تُرسل إليه.",
+        "do not show this again": "لا تعرض هذا مرة أخرى",
+        "made by artgins":      "من صنع ArtGins",
+        "about tagline":        "مبني على Yuneta — إطار عمل مدفوع بالأحداث للأنظمة الموزَّعة.",
+    },
+};
+
+export {ar};

@@ -6,18 +6,17 @@
  *      OUTSIDE the routed views:
  *
  *        - the layout frame: a flex column with the shell on top and a
- *          mini-player docked below it, so on mobile the player sits
- *          above the bottom nav with no fixed-position guesswork;
- *        - the mini-player and the full-screen "now playing" sheet, both
- *          driven by the shared music_store;
- *        - the light/dark theme (the toolbar's EV_TOGGLE_THEME);
- *        - the two "load music" toolbar events (EV_PICK_DIR / EV_PICK_FILES);
- *        - tinting the accent from the current cover.
- *
- *      The player markup and the cover-tint come from the single-page
- *      prototype this app grew from; here they are built with
- *      createElement2 and fed by the store's "playing"/"time" channels
- *      instead of inline globals.
+ *          mini-player docked below it;
+ *        - the mini-player itself, which is the transport you keep while
+ *          you are away from the deck. On the deck route it hides: the
+ *          deck already has full-size controls, and two sets of transport
+ *          buttons on one screen is the kind of clutter this redesign was
+ *          meant to remove;
+ *        - the light/dark theme and the language;
+ *        - the welcome / help / credits dialog, shown once and then only
+ *          on request;
+ *        - loading what was remembered — the authorised sources and the
+ *          saved lists — before anything else paints.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
@@ -30,22 +29,26 @@ import {
     gobj_subscribe_event,
     gobj_stop_children,
     gobj_start_tree,
-    createElement2,
+    createElement2, refresh_language,
 } from "@yuneta/gobj-js";
 
 import {
     yui_shell_set_translator,
+    yui_shell_language_changed,
+    yui_shell_navigate,
 } from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {
     subscribe,
-    current_track, is_playing, queue_position,
-    toggle, step, prev, seek_fraction,
-    set_shuffle, set_repeat, progress, fmt_time,
-    cover_url, store_state, setup_media_session,
+    current_track, is_playing, toggle, step, prev,
+    seek_fraction, progress, cover_url, setup_media_session,
 } from "./music_store.js";
 
-import {pick_files, pick_dir} from "./picker.js";
+import {load_sources, add_dir, add_files} from "./sources_store.js";
+import {load_playlists} from "./playlists_store.js";
+
+import {switch_locale, current_locale} from "./locales/locales.js";
+import {open_about, welcome_dismissed, about_bind_shell} from "./about_dialog.js";
 
 import {t} from "i18next";
 
@@ -55,16 +58,16 @@ import {t} from "i18next";
  ***************************************************************/
 const GCLASS_NAME = "C_MUSICA";
 
+const DECK_ROUTE = "/player";
+
 const svg = (path, size) =>
-    `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor"><path d="${path}"/></svg>`;
+    `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`;
 
 const P = {
-    prev:    "M6 6h2v12H6zm12 0v12l-9-6z",
-    next:    "M16 6h2v12h-2zM6 6l9 6-9 6z",
-    play:    "M8 5v14l11-7z",
-    pause:   "M6 5h4v14H6zm8 0h4v14h-4z",
-    shuffle: "M17 3v3h-2.2l-2.4 3.2 1.3 1.7L16 8h1v3l4-4-4-4zM3 6h4.4l1.9 2.5 1.3-1.7L8.4 4H3v2zm14 9h-1l-2.6-3.4-1.3 1.7 2.4 3.2H17v3l4-4-4-4v3.5zM3 18h5.4l7-9.3-1.3-1.7L7.4 16H3v2z",
-    repeat:  "M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z",
+    prev:  "M6 6h2v12H6zm12 0v12l-9-6z",
+    next:  "M16 6h2v12h-2zM6 6l9 6-9 6z",
+    play:  "M8 5v14l11-7z",
+    pause: "M6 5h4v14H6zm8 0h4v14h-4z",
 };
 
 
@@ -81,10 +84,9 @@ let PRIVATE_DATA = {
     shell:    null,
     $root:    null,     // flex column: shell + player
     $player:  null,
-    $now:     null,
     unsub:    null,
     tint_key: null,     // last cover a tint was computed from
-    touch_y:  null,     // "now" sheet swipe-down start
+    on_deck:  true,     // the deck route is showing
 };
 
 let __gclass__ = null;
@@ -128,8 +130,12 @@ function mt_create(gobj)
     gobj_subscribe_event(shell, "EV_TOGGLE_THEME", {}, gobj);
     gobj_subscribe_event(shell, "EV_PICK_DIR",     {}, gobj);
     gobj_subscribe_event(shell, "EV_PICK_FILES",   {}, gobj);
+    gobj_subscribe_event(shell, "EV_SET_LOCALE",   {}, gobj);
+    gobj_subscribe_event(shell, "EV_OPEN_ABOUT",   {}, gobj);
+    gobj_subscribe_event(shell, "EV_ROUTE_CHANGED",{}, gobj);
 
     yui_shell_set_translator(shell, t);
+    about_bind_shell(shell);
 }
 
 /***************************************************************
@@ -142,19 +148,27 @@ function mt_start(gobj)
     apply_theme(current_theme());
     gobj_start_tree(priv.shell);
 
-    /*  Build the player + sheet AFTER the shell mounted its $container
-        into $root, so the player docks below it. */
+    /*  The shell and the nav emit their labels as i18n KEYS and are only
+        translated by a refresh pass. At start up nobody has run one yet,
+        so the toolbar and the nav would sit there reading "player",
+        "library"… — indistinguishable from missing keys. */
+    yui_shell_language_changed(priv.shell);
+
+    /*  Build the player AFTER the shell mounted its $container into
+        $root, so the player docks below it. */
     build_player(gobj);
     setup_media_session();
 
     priv.unsub = subscribe(function(channel) {
-        if(channel === "playing") {
+        if(channel === "playing" || channel === "queue") {
             paint_player(gobj);
         } else if(channel === "time") {
             paint_time(gobj);
         }
     });
     paint_player(gobj);
+
+    boot(gobj);
 }
 
 /***************************************************************
@@ -180,6 +194,35 @@ function mt_destroy(gobj)
         priv.$root.parentNode.removeChild(priv.$root);
     }
     priv.$root = null;
+}
+
+
+
+
+                    /***************************
+                     *      Boot
+                     ***************************/
+
+
+
+
+/***************************************************************
+ *  Bring back what was remembered, then decide whether the
+ *  welcome dialog is due. Both are async and neither blocks the
+ *  first paint: the views repaint on the store channels as the
+ *  sources come in.
+ ***************************************************************/
+async function boot(gobj)
+{
+    let priv = gobj.priv;
+
+    await load_playlists();
+    await load_sources();
+
+    let dismissed = await welcome_dismissed();
+    if(!dismissed) {
+        open_about(priv.shell, true);
+    }
 }
 
 
@@ -214,38 +257,49 @@ function apply_theme(theme)
 
 
                     /***************************
-                     *      Player + now sheet
+                     *      The mini-player
                      ***************************/
 
 
 
 
-/***************************************************************
- *  Build the mini-player (docked below the shell) and the full
- *  "now playing" sheet (a fixed overlay). Both start hidden.
- ***************************************************************/
 function build_player(gobj)
 {
     let priv = gobj.priv;
 
-    /*  --- mini-player --- */
     let $player = createElement2(
         ["div", {class: "MUS_PLAYER"}, [
             ["div", {class: "MUS_SEEK"}, [["i", {class: "MUS_SEEK_FILL"}]],
                 {click: (ev) => seek_at(ev, ev.currentTarget)}],
             ["div", {class: "MUS_PBAR"}, [
-                ["div", {class: "MUS_PART"}, "♪",
-                    {click: () => open_now(gobj)}],
-                ["div", {class: "MUS_PMETA"}, [
-                    ["div", {class: "MUS_PTITLE"}, "—"],
-                    ["div", {class: "MUS_PARTIST"}, ""]
-                ], {click: () => open_now(gobj)}],
+                ["button", {
+                        class: "MUS_PART",
+                        type: "button",
+                        "aria-label": t("player"),
+                        "data-i18n-aria-label": "player"
+                    }, "♪",
+                    {click: () => go_to_deck(gobj)}],
+                ["button", {
+                        class: "MUS_PMETA",
+                        type: "button",
+                        "aria-label": t("player"),
+                        "data-i18n-aria-label": "player"
+                    }, [
+                    ["span", {class: "MUS_PTITLE"}, "—"],
+                    ["span", {class: "MUS_PARTIST"}, ""]
+                ], {click: () => go_to_deck(gobj)}],
                 ["div", {class: "MUS_PCTL"}, [
-                    ["button", {class: "MUS_PPREV", type: "button", "aria-label": "Anterior"},
+                    ["button", {class: "MUS_PPREV", type: "button",
+                                "aria-label": t("previous"),
+                                "data-i18n-aria-label": "previous"},
                         svg(P.prev, 20), {click: () => prev()}],
-                    ["button", {class: "MUS_PPLAY is-primary", type: "button", "aria-label": "Reproducir"},
+                    ["button", {class: "MUS_PPLAY is-primary", type: "button",
+                                "aria-label": t("play"),
+                                "data-i18n-aria-label": "play"},
                         svg(P.play, 19), {click: () => toggle()}],
-                    ["button", {class: "MUS_PNEXT", type: "button", "aria-label": "Siguiente"},
+                    ["button", {class: "MUS_PNEXT", type: "button",
+                                "aria-label": t("next"),
+                                "data-i18n-aria-label": "next"},
                         svg(P.next, 20), {click: () => step(1)}]
                 ]]
             ]]
@@ -254,53 +308,10 @@ function build_player(gobj)
     priv.$player = $player;
     priv.$root.appendChild($player);
 
-    /*  --- now playing sheet --- */
-    let $now = createElement2(
-        ["div", {class: "MUS_NOW"}, [
-            ["div", {class: "MUS_GRAB"}],
-            ["div", {class: "MUS_NOWART"}, "♪"],
-            ["h3", {class: "MUS_NOWTITLE"}, "—"],
-            ["p", {class: "MUS_NOWARTIST"}, ""],
-            ["div", {class: "MUS_NOWSEEK"}, [["i", {class: "MUS_NOWSEEK_FILL"}]],
-                {click: (ev) => seek_at(ev, ev.currentTarget)}],
-            ["div", {class: "MUS_TIMES"}, [
-                ["span", {class: "MUS_TCUR"}, "0:00"],
-                ["span", {class: "MUS_TTOT"}, "0:00"]
-            ]],
-            ["div", {class: "MUS_NCTL"}, [
-                ["button", {class: "MUS_SHUFFLE MUS_TOG", type: "button", "aria-label": "Aleatorio"},
-                    svg(P.shuffle, 19), {click: (ev) => toggle_shuffle(ev)}],
-                ["button", {class: "MUS_NPREV", type: "button", "aria-label": "Anterior"},
-                    svg(P.prev, 26), {click: () => prev()}],
-                ["button", {class: "MUS_NPLAY is-primary", type: "button", "aria-label": "Reproducir"},
-                    svg(P.play, 28), {click: () => toggle()}],
-                ["button", {class: "MUS_NNEXT", type: "button", "aria-label": "Siguiente"},
-                    svg(P.next, 26), {click: () => step(1)}],
-                ["button", {class: "MUS_REPEAT MUS_TOG", type: "button", "aria-label": "Repetir"},
-                    svg(P.repeat, 19), {click: (ev) => toggle_repeat(ev)}]
-            ]],
-            ["div", {class: "MUS_NFOOT"}, [
-                ["span", {class: "MUS_QPOS"}, ""],
-                ["button", {class: "MUS_CLOSENOW button is-ghost", type: "button"}, "Cerrar",
-                    {click: () => close_now(gobj)}]
-            ]]
-        ]]
-    );
-    priv.$now = $now;
-    document.body.appendChild($now);
-
-    /*  Swipe the sheet down to close (touch), like the reference. */
-    $now.addEventListener("touchstart", (e) => { priv.touch_y = e.touches[0].clientY; }, {passive:true});
-    $now.addEventListener("touchend", (e) => {
-        if(priv.touch_y !== null && e.changedTouches[0].clientY - priv.touch_y > 90) {
-            close_now(gobj);
-        }
-        priv.touch_y = null;
-    }, {passive:true});
-
-    /*  Keyboard transport (ignored while typing in an input). */
+    /*  Keyboard transport, ignored while typing. */
     document.addEventListener("keydown", (e) => {
-        if(e.target && e.target.tagName === "INPUT") {
+        let tag = e.target && e.target.tagName;
+        if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
             return;
         }
         if(e.code === "Space") { e.preventDefault(); toggle(); }
@@ -309,76 +320,60 @@ function build_player(gobj)
     });
 }
 
-function open_now(gobj)
+function go_to_deck(gobj)
 {
-    if(current_track()) {
-        gobj.priv.$now.classList.add("is-open");
+    let priv = gobj.priv;
+    if(priv.shell) {
+        yui_shell_navigate(priv.shell, DECK_ROUTE);
     }
-}
-
-function close_now(gobj)
-{
-    gobj.priv.$now.classList.remove("is-open");
-}
-
-function toggle_shuffle(ev)
-{
-    let on = !ev.currentTarget.classList.contains("is-on");
-    ev.currentTarget.classList.toggle("is-on", on);
-    set_shuffle(on);
-}
-
-function toggle_repeat(ev)
-{
-    let on = !ev.currentTarget.classList.contains("is-on");
-    ev.currentTarget.classList.toggle("is-on", on);
-    set_repeat(on);
 }
 
 function seek_at(ev, node)
 {
     let r = node.getBoundingClientRect();
     let x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
-    seek_fraction(r.width ? (x / r.width) : 0);
+    let f = getComputedStyle(node).direction === "rtl"
+        ? 1 - (x / r.width)
+        : (x / r.width);
+    seek_fraction(r.width ? f : 0);
 }
 
 
-/***************************************************************
- *  Paint the track-dependent parts of the player + sheet.
- ***************************************************************/
 function paint_player(gobj)
 {
     let priv = gobj.priv;
+    /*  EV_ROUTE_CHANGED lands during gobj_start_tree, which is BEFORE
+        build_player: the first route is resolved while the shell is
+        still starting. Nothing to paint yet. */
+    if(!priv.$player) {
+        return;
+    }
     let track = current_track();
 
-    /*  Show the chrome only once there is something to play. The root
-        class both reveals the player and hands it the shell's bottom
-        strip (see musica.css). */
-    let has = !!track;
-    priv.$root.classList.toggle("has-player", has);
-    priv.$player.classList.toggle("is-on", has);
-    if(!has) {
-        close_now(gobj);
+    /*  Show the strip only when there is something to play AND we are
+        not already looking at the deck. */
+    let show = !!track && !priv.on_deck;
+    priv.$root.classList.toggle("has-player", show);
+    priv.$player.classList.toggle("is-on", show);
+
+    if(!track) {
+        priv.tint_key = null;
+        set_accent("#C9A227");
         return;
     }
 
     let url = cover_url(track.key);
-
     set_text(priv.$player, ".MUS_PTITLE", track.title);
     set_text(priv.$player, ".MUS_PARTIST", track.artist);
-    set_text(priv.$now, ".MUS_NOWTITLE", track.title);
-    set_text(priv.$now, ".MUS_NOWARTIST", track.artist + " · " + track.album);
-
-    let qp = queue_position();
-    set_text(priv.$now, ".MUS_QPOS", (qp.index + 1) + " / " + qp.length);
-
     paint_art(priv.$player.querySelector(".MUS_PART"), url);
-    paint_art(priv.$now.querySelector(".MUS_NOWART"), url);
 
-    /*  Play / pause glyph across both surfaces. */
     let playing = is_playing();
-    priv.$player.querySelector(".MUS_PPLAY").innerHTML = svg(playing ? P.pause : P.play, 19);
-    priv.$now.querySelector(".MUS_NPLAY").innerHTML = svg(playing ? P.pause : P.play, 28);
+    let $play = priv.$player.querySelector(".MUS_PPLAY");
+    if($play) {
+        $play.innerHTML = svg(playing ? P.pause : P.play, 19);
+        $play.setAttribute("aria-label", t(playing ? "pause" : "play"));
+        $play.setAttribute("data-i18n-aria-label", playing ? "pause" : "play");
+    }
 
     tint_from(gobj, track.key, url);
     paint_time(gobj);
@@ -402,23 +397,16 @@ function paint_art($node, url)
     }
 }
 
-
-/***************************************************************
- *  Paint the position-dependent parts (cheap; fires on timeupdate).
- ***************************************************************/
 function paint_time(gobj)
 {
     let priv = gobj.priv;
-    let p = progress();
-    let pct = (p.fraction * 100) + "%";
-
-    let f1 = priv.$player.querySelector(".MUS_SEEK_FILL");
-    let f2 = priv.$now.querySelector(".MUS_NOWSEEK_FILL");
-    if(f1) { f1.style.width = pct; }
-    if(f2) { f2.style.width = pct; }
-
-    set_text(priv.$now, ".MUS_TCUR", fmt_time(p.current));
-    set_text(priv.$now, ".MUS_TTOT", fmt_time(p.duration));
+    if(!priv.$player) {
+        return;
+    }
+    let $fill = priv.$player.querySelector(".MUS_SEEK_FILL");
+    if($fill) {
+        $fill.style.width = (progress().fraction * 100) + "%";
+    }
 }
 
 function set_text($root, sel, text)
@@ -432,8 +420,8 @@ function set_text($root, sel, text)
 
 /***************************************************************
  *  Accent tint from the dominant colour of the cover.
- *  Sets --mus-accent / --mus-accent-soft on <html>;
- *  the player, the rows and the primary buttons read them.
+ *  Sets --mus-accent / --mus-accent-soft on <html>; the player,
+ *  the rows and the primary buttons read them.
  ***************************************************************/
 function tint_from(gobj, key, url)
 {
@@ -510,13 +498,44 @@ function ac_toggle_theme(gobj, event, kw, src)
 
 function ac_pick_dir(gobj, event, kw, src)
 {
-    pick_dir();
+    add_dir();
     return 0;
 }
 
 function ac_pick_files(gobj, event, kw, src)
 {
-    pick_files();
+    add_files();
+    return 0;
+}
+
+/*  The language menu items carry their code in the action kw. */
+function ac_set_locale(gobj, event, kw, src)
+{
+    let code = (kw && kw.locale) || "";
+    if(!code || code === current_locale()) {
+        return 0;
+    }
+    switch_locale(code);
+
+    /*  The shell re-translates every node that carries its key and then
+        publishes EV_LANGUAGE_CHANGED, which the views listen to so they
+        can rebuild what they composed with t(). */
+    yui_shell_language_changed(gobj.priv.shell);
+    refresh_language(gobj.priv.$player, t);
+    return 0;
+}
+
+function ac_open_about(gobj, event, kw, src)
+{
+    open_about(gobj.priv.shell, false);
+    return 0;
+}
+
+function ac_route_changed(gobj, event, kw, src)
+{
+    let route = (kw && (kw.base || kw.route)) || "";
+    gobj.priv.on_deck = (route === DECK_ROUTE);
+    paint_player(gobj);
     return 0;
 }
 
@@ -542,16 +561,22 @@ function create_gclass(gclass_name)
 
     const states = [
         ["ST_IDLE", [
-            ["EV_TOGGLE_THEME", ac_toggle_theme, null],
-            ["EV_PICK_DIR",     ac_pick_dir,     null],
-            ["EV_PICK_FILES",   ac_pick_files,   null]
+            ["EV_TOGGLE_THEME",  ac_toggle_theme,  null],
+            ["EV_PICK_DIR",      ac_pick_dir,      null],
+            ["EV_PICK_FILES",    ac_pick_files,    null],
+            ["EV_SET_LOCALE",    ac_set_locale,    null],
+            ["EV_OPEN_ABOUT",    ac_open_about,    null],
+            ["EV_ROUTE_CHANGED", ac_route_changed, null]
         ]]
     ];
 
     const event_types = [
-        ["EV_TOGGLE_THEME", 0],
-        ["EV_PICK_DIR",     0],
-        ["EV_PICK_FILES",   0]
+        ["EV_TOGGLE_THEME",  0],
+        ["EV_PICK_DIR",      0],
+        ["EV_PICK_FILES",    0],
+        ["EV_SET_LOCALE",    0],
+        ["EV_OPEN_ABOUT",    0],
+        ["EV_ROUTE_CHANGED", 0]
     ];
 
     __gclass__ = gclass_create(

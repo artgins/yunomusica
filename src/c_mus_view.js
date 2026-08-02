@@ -1,25 +1,17 @@
 /***********************************************************************
  *          c_mus_view.js
  *
- *      C_MUS_VIEW — the one view gclass every menu leaf mounts, told by
- *      its `view` attr which way to look at the library: "artistas",
- *      "albumes", "generos", "carpetas" or "pistas". It exposes the
- *      $container the shell requires and paints:
+ *      C_MUS_VIEW — the library: the place you go to FILL the deck.
  *
- *        - an empty state with the two "load music" buttons, while the
- *          library is empty;
- *        - a progress line, while a pick is being read;
- *        - otherwise the grouped list (or the album grid, or the flat
- *          track list), with a one-level drill-down into a group/album.
+ *      One view with five ways of looking at the same tracks, switched by
+ *      a chip row rather than by five separate routes: artists, albums,
+ *      genres, folders, and the flat list of everything. A tap on a group
+ *      drills one level down; a search filters the whole library into a
+ *      flat result list.
  *
- *      A search box at the top filters the whole library into a flat
- *      result list.
- *
- *      The view reads the library and drives playback through the shared
- *      music_store; it never talks to the host gobj. It repaints on the
- *      store's "library"/"loading" channels, and only re-highlights the
- *      playing row on "playing" (so a track change does not rebuild the
- *      list under the user's finger).
+ *      Every row offers the same two verbs, and the distinction matters:
+ *      PLAY replaces the queue and starts, ADD appends to whatever the
+ *      user has already built on the deck without interrupting it.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
@@ -30,17 +22,21 @@ import {
     gobj_parent,
     gobj_read_attr, gobj_read_pointer_attr, gobj_write_attr,
     gobj_subscribe_event,
-    createElement2,
+    createElement2, refresh_language,
 } from "@yuneta/gobj-js";
+
+import {yui_shell_of} from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {
     subscribe,
     has_library, store_state,
     groups_for, albums, all_tracks_sorted, search, cover_url,
-    play_list, current_track,
+    queue_add, current_track,
 } from "./music_store.js";
 
-import {pick_files, pick_dir} from "./picker.js";
+import {add_dir, add_files} from "./sources_store.js";
+
+import {t} from "i18next";
 
 
 /***************************************************************
@@ -48,17 +44,33 @@ import {pick_files, pick_dir} from "./picker.js";
  ***************************************************************/
 const GCLASS_NAME = "C_MUS_VIEW";
 
-/*  Inline glyph (a filled triangle) for the "play all" buttons — the
- *  media controls live on the player, not the icon font. */
-const ICON_PLAY = "<svg viewBox='0 0 24 24' width='16' height='16' fill='currentColor'><path d='M8 5v14l11-7z'/></svg>";
-const ICON_BACK = "<svg viewBox='0 0 24 24' width='20' height='20' fill='currentColor'><path d='M15.5 4.5 8 12l7.5 7.5 1.4-1.4L10.8 12l6.1-6.1z'/></svg>";
+const VIEWS = ["artists", "albums", "genres", "folders", "all"];
 
-/*  createElement2 drops plain-string children inside an element array and
-    treats a leading string as a tag, so an inline SVG must ride inside its
-    own element whose (string) content it parses. */
-function ico(svg)
+const svg = (path, size) =>
+    `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`;
+
+const P = {
+    play:   "M8 5v14l11-7z",
+    plus:   "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z",
+    back:   "M15.5 4.5 8 12l7.5 7.5 1.4-1.4L10.8 12l6.1-6.1z",
+    folder: "M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z",
+    file:   "M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zm0 7V3.5L18.5 9z",
+};
+
+function ico(path, size)
 {
-    return ["span", {class: "MUS_ICO"}, svg];
+    return ["span", {class: "MUS_ICO"}, svg(path, size)];
+}
+
+/*  The three "unknown" group names are stored as their key, so they can
+    follow the language like everything else. */
+const UNKNOWN_KEYS = {
+    "unknown artist": 1, "unknown album": 1, "unknown genre": 1,
+};
+
+function display_name(name)
+{
+    return UNKNOWN_KEYS[name] ? t(name) : name;
 }
 
 
@@ -66,18 +78,19 @@ function ico(svg)
  *              Attrs
  ***************************************************************/
 const attrs_table = [
-SDATA(data_type_t.DTP_POINTER,  "subscriber",  0,  null,       "Subscriber of output events"),
-SDATA(data_type_t.DTP_STRING,   "view",        0,  "artistas", "artistas|albumes|generos|carpetas|pistas"),
-SDATA(data_type_t.DTP_STRING,   "title",       0,  "",         "Human title of the view"),
-SDATA(data_type_t.DTP_POINTER,  "$container",  0,  null,       "Root HTMLElement (shell contract)"),
+SDATA(data_type_t.DTP_POINTER,  "subscriber",  0,  null,      "Subscriber of output events"),
+SDATA(data_type_t.DTP_STRING,   "view",        0,  "artists", "artists|albums|genres|folders|all"),
+SDATA(data_type_t.DTP_STRING,   "title",       0,  "",        "Human title of the view"),
+SDATA(data_type_t.DTP_POINTER,  "$container",  0,  null,      "Root HTMLElement (shell contract)"),
 SDATA_END()
 ];
 
 let PRIVATE_DATA = {
-    view:    "artistas",
-    detail:  null,      // {kind, name, tracks} while drilled in
-    search:  "",
-    unsub:   null,      // store unsubscribe fn
+    view:     "artists",
+    detail:   null,     // {kind, name, tracks} while drilled in
+    search:   "",
+    unsub:    null,
+    $chips:   null,
     $content: null,
     search_timer: 0,
 };
@@ -94,36 +107,28 @@ let __gclass__ = null;
 
 
 
-/***************************************************************
- *          Framework Method: Create
- ***************************************************************/
 function mt_create(gobj)
 {
     let priv = gobj.priv;
 
-    /*  CHILD subscription model: our output flows to the subscriber,
-        defaulting to the parent (the shell). We do not emit anything
-        today, but keep the contract. */
     let subscriber = gobj_read_pointer_attr(gobj, "subscriber");
     if(!subscriber) {
         subscriber = gobj_parent(gobj);
     }
     gobj_subscribe_event(gobj, null, {}, subscriber);
 
-    priv.view = gobj_read_attr(gobj, "view") || "artistas";
+    priv.view = gobj_read_attr(gobj, "view") || "artists";
+    if(VIEWS.indexOf(priv.view) < 0) {
+        priv.view = "artists";
+    }
 
     build_ui(gobj);
 }
 
-/***************************************************************
- *          Framework Method: Start
- ***************************************************************/
 function mt_start(gobj)
 {
     let priv = gobj.priv;
 
-    /*  Repaint when the library or a load moves; only re-highlight the
-        current row when playback moves — see file header. */
     priv.unsub = subscribe(function(channel) {
         if(channel === "library" || channel === "loading") {
             render(gobj);
@@ -132,12 +137,14 @@ function mt_start(gobj)
         }
     });
 
+    let shell = yui_shell_of(gobj);
+    if(shell) {
+        gobj_subscribe_event(shell, "EV_LANGUAGE_CHANGED", {}, gobj);
+    }
+
     render(gobj);
 }
 
-/***************************************************************
- *          Framework Method: Stop
- ***************************************************************/
 function mt_stop(gobj)
 {
     let priv = gobj.priv;
@@ -147,9 +154,6 @@ function mt_stop(gobj)
     }
 }
 
-/***************************************************************
- *          Framework Method: Destroy
- ***************************************************************/
 function mt_destroy(gobj)
 {
     let $c = gobj_read_attr(gobj, "$container");
@@ -169,11 +173,9 @@ function mt_destroy(gobj)
 
 
 
-/***************************************************************
- *  The persistent frame: a search header (kept across renders so
- *  its input never loses focus) and the content box that render()
- *  rebuilds.
- ***************************************************************/
+/*  The persistent frame: a search box kept across renders so its input
+    never loses focus, the chip row, and the content box render()
+    rebuilds. */
 function build_ui(gobj)
 {
     let priv = gobj.priv;
@@ -182,9 +184,11 @@ function build_ui(gobj)
         ["input", {
             class: "MUS_SEARCH input",
             type: "search",
-            placeholder: "Buscar título, artista, álbum…",
+            placeholder: t("search placeholder"),
+            "data-i18n-placeholder": "search placeholder",
             autocomplete: "off",
-            "aria-label": "Buscar"
+            "aria-label": t("search"),
+            "data-i18n-aria-label": "search"
         }, null, {
             input: function(ev) {
                 clearTimeout(priv.search_timer);
@@ -198,30 +202,22 @@ function build_ui(gobj)
         }]
     );
 
+    let $chips = createElement2(["nav", {class: "MUS_CHIPS"}, []]);
+    priv.$chips = $chips;
+
     let $header = createElement2(
         ["div", {class: "MUS_HEADER"}, [
-            ["div", {class: "MUS_SEARCH_WRAP"}, [$search]]
+            ["div", {class: "MUS_SEARCH_WRAP"}, [$search]],
+            $chips
         ]]
     );
 
     let $content = createElement2(["div", {class: "MUS_CONTENT"}, []]);
     priv.$content = $content;
 
-    let $c = createElement2(
-        ["div", {class: "C_MUS_VIEW MUS_VIEW"}, [$header, $content]]
-    );
-    gobj_write_attr(gobj, "$container", $c);
+    gobj_write_attr(gobj, "$container",
+        createElement2(["div", {class: "C_MUS_VIEW MUS_VIEW"}, [$header, $content]]));
 }
-
-
-
-
-                    /***************************
-                     *      Render
-                     ***************************/
-
-
-
 
 function clear($node)
 {
@@ -241,9 +237,16 @@ function scroll_top(gobj)
     }
 }
 
-/***************************************************************
- *  Repaint the content box for the current state.
- ***************************************************************/
+
+
+
+                    /***************************
+                     *      Render
+                     ***************************/
+
+
+
+
 function render(gobj)
 {
     let priv = gobj.priv;
@@ -252,102 +255,114 @@ function render(gobj)
         return;
     }
     clear($content);
+    paint_chips(gobj);
 
-    /*  Hide the search while there is nothing to search. */
+    /*  Nothing to search or to switch between while the library is
+        empty. */
     let $c = gobj_read_attr(gobj, "$container");
     let $header = $c && $c.querySelector(".MUS_HEADER");
     if($header) {
         $header.style.display = has_library() ? "" : "none";
     }
 
-    /*  A failed pick leaves a message; it survives until the next one. */
-    if(store_state.notice) {
-        $content.appendChild(createElement2(
-            ["div", {class: "MUS_NOTICE"}, store_state.notice]));
-    }
-
     if(!has_library()) {
-        if(store_state.loading) {
-            $content.appendChild(build_loading());
-        } else {
-            $content.appendChild(build_empty());
-        }
+        $content.appendChild(store_state.loading ? build_loading() : build_empty());
+        refresh_language($content, t);
         return;
     }
 
     if(priv.search) {
         render_list($content, search(priv.search));
-        highlight_current(gobj);
-        return;
-    }
-
-    if(priv.detail) {
+    } else if(priv.detail) {
         render_detail(gobj, $content);
-        highlight_current(gobj);
-        return;
-    }
-
-    if(priv.view === "pistas") {
+    } else if(priv.view === "all") {
         render_list($content, all_tracks_sorted());
-    } else if(priv.view === "albumes") {
+    } else if(priv.view === "albums") {
         render_albums(gobj, $content);
     } else {
         render_groups(gobj, $content, priv.view);
     }
+
     highlight_current(gobj);
+    refresh_language($content, t);
+}
+
+
+function paint_chips(gobj)
+{
+    let priv = gobj.priv;
+    let $chips = priv.$chips;
+    if(!$chips) {
+        return;
+    }
+    clear($chips);
+    for(const v of VIEWS) {
+        let on = (v === priv.view) && !priv.search;
+        $chips.appendChild(createElement2(
+            ["button", {
+                class: "MUS_CHIP" + (on ? " is-on" : ""),
+                type: "button",
+                "aria-selected": on ? "true" : "false",
+                i18n: v
+            }, t(v), {
+                click: () => {
+                    priv.view = v;
+                    priv.detail = null;
+                    scroll_top(gobj);
+                    render(gobj);
+                }
+            }]));
+    }
+    refresh_language($chips, t);
 }
 
 
 /***************************************************************
- *  Empty state — the two ways to load music.
+ *  Empty state — no marketing here any more, just the two ways
+ *  to get music in. The pitch lives in the welcome dialog.
  ***************************************************************/
 function build_empty()
 {
     return createElement2(
         ["div", {class: "MUS_EMPTY"}, [
-            ["h1", {class: "MUS_EMPTY_TITLE"}, [
-                ["span", {}, "Tu música,"],
-                ["br", {}],
-                ["em", {}, "como quieras verla."]
+            ["p", {class: "MUS_EMPTY_LEAD", i18n: "load something to start"},
+                t("load something to start")],
+            ["div", {class: "MUS_QACTIONS"}, [
+                ["button", {class: "MUS_QBTN button is-primary", type: "button"},
+                    [ico(P.folder, 16), ["span", {i18n: "add a folder"}, t("add a folder")]],
+                    {click: () => add_dir()}],
+                ["button", {class: "MUS_QBTN button", type: "button"},
+                    [ico(P.file, 16), ["span", {i18n: "add loose files"}, t("add loose files")]],
+                    {click: () => add_files()}]
             ]],
-            ["p", {class: "MUS_EMPTY_LEAD"},
-                "Elige la carpeta o los ficheros. Se leen aquí, en el móvil: nada sale del dispositivo."],
-            ["div", {class: "MUS_PICKERS"}, [
-                ["button", {class: "MUS_PICK button is-primary", type: "button"},
-                    "Elegir una carpeta", {click: () => pick_dir()}],
-                ["button", {class: "MUS_PICK is-ghost button", type: "button"},
-                    "Elegir ficheros sueltos", {click: () => pick_files()}]
-            ]],
-            ["p", {class: "MUS_HINT"},
-                "Se leen las etiquetas de cada fichero para agrupar por artista, álbum y género. " +
-                "Al recargar la página hay que volver a elegir: el navegador no guarda el permiso sobre tus ficheros."]
+            ["p", {class: "MUS_DIM MUS_HINT", i18n: "folders are recursive"},
+                t("folders are recursive")]
         ]]
     );
 }
 
 
-/***************************************************************
- *  Loading progress.
- ***************************************************************/
 function build_loading()
 {
     let total = store_state.total || 1;
     let pct = Math.round((store_state.loaded / total) * 100);
     return createElement2(
         ["div", {class: "MUS_LOADING"}, [
-            ["div", {class: "MUS_LOAD_COUNT"}, `${store_state.loaded} pistas`],
+            ["div", {class: "MUS_LOAD_COUNT"}, [
+                ["span", {}, String(store_state.loaded)],
+                ["span", {i18n: "tracks"}, t("tracks")]
+            ]],
             ["div", {class: "MUS_BAR"}, [
                 ["i", {class: "MUS_BAR_FILL", style: `width:${pct}%`}]
             ]],
-            ["div", {class: "MUS_LOAD_NAME"}, store_state.load_name || "Leyendo etiquetas…"]
+            ["div", {class: "MUS_LOAD_NAME"},
+                store_state.load_name || t("reading tags")]
         ]]
     );
 }
 
 
-/***************************************************************
- *  Cover art: an <img> when the album has one, else a glyph tile.
- ***************************************************************/
+/*  Cover art: an <img> when the album has one, else a glyph tile. */
 function cover_spec(key, cls, fallback)
 {
     let url = cover_url(key);
@@ -358,114 +373,140 @@ function cover_spec(key, cls, fallback)
 }
 
 
-/***************************************************************
- *  A single track row. `list` is the play context (the ordered
- *  list a tap starts a queue from); showNum swaps the cover for the
- *  track number in album/folder detail.
- ***************************************************************/
-function track_row(t, list, showNum)
+/*  The pair of verbs every row and every group header carries. */
+function verb_buttons(get_tracks)
 {
-    let left = showNum
-        ? ["div", {class: "MUS_NUM"}, t.track ? String(t.track) : "·"]
-        : cover_spec(t.key, "MUS_ART");
-
-    let subtitle = t.artist + (t.album && !showNum ? " · " + t.album : "");
-
-    return ["button", {
-            class: "MUS_ROW",
-            type: "button",
-            "data-tid": String(t.id)
-        }, [
-            left,
-            ["div", {class: "MUS_META"}, [
-                ["div", {class: "MUS_T1"}, t.title],
-                ["div", {class: "MUS_T2"}, subtitle]
-            ]]
-        ], {
-            click: () => play_list(list, list.indexOf(t))
-        }];
+    return ["div", {class: "MUS_ROWCTL"}, [
+        ["button", {
+                class: "MUS_IBTN",
+                type: "button",
+                "aria-label": t("play"),
+                "data-i18n-aria-label": "play",
+                title: t("play"),
+                "data-i18n-title": "play"
+            }, svg(P.play, 16),
+            {click: (ev) => { ev.stopPropagation(); queue_add(get_tracks(), "replace"); }}],
+        ["button", {
+                class: "MUS_IBTN",
+                type: "button",
+                "aria-label": t("add to queue"),
+                "data-i18n-aria-label": "add to queue",
+                title: t("add to queue"),
+                "data-i18n-title": "add to queue"
+            }, svg(P.plus, 16),
+            {click: (ev) => { ev.stopPropagation(); queue_add(get_tracks(), "append"); }}]
+    ]];
 }
 
 
 /***************************************************************
- *  Flat track list.
+ *  A single track row. `list` is the play context: the ordered
+ *  list a Play starts the queue from. showNum swaps the cover
+ *  for the track number in album/folder detail.
  ***************************************************************/
+function track_row(t_, list, showNum)
+{
+    let left = showNum
+        ? ["div", {class: "MUS_NUM"}, t_.track ? String(t_.track) : "·"]
+        : cover_spec(t_.key, "MUS_ART");
+
+    let subtitle = t_.artist + (t_.album && !showNum ? " · " + t_.album : "");
+
+    return ["div", {class: "MUS_ROW", "data-tid": String(t_.uid)}, [
+        left,
+        ["button", {
+                class: "MUS_ROWMAIN",
+                type: "button",
+                "aria-label": t("play"),
+                "data-i18n-aria-label": "play"
+            }, [
+            ["span", {class: "MUS_T1"}, t_.title],
+            ["span", {class: "MUS_T2"}, subtitle]
+        ], {click: () => queue_add(list.slice(list.indexOf(t_)), "replace")}],
+        verb_buttons(() => [t_])
+    ]];
+}
+
+
 function render_list($content, list)
 {
     if(!list.length) {
         $content.appendChild(createElement2(
-            ["div", {class: "MUS_EMPTY_NOTE"}, "Nada por aquí."]));
+            ["div", {class: "MUS_EMPTY_NOTE", i18n: "nothing here"}, t("nothing here")]));
         return;
     }
-    let $rows = createElement2(["div", {class: "MUS_ROWS"},
-        list.map((t) => track_row(t, list, false))]);
-    $content.appendChild($rows);
+    $content.appendChild(createElement2(
+        ["div", {class: "MUS_ROWS"}, list.map((x) => track_row(x, list, false))]));
 }
 
 
-/***************************************************************
- *  Grouped list (artistas / generos / carpetas): one row per group,
- *  a tap drills in.
- ***************************************************************/
 function render_groups(gobj, $content, view)
 {
     let priv = gobj.priv;
     let groups = groups_for(view);
-    let round = view === "artistas";
-    let fallback = round ? "♫" : (view === "carpetas" ? "▤" : "♪");
+    let round = view === "artists";
+    let fallback = round ? "♫" : (view === "folders" ? "▤" : "♪");
 
     let rows = groups.map(function(g) {
-        let subtitle = g.tracks.length + (g.tracks.length === 1 ? " pista" : " pistas");
-        if(view === "artistas") {
-            let nAlb = new Set(g.tracks.map((t) => t.album)).size;
-            subtitle += " · " + nAlb + (nAlb === 1 ? " álbum" : " álbumes");
+        let sub = [
+            ["span", {}, String(g.tracks.length)],
+            ["span", {i18n: "tracks"}, t("tracks")]
+        ];
+        if(view === "artists") {
+            let n = new Set(g.tracks.map((x) => x.album)).size;
+            sub.push(["span", {class: "MUS_SEP"}, "·"]);
+            /*  "n albums" is the count noun; "albums" is the chip label,
+                which is capitalised in the languages that capitalise. */
+            sub.push(["span", {}, String(n)]);
+            sub.push(["span", {i18n: "n albums"}, t("n albums")]);
         }
-        return ["button", {class: "MUS_ROW", type: "button"}, [
+        return ["div", {class: "MUS_ROW"}, [
             cover_spec(g.tracks[0].key, "MUS_ART" + (round ? " is-round" : ""), fallback),
-            ["div", {class: "MUS_META"}, [
-                ["div", {class: "MUS_T1"}, g.name],
-                ["div", {class: "MUS_T2"}, subtitle]
-            ]]
-        ], {
-            click: () => {
-                priv.detail = {kind: view, name: g.name, tracks: g.tracks};
-                scroll_top(gobj);
-                render(gobj);
-            }
-        }];
+            ["button", {class: "MUS_ROWMAIN", type: "button"}, [
+                ["span", {class: "MUS_T1"}, display_name(g.name)],
+                ["span", {class: "MUS_T2"}, sub]
+            ], {
+                click: () => {
+                    priv.detail = {kind: view, name: g.name, tracks: g.tracks};
+                    scroll_top(gobj);
+                    render(gobj);
+                }
+            }],
+            verb_buttons(() => ordered_detail({kind: view, tracks: g.tracks}))
+        ]];
     });
 
     $content.appendChild(createElement2(["div", {class: "MUS_ROWS"}, rows]));
 }
 
 
-/***************************************************************
- *  Album grid.
- ***************************************************************/
 function render_albums(gobj, $content)
 {
     let priv = gobj.priv;
     let cards = albums().map(function(a) {
-        return ["button", {class: "MUS_CARD", type: "button"}, [
-            cover_spec(a.tracks[0].key, "MUS_COVER", "♪"),
-            ["div", {class: "MUS_T1"}, a.name],
-            ["div", {class: "MUS_T2"}, a.tracks[0].albumArtist]
-        ], {
-            click: () => {
-                priv.detail = {kind: "album", name: a.name, tracks: a.tracks};
-                scroll_top(gobj);
-                render(gobj);
-            }
-        }];
+        return ["div", {class: "MUS_CARD"}, [
+            ["button", {class: "MUS_CARDMAIN", type: "button"}, [
+                cover_spec(a.tracks[0].key, "MUS_COVER", "♪"),
+                ["span", {class: "MUS_T1"}, display_name(a.name)],
+                ["span", {class: "MUS_T2"}, display_name(a.tracks[0].albumArtist)]
+            ], {
+                click: () => {
+                    priv.detail = {kind: "albums", name: a.name, tracks: a.tracks};
+                    scroll_top(gobj);
+                    render(gobj);
+                }
+            }],
+            verb_buttons(() => ordered_detail({kind: "albums", tracks: a.tracks}))
+        ]];
     });
     $content.appendChild(createElement2(["div", {class: "MUS_GRID"}, cards]));
 }
 
 
 /***************************************************************
- *  Drill-down detail: a header with cover + "play all", then the
- *  tracks. An album is a flat, track-numbered list; an artist /
- *  genre / folder is split into per-album sections.
+ *  Drill-down detail: a header with cover + the two verbs, then
+ *  the tracks. An album or a folder is a flat, track-numbered
+ *  list; an artist or a genre is split into per-album sections.
  ***************************************************************/
 function render_detail(gobj, $content)
 {
@@ -473,54 +514,64 @@ function render_detail(gobj, $content)
     let d = priv.detail;
     let ordered = ordered_detail(d);
 
-    let year = d.tracks[0].year;
-    let meta = d.tracks.length + " pistas"
-        + (d.kind === "album" ? " · " + d.tracks[0].albumArtist : "")
-        + (d.kind === "album" && year ? " · " + year : "");
-
-    let $head = createElement2(
-        ["div", {class: "MUS_DHEAD"}, [
-            cover_spec(d.tracks[0].key, "MUS_COVER MUS_DCOVER", d.kind === "artistas" ? "♫" : "♪"),
-            ["div", {class: "MUS_DINFO"}, [
-                ["h3", {class: "MUS_DTITLE"}, d.name],
-                ["p", {class: "MUS_DMETA"}, meta],
-                ["button", {class: "MUS_PLAYALL button is-primary", type: "button"},
-                    [ico(ICON_PLAY), ["span", {}, "Reproducir"]],
-                    {click: () => play_list(ordered, 0)}]
-            ]]
-        ]]
-    );
-
-    let $back = createElement2(
+    $content.appendChild(createElement2(
         ["button", {class: "MUS_BACK button is-ghost", type: "button"},
-            [ico(ICON_BACK), ["span", {}, "Volver"]],
-            {click: () => { priv.detail = null; render(gobj); scroll_top(gobj); }}]
-    );
+            [ico(P.back, 18), ["span", {i18n: "back"}, t("back")]],
+            {click: () => { priv.detail = null; render(gobj); scroll_top(gobj); }}]));
 
-    $content.appendChild($back);
-    $content.appendChild($head);
+    let year = d.tracks[0].year;
+    let meta = [
+        ["span", {}, String(d.tracks.length)],
+        ["span", {i18n: "tracks"}, t("tracks")]
+    ];
+    if(d.kind === "albums") {
+        meta.push(["span", {class: "MUS_SEP"}, "·"]);
+        meta.push(["span", {}, display_name(d.tracks[0].albumArtist)]);
+        if(year) {
+            meta.push(["span", {class: "MUS_SEP"}, "·"]);
+            meta.push(["span", {}, year]);
+        }
+    }
 
-    if(d.kind === "album" || d.kind === "carpetas") {
-        let $rows = createElement2(["div", {class: "MUS_ROWS"},
-            ordered.map((t) => track_row(t, ordered, true))]);
-        $content.appendChild($rows);
+    $content.appendChild(createElement2(
+        ["div", {class: "MUS_DHEAD"}, [
+            cover_spec(d.tracks[0].key, "MUS_COVER MUS_DCOVER",
+                d.kind === "artists" ? "♫" : "♪"),
+            ["div", {class: "MUS_DINFO"}, [
+                ["h3", {class: "MUS_DTITLE"}, display_name(d.name)],
+                ["p", {class: "MUS_DMETA"}, meta],
+                ["div", {class: "MUS_QACTIONS"}, [
+                    ["button", {class: "MUS_QBTN button is-primary", type: "button"},
+                        [ico(P.play, 15), ["span", {i18n: "play all"}, t("play all")]],
+                        {click: () => queue_add(ordered, "replace")}],
+                    ["button", {class: "MUS_QBTN button", type: "button"},
+                        [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
+                        {click: () => queue_add(ordered, "append")}]
+                ]]
+            ]]
+        ]]));
+
+    if(d.kind === "albums" || d.kind === "folders") {
+        $content.appendChild(createElement2(
+            ["div", {class: "MUS_ROWS"},
+                ordered.map((x) => track_row(x, ordered, true))]));
         return;
     }
 
     /*  Artist / genre: one section per album. */
     let sections = new Map();
-    for(let t of ordered) {
-        if(!sections.has(t.album)) {
-            sections.set(t.album, []);
+    for(const x of ordered) {
+        if(!sections.has(x.album)) {
+            sections.set(x.album, []);
         }
-        sections.get(t.album).push(t);
+        sections.get(x.album).push(x);
     }
     let $wrap = createElement2(["div", {class: "MUS_ROWS"}, []]);
-    for(let [album, tracks] of sections.entries()) {
+    for(const [album, tracks] of sections.entries()) {
         $wrap.appendChild(createElement2(
-            ["div", {class: "MUS_SECTION_H"}, album]));
-        for(let t of tracks) {
-            $wrap.appendChild(createElement2(track_row(t, ordered, true)));
+            ["div", {class: "MUS_SECTION_H"}, display_name(album)]));
+        for(const x of tracks) {
+            $wrap.appendChild(createElement2(track_row(x, ordered, true)));
         }
     }
     $content.appendChild($wrap);
@@ -529,20 +580,18 @@ function render_detail(gobj, $content)
 
 function ordered_detail(d)
 {
-    let t = [...d.tracks];
-    const collator = new Intl.Collator("es", {sensitivity: "base"});
+    let list = [...d.tracks];
+    const collator = new Intl.Collator(undefined, {sensitivity: "base", numeric: true});
     const byTrackNo = (a,b) => (a.track - b.track) || collator.compare(a.title, b.title);
-    if(d.kind === "album") {
-        return t.sort(byTrackNo);
+    if(d.kind === "albums") {
+        return list.sort(byTrackNo);
     }
-    return t.sort((a,b) => collator.compare(a.album, b.album) || byTrackNo(a,b));
+    return list.sort((a,b) => collator.compare(a.album, b.album) || byTrackNo(a,b));
 }
 
 
-/***************************************************************
- *  Toggle the "playing" tint on whichever row is the current
- *  track, without rebuilding the list.
- ***************************************************************/
+/*  Toggle the "playing" tint on whichever row is the current track,
+    without rebuilding the list. */
 function highlight_current(gobj)
 {
     let priv = gobj.priv;
@@ -550,11 +599,26 @@ function highlight_current(gobj)
         return;
     }
     let cur = current_track();
-    let cur_id = cur ? String(cur.id) : null;
-    let rows = priv.$content.querySelectorAll(".MUS_ROW[data-tid]");
-    for(let r of rows) {
-        r.classList.toggle("is-playing", r.getAttribute("data-tid") === cur_id);
+    let cur_id = cur ? String(cur.uid) : null;
+    for(const $row of priv.$content.querySelectorAll(".MUS_ROW[data-tid]")) {
+        $row.classList.toggle("is-playing", $row.getAttribute("data-tid") === cur_id);
     }
+}
+
+
+
+
+                    /***************************
+                     *      Actions
+                     ***************************/
+
+
+
+
+function ac_language_changed(gobj, event, kw, src)
+{
+    render(gobj);
+    return 0;
 }
 
 
@@ -578,9 +642,13 @@ function create_gclass(gclass_name)
     }
 
     const states = [
-        ["ST_IDLE", []]
+        ["ST_IDLE", [
+            ["EV_LANGUAGE_CHANGED", ac_language_changed, null]
+        ]]
     ];
-    const event_types = [];
+    const event_types = [
+        ["EV_LANGUAGE_CHANGED", 0]
+    ];
 
     __gclass__ = gclass_create(
         gclass_name,
