@@ -684,6 +684,9 @@ img.MUS_ART { object-fit: cover; }
 .MUS_SRCMETA { flex: 1; min-width: 14ch; }
 .MUS_SRCMETA .MUS_T2 { white-space: normal; }
 .MUS_SRCSTATE { font-size: 0.8rem; flex-basis: 100%; }
+.MUS_SRCPROGRESS { font-variant-numeric: tabular-nums; }
+.MUS_SRCPROGRESS > span + span { margin-inline-start: 0.3rem; }
+.MUS_SRCPROGRESS .MUS_SEP { margin-inline: 0; }
 .MUS_SRCACTIONS {
     display: flex;
     flex-wrap: wrap;

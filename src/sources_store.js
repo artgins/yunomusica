@@ -307,8 +307,12 @@ function pick_with_input(as_dir)
             };
             S.sources.push(source);
             rt(source.id).permission = "granted";
-            await persist(source);
             emit();
+            /*  No persist() before the scan: a "files" source carries
+                every File it was given, and writing thousands of them to
+                IndexedDB twice for one pick is a stall the user sees.
+                scan() persists once, at the end, with the count filled
+                in. */
             await scan(source.id);
             resolve(source.id);
         };

@@ -247,6 +247,30 @@ function scroll_top(gobj)
 
 
 
+/***************************************************************
+ *  A drill-down holds the group's tracks as they were when it
+ *  was opened. Removing a source changes the library underneath
+ *  it, so re-resolve the group by name before painting: if it
+ *  lost tracks, take the current ones; if it is gone entirely,
+ *  drop back to the list rather than showing a group whose files
+ *  are no longer there.
+ ***************************************************************/
+function revalidate_detail(gobj)
+{
+    let priv = gobj.priv;
+    let d = priv.detail;
+    if(!d) {
+        return;
+    }
+    let groups = (d.kind === "albums") ? albums() : groups_for(d.kind);
+    let g = groups.find((x) => x.name === d.name);
+    if(!g) {
+        priv.detail = null;
+        return;
+    }
+    d.tracks = g.tracks;
+}
+
 function render(gobj)
 {
     let priv = gobj.priv;
@@ -254,6 +278,7 @@ function render(gobj)
     if(!$content) {
         return;
     }
+    revalidate_detail(gobj);
     clear($content);
     paint_chips(gobj);
 

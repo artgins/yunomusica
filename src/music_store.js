@@ -208,6 +208,47 @@ function cleanGenre(g)
     return g.replace(/\0/g," / ").trim();
 }
 
+/***************************************************************
+ *  Read ONLY the tag, not a fixed slab off the front.
+ *
+ *  The ID3v2 header is 10 bytes and states the exact length of
+ *  the tag that follows, so that is all there is to read: a few
+ *  KB for a plain tag, more only when a cover is embedded, and
+ *  nothing at all for a file with no ID3v2 at all.
+ *
+ *  This used to read a flat 512 KB per file. On a 5000-track
+ *  library that is 2.4 GiB pulled off the disk and thrown away —
+ *  minutes of "reading…" on a phone, which is exactly what it
+ *  looked like: a scan that never finished.
+ ***************************************************************/
+const ID3_HEADER = 10;
+const MAX_TAG = 4 * 1024 * 1024;    // a corrupt size field must not read the whole file
+
+async function read_tags(f)
+{
+    let tag = {};
+    try {
+        const head = new Uint8Array(await f.slice(0, ID3_HEADER).arrayBuffer());
+        if(head.length >= ID3_HEADER &&
+                head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33) {    // "ID3"
+            const len = Math.min(ID3_HEADER + syncsafe(head, 6), MAX_TAG, f.size);
+            tag = parseID3(await f.slice(0, len).arrayBuffer());
+        }
+    } catch(e) {
+        /*  Unreadable head: the ID3v1 tail and the path guess remain. */
+    }
+    if(!tag.title && f.size > 128) {
+        try {
+            const tail = await f.slice(Math.max(0, f.size - 128)).arrayBuffer();
+            tag = Object.assign(parseID3v1(tail), tag);
+        } catch(e) {
+            /*  Unreadable tail: fall back to the path guess. */
+        }
+    }
+    return tag;
+}
+
+
 /*  Fallback: deduce from the file name and the folder path. */
 function fromPath(file)
 {
@@ -304,20 +345,11 @@ async function ingest(files, source_id)
     S.load_name = "";
     emit("loading");
 
+    let last_emit = 0;
     for(let i = 0; i < list.length; i++) {
         const f = list[i];
         const guess = fromPath(f);
-        let tag = {};
-        try {
-            const head = await f.slice(0, 512 * 1024).arrayBuffer();
-            tag = parseID3(head);
-            if(!tag.title && f.size > 128) {
-                const tail = await f.slice(Math.max(0, f.size - 128)).arrayBuffer();
-                tag = Object.assign(parseID3v1(tail), tag);
-            }
-        } catch(e) {
-            /*  Unreadable header: fall back to the path guess below. */
-        }
+        const tag = await read_tags(f);
 
         const album  = (tag.album  || guess.album  || UNKNOWN_ALBUM).trim();
         const artist = (tag.artist || guess.artist || UNKNOWN_ARTIST).trim();
@@ -341,11 +373,16 @@ async function ingest(files, source_id)
             folder: guess.folder, key
         });
 
-        if(i % 4 === 0 || i === list.length - 1) {
-            S.loaded = i + 1;
-            S.load_name = f.name;
+        /*  Report on a clock, not on a file count: a library of five
+            thousand tracks would otherwise spend its time repainting
+            instead of reading. */
+        S.loaded = i + 1;
+        S.load_name = f.name;
+        const now = Date.now();
+        if(now - last_emit > 120 || i === list.length - 1) {
+            last_emit = now;
             emit("loading");
-            /*  Yield so the progress paints between chunks. */
+            /*  Yield so the progress actually paints between chunks. */
             await new Promise((r) => setTimeout(r));
         }
     }

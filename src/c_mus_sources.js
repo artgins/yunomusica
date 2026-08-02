@@ -35,7 +35,7 @@ import {
     add_dir, add_files, authorize, scan, remove_source,
 } from "./sources_store.js";
 
-import {subscribe, tracks_of_source, queue_add} from "./music_store.js";
+import {subscribe, tracks_of_source, queue_add, store_state} from "./music_store.js";
 
 import {t} from "i18next";
 
@@ -118,9 +118,11 @@ function mt_start(gobj)
 
     priv.unsub_sources = subscribe_sources(() => render(gobj));
     /*  A scan feeds the library, and the per-source track count comes
-        from there, so repaint on the library channel too. */
+        from there, so repaint on the library channel too — and on
+        "loading", which is what carries how far a scan has got. The
+        store emits that on a 120 ms clock, so this is cheap. */
     priv.unsub_music = subscribe(function(channel) {
-        if(channel === "library") {
+        if(channel === "library" || channel === "loading") {
             render(gobj);
         }
     });
@@ -265,7 +267,16 @@ function build_source_row(s)
 
     let $state = null;
     if(s.scanning) {
-        $state = ["div", {class: "MUS_SRCSTATE", i18n: "reading"}, t("reading")];
+        /*  Say how far it has got. A big folder takes a while, and
+            "reading…" next to "0 tracks" is indistinguishable from
+            being stuck — which is exactly what it looked like. */
+        let parts = [["span", {i18n: "reading"}, t("reading")]];
+        if(store_state.total) {
+            parts.push(["span", {}, String(store_state.loaded)]);
+            parts.push(["span", {class: "MUS_SEP"}, "/"]);
+            parts.push(["span", {}, String(store_state.total)]);
+        }
+        $state = ["div", {class: "MUS_SRCSTATE MUS_SRCPROGRESS"}, parts];
     } else if(needs_auth) {
         let k = (s.permission === "denied") ? "permission denied" : "waiting for permission";
         $state = ["div", {class: "MUS_SRCSTATE is-warn", i18n: k}, t(k)];
