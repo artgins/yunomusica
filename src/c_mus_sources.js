@@ -32,6 +32,7 @@ import {yui_shell_of} from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {
     subscribe_sources, all_sources, fsa_supported, is_persistent,
+    is_durable, write_failed,
     add_dir, add_files, authorize, scan, remove_source,
 } from "./sources_store.js";
 
@@ -244,6 +245,18 @@ function build_explainer()
     if(!fsa_supported()) {
         children.push(["p", {class: "MUS_DIM", i18n: "upload warning explained"},
             t("upload warning explained")]);
+    }
+
+    /*  Say out loud whether what we store is actually safe. Losing your
+        folders on restart with no explanation is the worst outcome
+        here, and the browser tells us in advance which of the two
+        situations we are in. */
+    if(!is_persistent() || write_failed()) {
+        children.push(["p", {class: "is-warn", i18n: "could not be saved"},
+            t("could not be saved")]);
+    } else if(is_durable() === false) {
+        children.push(["p", {class: "is-warn", i18n: "storage may be cleared"},
+            t("storage may be cleared")]);
     }
 
     return createElement2(["div", {class: "MUS_EXPLAIN"}, children]);

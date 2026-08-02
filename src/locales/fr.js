@@ -75,6 +75,10 @@ const fr = {
             "Rien n'est copié ni envoyé. Seule une référence à ce qui est déjà sur votre disque est conservée.",
         "sources persist":
             "Ce navigateur retient vos dossiers d'une session à l'autre. Après un rechargement, un clic suffit à les réautoriser.",
+        "storage may be cleared":
+            "Votre navigateur n’a pas accordé de stockage durable : il peut donc supprimer vos dossiers quand il manque de place — ou s’il est réglé pour effacer les données des sites à la fermeture. Si vos dossiers disparaissent, c’est pour cela.",
+        "could not be saved":
+            "Vos dossiers n’ont pas pu être enregistrés : ce navigateur n’autorise l’application à rien stocker. Ils seront perdus à la fermeture.",
         "sources do not persist":
             "Ce navigateur ne peut pas conserver l'autorisation d'un dossier ; les fichiers choisis sont donc retenus comme une liste figée. Les morceaux ajoutés ensuite au dossier n'apparaîtront pas.",
         "upload warning explained":

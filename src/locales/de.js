@@ -75,6 +75,10 @@ const de = {
             "Es wird nichts kopiert und nichts hochgeladen. Gespeichert wird nur ein Verweis auf das, was ohnehin auf deiner Festplatte liegt.",
         "sources persist":
             "Dieser Browser merkt sich deine Ordner über Sitzungen hinweg. Nach dem Neuladen genügt ein Klick, um sie wieder freizugeben.",
+        "storage may be cleared":
+            "Dein Browser hat keinen dauerhaften Speicher gewährt, kann deine Ordner also verwerfen, wenn er Platz braucht — oder wenn er Website-Daten beim Beenden löscht. Wenn deine Ordner immer wieder verschwinden, liegt es daran.",
+        "could not be saved":
+            "Deine Ordner konnten nicht gespeichert werden: Dieser Browser lässt die App nichts speichern. Sie sind beim Schließen weg.",
         "sources do not persist":
             "Dieser Browser kann die Freigabe eines Ordners nicht speichern; die ausgewählten Dateien werden deshalb als feste Liste gemerkt. Später hinzugefügte Titel erscheinen nicht.",
         "upload warning explained":

@@ -75,6 +75,10 @@ const pt = {
             "Nada é copiado nem enviado. Guarda-se apenas uma referência ao que já está no teu disco.",
         "sources persist":
             "Este navegador lembra-se das tuas pastas entre sessões. Depois de recarregar, basta um clique para voltar a autorizá-las.",
+        "storage may be cleared":
+            "O teu navegador não concedeu armazenamento duradouro, por isso pode descartar as tuas pastas quando precisar de espaço — ou se estiver configurado para limpar os dados do site ao sair. Se as tuas pastas desaparecem, é por isto.",
+        "could not be saved":
+            "Não foi possível guardar as tuas pastas: este navegador não deixa a aplicação armazenar nada. Perder-se-ão quando o fechares.",
         "sources do not persist":
             "Este navegador não consegue guardar a permissão sobre uma pasta, por isso os ficheiros que escolheres ficam como uma lista fixa. As faixas acrescentadas depois à pasta não aparecerão.",
         "upload warning explained":

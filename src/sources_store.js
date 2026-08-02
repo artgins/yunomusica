@@ -26,7 +26,10 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
-import {STORE_SOURCES, idb_all, idb_put, idb_del, idb_available} from "./idb.js";
+import {
+    STORE_SOURCES, idb_all, idb_put, idb_del, idb_available,
+    request_persistence, storage_persisted,
+} from "./idb.js";
 import {ingest, drop_source_tracks, cancel_ingest} from "./music_store.js";
 
 
@@ -69,6 +72,8 @@ const S = {
     persistent: false,      // IndexedDB actually works here
     preparing: false,       // the browser is still handing over a folder
     stopping: false,        // Stop pressed, waiting for the loop to break
+    write_failed: false,    // the last store attempt did not land
+    durable: null,          // storage is exempt from eviction (null = unknown)
 };
 
 function rt(id)
@@ -197,6 +202,7 @@ async function authorize(id)
 async function load_sources()
 {
     S.persistent = await idb_available();
+    S.durable = await storage_persisted();
     let rows = await idb_all(STORE_SOURCES);
     S.sources = (rows || []).sort((a, b) => (a.added || 0) - (b.added || 0));
     for(const s of S.sources) {
@@ -223,7 +229,7 @@ async function load_sources()
 async function persist(source)
 {
     /*  Store the reference, never the runtime state. */
-    await idb_put(STORE_SOURCES, {
+    let ok = await idb_put(STORE_SOURCES, {
         id:     source.id,
         name:   source.name,
         kind:   source.kind,
@@ -232,6 +238,37 @@ async function persist(source)
         added:  source.added,
         count:  source.count || 0,
     });
+    /*  A write that did not land must not pass for one that did: the
+        user would only find out on the next restart, when the folder is
+        not there any more. */
+    S.write_failed = !ok;
+    if(!ok) {
+        console.error("yunomúsica: could not store the source", source.name);
+    }
+    return ok;
+}
+
+function write_failed()
+{
+    return S.write_failed;
+}
+
+/*  Adding a source is the moment to ask the browser to keep what we
+    store. Chromium decides silently; Firefox asks the user. Either way
+    it is asked once, when it obviously matters, not on page load. */
+async function make_durable()
+{
+    if(S.durable) {
+        return true;
+    }
+    S.durable = await request_persistence();
+    emit();
+    return S.durable;
+}
+
+function is_durable()
+{
+    return S.durable;
 }
 
 /*  A whole folder, recursively. Returns the new source id, or "". */
@@ -256,6 +293,7 @@ async function add_dir()
     };
     S.sources.push(source);
     rt(source.id).permission = "granted";
+    await make_durable();
     await persist(source);
     emit();
     await scan(source.id);
@@ -357,6 +395,7 @@ function pick_with_input(as_dir)
             };
             S.sources.push(source);
             rt(source.id).permission = "granted";
+            await make_durable();
             emit();
             /*  No persist() before the scan: a "files" source carries
                 every File it was given, and writing thousands of them to
@@ -443,6 +482,11 @@ async function scan(id)
     } catch(e) {
         r.error = (e && e.name === "NotAllowedError") ? "permission denied" : "could not be read";
         r.scanning = false;
+        /*  Store it even though the read failed. The source is real —
+            the user chose it — and a folder that vanishes on restart
+            because one read went wrong is worse than a folder that
+            comes back saying it could not be read. */
+        await persist(source);
         emit();
         return 0;
     }
@@ -535,6 +579,8 @@ export {
     subscribe_sources,
     fsa_supported,
     is_persistent,
+    is_durable,
+    write_failed,
     is_preparing,
     stop_scan,
     is_stopping,

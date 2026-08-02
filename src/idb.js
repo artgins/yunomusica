@@ -127,9 +127,13 @@ function idb_get(store, key)
     return run(store, "readonly", (os) => os.get(key)).then((r) => r || null);
 }
 
+/*  Resolves to true only if the write really landed. Callers used to
+    ignore this, so a failed write — a quota refusal, a browser with
+    storage switched off — looked exactly like a successful one until the
+    user restarted and found their folders gone. */
 function idb_put(store, value)
 {
-    return run(store, "readwrite", (os) => os.put(value));
+    return run(store, "readwrite", (os) => os.put(value)).then((r) => r !== null);
 }
 
 function idb_del(store, key)
@@ -166,6 +170,42 @@ function idb_available()
 }
 
 
+/***************************************************************
+ *  Ask the browser NOT to evict what we store.
+ *
+ *  Without this the origin is "best-effort": the browser may
+ *  throw the data away whenever it feels like it, and Firefox
+ *  in particular clears it on exit when the user has "delete
+ *  cookies and site data when Firefox is closed" on. That is
+ *  the difference between "your folders are remembered" and
+ *  "your folders were remembered until you closed the browser".
+ *
+ *  Chromium decides silently from site engagement; Firefox
+ *  asks the user. So this is called when a source is ADDED —
+ *  a moment when the request makes obvious sense — never on
+ *  page load.
+ ***************************************************************/
+function request_persistence()
+{
+    if(typeof navigator === "undefined" || !navigator.storage ||
+            !navigator.storage.persist) {
+        return Promise.resolve(false);
+    }
+    return navigator.storage.persisted()
+        .then((already) => already ? true : navigator.storage.persist())
+        .catch(() => false);
+}
+
+function storage_persisted()
+{
+    if(typeof navigator === "undefined" || !navigator.storage ||
+            !navigator.storage.persisted) {
+        return Promise.resolve(null);       // the browser will not say
+    }
+    return navigator.storage.persisted().catch(() => null);
+}
+
+
 export {
     STORE_SOURCES,
     STORE_PLAYLISTS,
@@ -177,4 +217,6 @@ export {
     pref_get,
     pref_set,
     idb_available,
+    request_persistence,
+    storage_persisted,
 };

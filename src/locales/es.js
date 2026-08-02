@@ -80,6 +80,10 @@ const es = {
             "No se copia nada ni se sube nada. Solo se guarda una referencia a lo que ya está en tu disco.",
         "sources persist":
             "Este navegador recuerda tus carpetas entre sesiones. Al recargar basta un clic para volver a autorizarlas.",
+        "storage may be cleared":
+            "Tu navegador no ha concedido almacenamiento duradero, así que puede descartar tus carpetas cuando necesite espacio — o si está configurado para borrar los datos del sitio al salir. Si tus carpetas desaparecen, es por esto.",
+        "could not be saved":
+            "No se han podido guardar tus carpetas: este navegador no deja a la app almacenar nada. Se perderán al cerrarlo.",
         "sources do not persist":
             "Este navegador no puede guardar el permiso sobre una carpeta, así que los ficheros que elijas se recuerdan como una lista fija. Lo que añadas después a la carpeta no aparecerá.",
         "upload warning explained":
