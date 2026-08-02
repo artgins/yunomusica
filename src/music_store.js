@@ -298,7 +298,11 @@ const S = {
     loading: false,
     loaded:  0,
     total:   0,
+    seen:    0,         // files the walk handed over, audio or not
     load_name: "",
+    load_started: 0,    // Date.now() when the read began
+    load_source: "",    // the source being read right now
+    cancel:  false,     // stop requested (Stop, or its source was removed)
     notice:  "",        // a message the views show in place (bad pick)
     /*  playback */
     audio:   null,
@@ -313,7 +317,22 @@ const S = {
 /***************************************************************
  *      3. Ingest
  ***************************************************************/
-const AUDIO_RE = /\.(mp3|m4a|flac|ogg|opus|wav|aac|wma)$/i;
+const AUDIO_RE = /\.(mp3|m4a|flac|ogg|opus|wav|aac|wma|mp4|3gp|mid|midi|amr|aiff?)$/i;
+
+/*  Recognise audio by TYPE as well as by name.
+ *
+ *  A file handed over by Android's Storage Access Framework often
+ *  arrives with a display name that carries no usable extension, so
+ *  matching the name alone silently rejected a whole phone's music
+ *  library — the folder read as "no audio here" or as nothing at all.
+ *  The browser already knows the MIME type; ask it too. */
+function is_audio(f)
+{
+    if(AUDIO_RE.test(f.name || "")) {
+        return true;
+    }
+    return !!(f.type && f.type.indexOf("audio/") === 0);
+}
 
 function has_library()
 {
@@ -329,7 +348,8 @@ function track_count()
     they came from. Returns {ok, count}. */
 async function ingest(files, source_id)
 {
-    const list = [...files].filter((f) => AUDIO_RE.test(f.name));
+    const list = [...files].filter(is_audio);
+    S.seen = [...files].length;
     if(!list.length) {
         /*  A pick with nothing playable in it must not dead-end in
             silence: say it in place and let the user pick again. */
@@ -343,10 +363,18 @@ async function ingest(files, source_id)
     S.loaded  = 0;
     S.total   = list.length;
     S.load_name = "";
+    S.load_started = Date.now();
+    S.load_source = source_id || "";
+    S.cancel = false;
     emit("loading");
 
     let last_emit = 0;
+    let added = 0;
     for(let i = 0; i < list.length; i++) {
+        if(S.cancel) {
+            /*  Stop pressed: keep what has been read, drop the rest. */
+            break;
+        }
         const f = list[i];
         const guess = fromPath(f);
         const tag = await read_tags(f);
@@ -372,6 +400,7 @@ async function ingest(files, source_id)
             year: (tag.year || "").slice(0,4),
             folder: guess.folder, key
         });
+        added++;
 
         /*  Report on a clock, not on a file count: a library of five
             thousand tracks would otherwise spend its time repainting
@@ -387,10 +416,36 @@ async function ingest(files, source_id)
         }
     }
 
+    const cancelled = S.cancel;
     S.loading = false;
+    S.cancel = false;
+    S.load_source = "";
     emit("loading");
     emit("library");
-    return {ok:true, count:list.length};
+    return {ok:true, count:added, cancelled:cancelled};
+}
+
+/*  Stop a running read. What was already read stays: the user asked to
+    stop waiting, not to throw away the work.
+
+    With a `source_id` it only stops a read of THAT source — used when a
+    source is removed while it is being read, so the removal does not
+    take down an unrelated scan. */
+function cancel_ingest(source_id)
+{
+    if(!S.loading) {
+        return false;
+    }
+    if(source_id && S.load_source !== source_id) {
+        return false;
+    }
+    S.cancel = true;
+    return true;
+}
+
+function scan_elapsed()
+{
+    return S.load_started ? (Date.now() - S.load_started) : 0;
 }
 
 /*  A source was removed or is being rescanned: forget its tracks, and
@@ -824,6 +879,8 @@ export {
     has_library,
     track_count,
     ingest,
+    cancel_ingest,
+    scan_elapsed,
     drop_source_tracks,
     clear_notice,
     groups_for,

@@ -85,6 +85,12 @@ const ja = {
         "rescan":               "読み直す",
         "no sources yet":       "ソースはまだありません。",
         "reading":              "読み込み中…",
+        "preparing folder":
+            "フォルダーを準備しています…",
+        "this can take a while":
+            "しばらくかかることがあります。ブラウザーがファイルを引き渡しているところで、音楽フォルダーが大きいと時間がかかります。どこにも送信されません。",
+        "stop":                 "停止",
+        "stopped":              "フォルダーを読み終える前に停止しました",
         "waiting for permission": "許可を待っています",
         "permission denied":    "許可されませんでした",
         "no audio here":        "そこに音声ファイルはありません。",

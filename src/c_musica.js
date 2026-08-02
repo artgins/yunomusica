@@ -42,11 +42,12 @@ import {
     subscribe, store_state,
     current_track, is_playing, toggle, step, prev,
     seek_fraction, progress, cover_url, setup_media_session,
+    cancel_ingest, scan_elapsed, fmt_time,
 } from "./music_store.js";
 
 import {
     load_sources, add_dir, add_files,
-    subscribe_sources, scanning_source,
+    subscribe_sources, scanning_source, is_preparing,
 } from "./sources_store.js";
 import {load_playlists} from "./playlists_store.js";
 
@@ -88,6 +89,7 @@ let PRIVATE_DATA = {
     $root:    null,     // flex column: shell + player
     $player:  null,
     $scan:    null,     // the "reading your music" bar
+    scan_timer: 0,      // ticks the elapsed clock on that bar
     unsub:    null,
     unsub_src: null,
     tint_key: null,     // last cover a tint was computed from
@@ -197,6 +199,10 @@ function mt_stop(gobj)
     if(priv.unsub_src) {
         priv.unsub_src();
         priv.unsub_src = null;
+    }
+    if(priv.scan_timer) {
+        clearInterval(priv.scan_timer);
+        priv.scan_timer = 0;
     }
     gobj_stop_children(gobj);
 }
@@ -338,7 +344,17 @@ function build_player(gobj)
                     ["span", {class: "MUS_SCAN_LABEL", i18n: "reading tags"},
                         t("reading tags")],
                     ["span", {class: "MUS_SCAN_WHAT"}, ""],
-                    ["span", {class: "MUS_SCAN_COUNT"}, ""]
+                    ["span", {class: "MUS_SCAN_CLOCK"}, "0:00"],
+                    ["span", {class: "MUS_SCAN_COUNT"}, ""],
+                    /*  A read the user cannot end is a trap. Stopping
+                        keeps whatever was read; it does not undo it. */
+                    ["button", {
+                            class: "MUS_SCAN_STOP",
+                            type: "button",
+                            i18n: "stop",
+                            "aria-label": t("stop"),
+                            "data-i18n-aria-label": "stop"
+                        }, t("stop"), {click: () => cancel_ingest()}]
                 ]],
                 ["div", {class: "MUS_BAR"}, [["i", {class: "MUS_BAR_FILL"}]]],
                 ["div", {class: "MUS_SCAN_FILE"}, ""]
@@ -430,28 +446,73 @@ function paint_scan(gobj)
         return;
     }
     let src = scanning_source();
-    let on = !!src || store_state.loading;
+    let preparing = is_preparing();
+    let on = preparing || !!src || store_state.loading;
 
     priv.$root.classList.toggle("is-scanning", on);
     priv.$scan.classList.toggle("is-on", on);
+    priv.$scan.classList.toggle("is-preparing", preparing);
+
+    /*  The clock has to tick on its own. Repaints are driven by files
+        being read, so a slow file — or a tree still being walked, which
+        reads nothing at all — would freeze the one number that tells
+        the user the app is still alive. */
+    if(on && !priv.scan_timer) {
+        priv.scan_timer = setInterval(() => paint_scan_clock(gobj), 500);
+    } else if(!on && priv.scan_timer) {
+        clearInterval(priv.scan_timer);
+        priv.scan_timer = 0;
+    }
     if(!on) {
         return;
     }
+    paint_scan_clock(gobj);
 
-    set_text(priv.$scan, ".MUS_SCAN_WHAT", src ? src.name : "");
+    /*  Two phases, and they fail differently, so they say different
+        things: the browser handing the folder over (opaque, no numbers,
+        nothing to stop), then our own read (counted, stoppable). */
+    let label_key = preparing ? "preparing folder" : "reading tags";
+    let $label = priv.$scan.querySelector(".MUS_SCAN_LABEL");
+    if($label) {
+        $label.textContent = t(label_key);
+        $label.setAttribute("data-i18n", label_key);
+    }
 
-    let total = store_state.total || 0;
+    set_text(priv.$scan, ".MUS_SCAN_WHAT", (!preparing && src) ? src.name : "");
+
+    let total = preparing ? 0 : (store_state.total || 0);
     let done = store_state.loaded || 0;
     set_text(priv.$scan, ".MUS_SCAN_COUNT", total ? `${done} / ${total}` : "");
 
     let $fill = priv.$scan.querySelector(".MUS_BAR_FILL");
     if($fill) {
-        /*  No total yet means the tree is still being walked: leave the
-            bar indeterminate rather than claiming 0%. */
+        /*  No total yet: the folder is still being handed over, or the
+            tree is still being walked. Sweep rather than claim 0%. */
         $fill.style.width = total ? ((done / total) * 100) + "%" : "";
         $fill.classList.toggle("is-indeterminate", !total);
     }
-    set_text(priv.$scan, ".MUS_SCAN_FILE", store_state.load_name || "");
+
+    /*  While there are no numbers to show, warn that the wait is normal
+        and can be long — that gap is where the app looked hung. */
+    let $sub = priv.$scan.querySelector(".MUS_SCAN_FILE");
+    if($sub) {
+        if(total) {
+            $sub.textContent = store_state.load_name || "";
+            $sub.removeAttribute("data-i18n");
+        } else {
+            $sub.textContent = t("this can take a while");
+            $sub.setAttribute("data-i18n", "this can take a while");
+        }
+    }
+}
+
+function paint_scan_clock(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.$scan) {
+        return;
+    }
+    set_text(priv.$scan, ".MUS_SCAN_CLOCK", fmt_time(scan_elapsed() / 1000));
 }
 
 function paint_art($node, url)

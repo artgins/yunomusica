@@ -85,6 +85,12 @@ const pt = {
         "rescan":               "Reler",
         "no sources yet":       "Ainda não há fontes.",
         "reading":              "A ler…",
+        "preparing folder":
+            "A preparar a pasta…",
+        "this can take a while":
+            "Pode demorar um bocado: o navegador está a entregar os ficheiros, e uma pasta de música grande leva tempo. Não está a ser enviado nada para lado nenhum.",
+        "stop":                 "Parar",
+        "stopped":              "Parado antes de acabar a pasta",
         "waiting for permission": "À espera de permissão",
         "permission denied":    "Permissão negada",
         "no audio here":        "Não há ficheiros de áudio aí.",

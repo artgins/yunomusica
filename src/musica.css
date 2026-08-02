@@ -873,15 +873,34 @@ img.MUS_ART { object-fit: cover; }
     text-overflow: ellipsis;
     opacity: 0.85;
 }
-.MUS_SCAN_COUNT { flex: none; font-variant-numeric: tabular-nums; }
+.MUS_SCAN_COUNT,
+.MUS_SCAN_CLOCK { flex: none; font-variant-numeric: tabular-nums; }
+.MUS_SCAN_CLOCK { opacity: 0.85; }
+
+.MUS_SCAN_STOP {
+    flex: none;
+    border: 1px solid color-mix(in srgb, var(--mus-accent-ink) 45%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--mus-accent-ink) 10%, transparent);
+    color: inherit;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+}
+.MUS_SCAN_STOP:hover { background: color-mix(in srgb, var(--mus-accent-ink) 20%, transparent); }
 .MUS_SCAN_FILE {
     font-size: 0.72rem;
-    opacity: 0.75;
+    opacity: 0.8;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-top: 0.15rem;
 }
+/*  Nothing of ours is running yet, so there is nothing to stop. */
+.MUS_SCANBAR.is-preparing .MUS_SCAN_STOP { display: none; }
+.MUS_SCANBAR.is-preparing .MUS_SCAN_FILE { white-space: normal; }
 .MUS_SCANBAR .MUS_BAR {
     margin-top: 0.35rem;
     height: 4px;

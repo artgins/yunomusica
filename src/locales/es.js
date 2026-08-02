@@ -90,6 +90,12 @@ const es = {
         "rescan":               "Releer",
         "no sources yet":       "Todavía no hay fuentes.",
         "reading":              "Leyendo…",
+        "preparing folder":
+            "Preparando la carpeta…",
+        "this can take a while":
+            "Puede tardar un rato: el navegador está entregando los ficheros, y una carpeta de música grande lleva su tiempo. No se está enviando nada a ninguna parte.",
+        "stop":                 "Parar",
+        "stopped":              "Parado antes de acabar la carpeta",
         "waiting for permission": "Esperando permiso",
         "permission denied":    "Permiso denegado",
         "no audio here":        "Ahí no hay ficheros de audio.",

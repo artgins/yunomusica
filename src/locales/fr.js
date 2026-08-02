@@ -85,6 +85,12 @@ const fr = {
         "rescan":               "Relire",
         "no sources yet":       "Pas encore de source.",
         "reading":              "Lecture…",
+        "preparing folder":
+            "Préparation du dossier…",
+        "this can take a while":
+            "Cela peut prendre un moment : le navigateur remet les fichiers, et un gros dossier de musique demande du temps. Rien n’est envoyé nulle part.",
+        "stop":                 "Arrêter",
+        "stopped":              "Arrêté avant la fin du dossier",
         "waiting for permission": "En attente d'autorisation",
         "permission denied":    "Autorisation refusée",
         "no audio here":        "Aucun fichier audio là-dedans.",

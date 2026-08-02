@@ -27,7 +27,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {STORE_SOURCES, idb_all, idb_put, idb_del, idb_available} from "./idb.js";
-import {ingest, drop_source_tracks} from "./music_store.js";
+import {ingest, drop_source_tracks, cancel_ingest} from "./music_store.js";
 
 
 /***************************************************************
@@ -67,6 +67,7 @@ const S = {
     runtime: new Map(),     // id -> {permission, scanning, error}
     loaded:  false,
     persistent: false,      // IndexedDB actually works here
+    preparing: false,       // the browser is still handing over a folder
 };
 
 function rt(id)
@@ -87,6 +88,14 @@ function fsa_supported()
 function is_persistent()
 {
     return S.persistent;
+}
+
+/*  True between the picker closing and the browser handing the files
+    over. Nothing of ours runs in that gap, and on a phone's whole music
+    folder it is the longest part of the whole operation. */
+function is_preparing()
+{
+    return S.preparing;
 }
 
 function all_sources()
@@ -280,11 +289,35 @@ function pick_with_input(as_dir)
     let el = as_dir ? inputs.dir : inputs.files;
 
     return new Promise(function(resolve) {
+        /*  Between the user closing the picker and `change` firing, the
+            BROWSER is enumerating the folder and building the FileList.
+            For a phone's whole Music folder that is a long, silent gap
+            in which our code has not run yet — the app looked dead
+            through all of it.
+            There is no event for "the dialog closed", but the page gets
+            its focus back when it does. So: focus returns and no files
+            have arrived => the browser is still handing them over. Say
+            so. */
+        let armed = 0;
+        const on_focus = function() {
+            armed = setTimeout(function() {
+                if(S.preparing !== true) {
+                    S.preparing = true;
+                    emit();
+                }
+            }, 400);
+        };
         const cancelled = function() {
             cleanup();
             resolve("");
         };
         const cleanup = function() {
+            clearTimeout(armed);
+            window.removeEventListener("focus", on_focus);
+            if(S.preparing) {
+                S.preparing = false;
+                emit();
+            }
             el.removeEventListener("change", done);
             el.removeEventListener("cancel", cancelled);
         };
@@ -401,9 +434,26 @@ async function scan(id)
     drop_source_tracks(id);
     let res = await ingest(files, id);
 
+    /*  The source can be removed WHILE it is being read. Everything the
+        read added since then belongs to a source that no longer exists,
+        so throw it away: otherwise the library quietly repopulates
+        itself after the user emptied it, with tracks that can never be
+        removed because there is no source left to remove. */
+    if(!find(id)) {
+        drop_source_tracks(id);
+        S.runtime.delete(id);
+        emit();
+        return 0;
+    }
+
     source.count = (res && res.count) || 0;
     r.scanning = false;
-    if(!source.count) {
+    if(res && res.cancelled) {
+        /*  Stopped on purpose: what was read stays, and the source says
+            it is only part of the folder rather than pretending it is
+            all of it. */
+        r.error = "stopped";
+    } else if(!source.count) {
         r.error = "no audio here";
     }
     await persist(source);
@@ -418,7 +468,18 @@ async function remove_source(id)
         return;
     }
     S.sources.splice(i, 1);
-    S.runtime.delete(id);
+
+    /*  Stop its read first. Removing a source while it is being read used
+        to leave the read running: it went on adding tracks to the library
+        for a folder the user had just deleted. scan() does the final
+        clean-up when it notices the source is gone. */
+    let r = S.runtime.get(id);
+    if(r && r.scanning) {
+        cancel_ingest(id);
+    } else {
+        S.runtime.delete(id);
+    }
+
     drop_source_tracks(id);
     await idb_del(STORE_SOURCES, id);
     emit();
@@ -448,6 +509,7 @@ export {
     subscribe_sources,
     fsa_supported,
     is_persistent,
+    is_preparing,
     load_sources,
     all_sources,
     source_name,

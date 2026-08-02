@@ -85,6 +85,12 @@ const de = {
         "rescan":               "Neu einlesen",
         "no sources yet":       "Noch keine Quellen.",
         "reading":              "Wird gelesen…",
+        "preparing folder":
+            "Ordner wird vorbereitet…",
+        "this can take a while":
+            "Das kann dauern: Der Browser übergibt gerade die Dateien, und ein großer Musikordner braucht Zeit. Es wird nichts irgendwohin gesendet.",
+        "stop":                 "Stopp",
+        "stopped":              "Vor dem Ende des Ordners gestoppt",
         "waiting for permission": "Warten auf Freigabe",
         "permission denied":    "Freigabe verweigert",
         "no audio here":        "Dort sind keine Audiodateien.",
