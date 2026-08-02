@@ -99,14 +99,19 @@
  *====================================================================*/
 .MUS_ROOT {
     --mus-player-h: 0px;
+    --mus-scan-h: 0px;
 }
-/*  Must match what the player actually measures, or it eats into the
-    bottom nav: 5px seek bar + 68px bar + 1px top border. */
+/*  Must match what each strip actually measures, or it eats into the
+    bottom nav: the player is 5px seek bar + 68px bar + 1px top border. */
 .MUS_ROOT.has-player {
     --mus-player-h: calc(74px + env(safe-area-inset-bottom));
 }
-.MUS_ROOT.has-player > .yui-shell {
-    inset: 0 0 var(--mus-player-h) 0;
+.MUS_ROOT.is-scanning {
+    --mus-scan-h: 62px;
+}
+.MUS_ROOT.has-player > .yui-shell,
+.MUS_ROOT.is-scanning > .yui-shell {
+    inset: 0 0 calc(var(--mus-player-h) + var(--mus-scan-h)) 0;
     height: auto;
 }
 
@@ -684,9 +689,22 @@ img.MUS_ART { object-fit: cover; }
 .MUS_SRCMETA { flex: 1; min-width: 14ch; }
 .MUS_SRCMETA .MUS_T2 { white-space: normal; }
 .MUS_SRCSTATE { font-size: 0.8rem; flex-basis: 100%; }
-.MUS_SRCPROGRESS { font-variant-numeric: tabular-nums; }
-.MUS_SRCPROGRESS > span + span { margin-inline-start: 0.3rem; }
-.MUS_SRCPROGRESS .MUS_SEP { margin-inline: 0; }
+
+/*  A source being read says so in the accent colour, with a spinner and
+    a bar. Grey small print next to "0 tracks" read as broken. */
+.MUS_SRCPROGRESS { color: var(--mus-accent); font-weight: 600; }
+.MUS_SRCPROGRESS_LINE {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-variant-numeric: tabular-nums;
+}
+.MUS_SRCPROGRESS_LINE .MUS_SEP { margin-inline: 0; color: inherit; }
+.MUS_SRCPROGRESS .MUS_BAR { margin-top: 0.35rem; height: 4px; }
+.MUS_SRCPROGRESS .MUS_SPINNER {
+    border-color: color-mix(in srgb, var(--mus-accent) 30%, transparent);
+    border-top-color: var(--mus-accent);
+}
 .MUS_SRCACTIONS {
     display: flex;
     flex-wrap: wrap;
@@ -810,6 +828,90 @@ img.MUS_ART { object-fit: cover; }
     color: var(--mus-accent-ink);
     width: 44px !important;
     height: 44px !important;
+}
+
+
+/*======================================================================
+ *      Scan bar — docked above the player, on every screen
+ *
+ *      Deliberately loud: accent background, a spinner and a counter.
+ *      Reading a large folder is the one slow thing this app does, and
+ *      a user who cannot tell it apart from a hang will assume it broke.
+ *====================================================================*/
+.MUS_SCANBAR {
+    display: none;
+    position: fixed;
+    inset-inline: 0;
+    bottom: var(--mus-player-h);
+    z-index: 31;
+    height: var(--mus-scan-h);
+    background: var(--mus-accent);
+    color: var(--mus-accent-ink);
+    border-top: 1px solid color-mix(in srgb, var(--mus-accent) 70%, #000);
+}
+.MUS_SCANBAR.is-on { display: block; }
+
+.MUS_SCAN_BODY {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0.5rem 0.9rem;
+}
+.MUS_SCAN_LINE {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+.MUS_SCAN_LABEL { flex: none; }
+.MUS_SCAN_WHAT {
+    flex: 1;
+    min-width: 0;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.85;
+}
+.MUS_SCAN_COUNT { flex: none; font-variant-numeric: tabular-nums; }
+.MUS_SCAN_FILE {
+    font-size: 0.72rem;
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 0.15rem;
+}
+.MUS_SCANBAR .MUS_BAR {
+    margin-top: 0.35rem;
+    height: 4px;
+    background: color-mix(in srgb, var(--mus-accent-ink) 22%, transparent);
+}
+.MUS_SCANBAR .MUS_BAR_FILL { background: var(--mus-accent-ink); }
+
+/*  Still walking the folder tree: no total to divide by yet. */
+.MUS_BAR_FILL.is-indeterminate {
+    width: 35%;
+    animation: mus-sweep 1.1s ease-in-out infinite;
+}
+@keyframes mus-sweep {
+    0%   { margin-inline-start: -35%; }
+    100% { margin-inline-start: 100%; }
+}
+
+.MUS_SPINNER {
+    flex: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--mus-accent-ink) 30%, transparent);
+    border-top-color: var(--mus-accent-ink);
+    animation: mus-spin 0.7s linear infinite;
+}
+@keyframes mus-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .MUS_SPINNER, .MUS_BAR_FILL.is-indeterminate { animation: none; }
 }
 
 

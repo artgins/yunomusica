@@ -430,6 +430,19 @@ function source_name(id)
     return s ? s.name : "";
 }
 
+/*  The source being read right now, if any. Scans are awaited one at a
+    time, so there is at most one. The host paints a bar from this so a
+    long read is visible from EVERY screen, not only from Sources. */
+function scanning_source()
+{
+    for(const s of S.sources) {
+        if(rt(s.id).scanning) {
+            return {id: s.id, name: s.name};
+        }
+    }
+    return null;
+}
+
 
 export {
     subscribe_sources,
@@ -438,6 +451,7 @@ export {
     load_sources,
     all_sources,
     source_name,
+    scanning_source,
     add_dir,
     add_files,
     authorize,

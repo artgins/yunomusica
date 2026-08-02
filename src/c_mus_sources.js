@@ -270,13 +270,26 @@ function build_source_row(s)
         /*  Say how far it has got. A big folder takes a while, and
             "reading…" next to "0 tracks" is indistinguishable from
             being stuck — which is exactly what it looked like. */
-        let parts = [["span", {i18n: "reading"}, t("reading")]];
-        if(store_state.total) {
-            parts.push(["span", {}, String(store_state.loaded)]);
-            parts.push(["span", {class: "MUS_SEP"}, "/"]);
-            parts.push(["span", {}, String(store_state.total)]);
+        let total = store_state.total || 0;
+        let pct = total ? Math.round((store_state.loaded / total) * 100) : 0;
+        let line = [
+            ["span", {class: "MUS_SPINNER", "aria-hidden": "true"}],
+            ["span", {i18n: "reading"}, t("reading")]
+        ];
+        if(total) {
+            line.push(["span", {}, String(store_state.loaded)]);
+            line.push(["span", {class: "MUS_SEP"}, "/"]);
+            line.push(["span", {}, String(total)]);
         }
-        $state = ["div", {class: "MUS_SRCSTATE MUS_SRCPROGRESS"}, parts];
+        $state = ["div", {class: "MUS_SRCSTATE MUS_SRCPROGRESS", role: "status"}, [
+            ["div", {class: "MUS_SRCPROGRESS_LINE"}, line],
+            ["div", {class: "MUS_BAR"}, [
+                ["i", {
+                    class: "MUS_BAR_FILL" + (total ? "" : " is-indeterminate"),
+                    style: total ? `width:${pct}%` : ""
+                }]
+            ]]
+        ]];
     } else if(needs_auth) {
         let k = (s.permission === "denied") ? "permission denied" : "waiting for permission";
         $state = ["div", {class: "MUS_SRCSTATE is-warn", i18n: k}, t(k)];

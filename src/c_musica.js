@@ -39,12 +39,15 @@ import {
 } from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {
-    subscribe,
+    subscribe, store_state,
     current_track, is_playing, toggle, step, prev,
     seek_fraction, progress, cover_url, setup_media_session,
 } from "./music_store.js";
 
-import {load_sources, add_dir, add_files} from "./sources_store.js";
+import {
+    load_sources, add_dir, add_files,
+    subscribe_sources, scanning_source,
+} from "./sources_store.js";
 import {load_playlists} from "./playlists_store.js";
 
 import {switch_locale, current_locale} from "./locales/locales.js";
@@ -84,7 +87,9 @@ let PRIVATE_DATA = {
     shell:    null,
     $root:    null,     // flex column: shell + player
     $player:  null,
+    $scan:    null,     // the "reading your music" bar
     unsub:    null,
+    unsub_src: null,
     tint_key: null,     // last cover a tint was computed from
     on_deck:  true,     // the deck route is showing
 };
@@ -164,9 +169,17 @@ function mt_start(gobj)
             paint_player(gobj);
         } else if(channel === "time") {
             paint_time(gobj);
+        } else if(channel === "loading") {
+            paint_scan(gobj);
         }
     });
+    /*  A scan starts before the first file is read (walking a big tree
+        takes a while on its own), so the bar has to follow the SOURCE
+        state, not only the read counter. */
+    priv.unsub_src = subscribe_sources(() => paint_scan(gobj));
+
     paint_player(gobj);
+    paint_scan(gobj);
 
     boot(gobj);
 }
@@ -180,6 +193,10 @@ function mt_stop(gobj)
     if(priv.unsub) {
         priv.unsub();
         priv.unsub = null;
+    }
+    if(priv.unsub_src) {
+        priv.unsub_src();
+        priv.unsub_src = null;
     }
     gobj_stop_children(gobj);
 }
@@ -308,6 +325,29 @@ function build_player(gobj)
     priv.$player = $player;
     priv.$root.appendChild($player);
 
+    /*  Reading a big folder takes real time. It used to say so in one
+        small grey line, on the Sources screen only — so anyone who
+        started a scan and walked to another screen was left with no
+        sign that anything was happening at all. This bar is docked
+        above the player and shows on EVERY screen while a scan runs. */
+    let $scan = createElement2(
+        ["div", {class: "MUS_SCANBAR", role: "status", "aria-live": "polite"}, [
+            ["div", {class: "MUS_SCAN_BODY"}, [
+                ["div", {class: "MUS_SCAN_LINE"}, [
+                    ["span", {class: "MUS_SPINNER", "aria-hidden": "true"}],
+                    ["span", {class: "MUS_SCAN_LABEL", i18n: "reading tags"},
+                        t("reading tags")],
+                    ["span", {class: "MUS_SCAN_WHAT"}, ""],
+                    ["span", {class: "MUS_SCAN_COUNT"}, ""]
+                ]],
+                ["div", {class: "MUS_BAR"}, [["i", {class: "MUS_BAR_FILL"}]]],
+                ["div", {class: "MUS_SCAN_FILE"}, ""]
+            ]]
+        ]]
+    );
+    priv.$scan = $scan;
+    priv.$root.appendChild($scan);
+
     /*  Keyboard transport, ignored while typing. */
     document.addEventListener("keydown", (e) => {
         let tag = e.target && e.target.tagName;
@@ -377,6 +417,41 @@ function paint_player(gobj)
 
     tint_from(gobj, track.key, url);
     paint_time(gobj);
+}
+
+/***************************************************************
+ *  The scan bar. Shown while a source is being read, from
+ *  whichever screen the user happens to be on.
+ ***************************************************************/
+function paint_scan(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.$scan) {
+        return;
+    }
+    let src = scanning_source();
+    let on = !!src || store_state.loading;
+
+    priv.$root.classList.toggle("is-scanning", on);
+    priv.$scan.classList.toggle("is-on", on);
+    if(!on) {
+        return;
+    }
+
+    set_text(priv.$scan, ".MUS_SCAN_WHAT", src ? src.name : "");
+
+    let total = store_state.total || 0;
+    let done = store_state.loaded || 0;
+    set_text(priv.$scan, ".MUS_SCAN_COUNT", total ? `${done} / ${total}` : "");
+
+    let $fill = priv.$scan.querySelector(".MUS_BAR_FILL");
+    if($fill) {
+        /*  No total yet means the tree is still being walked: leave the
+            bar indeterminate rather than claiming 0%. */
+        $fill.style.width = total ? ((done / total) * 100) + "%" : "";
+        $fill.classList.toggle("is-indeterminate", !total);
+    }
+    set_text(priv.$scan, ".MUS_SCAN_FILE", store_state.load_name || "");
 }
 
 function paint_art($node, url)
