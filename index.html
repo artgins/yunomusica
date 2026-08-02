@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Yunomúsica</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#15121B">
+    <meta name="description" content="Tu música, como quieras verla. Se lee aquí, en el móvil: nada sale del dispositivo.">
+    <link rel="icon" href="./yunomusica-mark.svg" type="image/svg+xml">
+    <!--
+        Theme, resolved before the first paint so there is no flash.
+        A music app reads better dark, so that is the default when the OS
+        expresses no preference. Stored under the same "myst:theme" key the
+        rest of the yuneta family uses.
+    -->
+    <script>
+    (function () {
+        "use strict";
+        var theme = null;
+        try {
+            var stored = localStorage.getItem("myst:theme");
+            if(stored === "dark" || stored === "light") {
+                theme = stored;
+            }
+        } catch (e) {
+            theme = null;
+        }
+        if(!theme) {
+            theme = (window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: light)").matches)
+                ? "light" : "dark";
+        }
+        document.documentElement.setAttribute("data-theme", theme);
+    })();
+    </script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
