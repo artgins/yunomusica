@@ -13,7 +13,7 @@
  *          track list), with a one-level drill-down into a group/album.
  *
  *      A search box at the top filters the whole library into a flat
- *      result list, exactly as the reference musica.html did.
+ *      result list.
  *
  *      The view reads the library and drives playback through the shared
  *      music_store; it never talks to the host gobj. It repaints on the
@@ -258,6 +258,12 @@ function render(gobj)
     let $header = $c && $c.querySelector(".MUS_HEADER");
     if($header) {
         $header.style.display = has_library() ? "" : "none";
+    }
+
+    /*  A failed pick leaves a message; it survives until the next one. */
+    if(store_state.notice) {
+        $content.appendChild(createElement2(
+            ["div", {class: "MUS_NOTICE"}, store_state.notice]));
     }
 
     if(!has_library()) {

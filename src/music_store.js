@@ -6,10 +6,9 @@
  *      four ways, and playing a queue through one <audio> element.
  *
  *      The ID3 reader and the play/queue logic are ported verbatim from
- *      the reference `musica.html` — a single self-contained page written
- *      earlier — so nothing about the parsing changes; only its shape does,
- *      from inline globals to a module with a tiny pub/sub the gobj views
- *      subscribe to.
+ *      the single self-contained page this app grew from, so nothing about
+ *      the parsing changes; only its shape does, from inline globals to a
+ *      module with a tiny pub/sub the gobj views subscribe to.
  *
  *      Everything runs on the device: a picked file is read with the File
  *      API and played from an object URL. Nothing is uploaded.
@@ -56,7 +55,6 @@ function emit(channel)
 
 /***************************************************************
  *      1. ID3 tag reading (v2.2/2.3/2.4 + v1) — no dependencies
- *      (ported verbatim from musica.html)
  ***************************************************************/
 const GENRES = ("Blues,Classic Rock,Country,Dance,Disco,Funk,Grunge,Hip-Hop,Jazz,Metal,New Age,Oldies,Other,Pop,R&B,Rap,"+
 "Reggae,Rock,Techno,Industrial,Alternative,Ska,Death Metal,Pranks,Soundtrack,Euro-Techno,Ambient,Trip-Hop,Vocal,"+
@@ -249,6 +247,7 @@ const S = {
     loaded:  0,
     total:   0,
     load_name: "",
+    notice:  "",        // a message the view shows in place (bad pick)
     /*  playback */
     audio:   null,
     queue:   [],
@@ -273,9 +272,14 @@ async function ingest(files)
 {
     const list = [...files].filter((f) => AUDIO_RE.test(f.name));
     if(!list.length) {
+        /*  A pick with nothing playable in it must not dead-end in
+            silence: say it in place and let the user pick again. */
+        S.notice = "No he encontrado ficheros de audio ahí.";
+        emit("library");
         return {ok:false, reason:"no-audio"};
     }
 
+    S.notice = "";
     S.loading = true;
     S.loaded  = 0;
     S.total   = list.length;

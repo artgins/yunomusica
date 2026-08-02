@@ -10,12 +10,12 @@
         "preview": "vite preview"
     },
     "dependencies": {
-        "@yuneta/gobj-js": "file:../gobj-js",
-        "@yuneta/gobj-ui": "file:../gobj-ui.js",
+        "@yuneta/gobj-js": "file:../../yunetas/kernel/js/gobj-js",
+        "@yuneta/gobj-ui": "file:../../yunetas/kernel/js/gobj-ui",
         "bulma": "^1.0.4",
         "i18next": "^26.3.6"
     },
     "devDependencies": {
-        "vite": "^8.1.5"
+        "vite": "^8.2.0"
     }
 }

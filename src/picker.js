@@ -11,7 +11,7 @@
  *
  *      The hidden <input>s are created once, lazily, and reused. The
  *      folder walk and the reason for reading here — nothing leaves the
- *      device — are ported from the reference musica.html.
+ *      device — come from the single-page prototype this app grew from.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.

@@ -3,10 +3,11 @@
  *
  *      Build config for yunomúsica.
  *
- *      Resolution mirrors the gobj-ui in-repo consumers (test-app /
- *      wattyzer):
- *        - @yuneta/gobj-js -> the sibling checkout SOURCE (src/index.js),
- *          not its built dist/, so the app tracks the current kernel.
+ *      Resolution mirrors the gobj-ui in-repo consumers (gui_agent /
+ *      gui_treedb), pointing at the yunetas kernel checkout:
+ *        - @yuneta/gobj-js -> ../../yunetas/kernel/js/gobj-js SOURCE
+ *          (src/index.js), not its built dist/, so the app tracks the
+ *          current kernel.
  *        - @yuneta/gobj-ui -> that repo's ROOT, so package sub-paths
  *          (/src/*.js, /src/*.css) resolve to the source being edited.
  *      Both are also `file:` deps in package.json, so npm installs the
@@ -43,11 +44,15 @@ export default defineConfig({
         alias: [
             {
                 find: "@yuneta/gobj-js",
-                replacement: path.resolve(__dirname, "../gobj-js/src/index.js"),
+                replacement: path.resolve(
+                    __dirname, "../../yunetas/kernel/js/gobj-js/src/index.js"
+                ),
             },
             {
                 find: /^@yuneta\/gobj-ui($|\/)/,
-                replacement: path.resolve(__dirname, "../gobj-ui.js") + "/",
+                replacement: path.resolve(
+                    __dirname, "../../yunetas/kernel/js/gobj-ui"
+                ) + "/",
             },
         ],
     },

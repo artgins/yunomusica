@@ -14,9 +14,10 @@
  *        - the two "load music" toolbar events (EV_PICK_DIR / EV_PICK_FILES);
  *        - tinting the accent from the current cover.
  *
- *      The player markup and the cover-tint are ported from the reference
- *      musica.html; here they are built with createElement2 and fed by the
- *      store's "playing"/"time" channels instead of inline globals.
+ *      The player markup and the cover-tint come from the single-page
+ *      prototype this app grew from; here they are built with
+ *      createElement2 and fed by the store's "playing"/"time" channels
+ *      instead of inline globals.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
@@ -430,8 +431,8 @@ function set_text($root, sel, text)
 
 
 /***************************************************************
- *  Accent tint from the dominant colour of the cover (ported from
- *  musica.html). Sets --mus-accent / --mus-accent-soft on <html>;
+ *  Accent tint from the dominant colour of the cover.
+ *  Sets --mus-accent / --mus-accent-soft on <html>;
  *  the player, the rows and the primary buttons read them.
  ***************************************************************/
 function tint_from(gobj, key, url)

@@ -355,6 +355,18 @@ img.MUS_ART { object-fit: cover; }
     text-align: center;
 }
 
+/*  Said when a pick had nothing playable in it. */
+.MUS_NOTICE {
+    max-width: 560px;
+    margin: 0.5rem auto 0;
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    background: var(--mus-accent-soft);
+    border: 1px solid var(--mus-accent);
+    color: var(--bulma-text-strong, #1f1f1f);
+    font-size: 0.9rem;
+}
+
 
 /*======================================================================
  *      Mini-player (docked below the shell)

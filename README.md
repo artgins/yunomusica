@@ -64,4 +64,3 @@ npm run build && ./deploy_yunomusica.sh
 | `src/music_store.js` | dominio: lectura ID3, biblioteca y reproducción |
 | `src/picker.js` | elegir carpeta / ficheros del dispositivo |
 | `src/musica.css` | estilos de la app (las vistas y el reproductor) |
-| `musica.html` | la página original de un chat, referencia del diseño |
