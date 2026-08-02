@@ -42,7 +42,10 @@ import {
     progress, fmt_time,
 } from "./music_store.js";
 
-import {add_dir, add_files} from "./sources_store.js";
+import {
+    add_dir, add_files,
+    subscribe_sources, pending_authorisation, authorize_all,
+} from "./sources_store.js";
 import {save_queue_as} from "./playlists_store.js";
 import {open_about} from "./about_dialog.js";
 
@@ -103,6 +106,7 @@ SDATA_END()
 
 let PRIVATE_DATA = {
     unsub:      null,
+    unsub_src:  null,   // sources channel, for the authorisation banner
     $now:       null,   // the transport card
     $queue:     null,   // the queue box
     naming:     false,  // the "save as list" row is open
@@ -154,6 +158,10 @@ function mt_start(gobj)
         }
     });
 
+    /*  The authorisation banner lives on this screen, so it has to
+        follow the sources too. */
+    priv.unsub_src = subscribe_sources(() => paint_now(gobj));
+
     /*  A language switch re-renders everything this view composed with
         t() at build time — see the gobj-ui i18n contract. */
     let shell = yui_shell_of(gobj);
@@ -174,6 +182,10 @@ function mt_stop(gobj)
     if(priv.unsub) {
         priv.unsub();
         priv.unsub = null;
+    }
+    if(priv.unsub_src) {
+        priv.unsub_src();
+        priv.unsub_src = null;
     }
 }
 
@@ -325,6 +337,26 @@ function paint_now(gobj)
 
     $now.appendChild(createElement2(
         ["div", {class: "MUS_DECKCARD"}, [$head, $seek, $times, $transport]]));
+
+    /*  Chrome hands back the folder but not the permission on it, every
+        launch, and nothing the app can call changes that. What it CAN do
+        is put the button where the user already is instead of making
+        them go and find it in Sources. */
+    let pending = pending_authorisation();
+    if(pending.length) {
+        $now.appendChild(createElement2(
+            ["div", {class: "MUS_AUTHBAR", role: "status"}, [
+                ["div", {class: "MUS_AUTHBAR_TXT"}, [
+                    ["span", {i18n: "folders need authorising"},
+                        t("folders need authorising")],
+                    ["span", {class: "MUS_AUTHBAR_WHICH"},
+                        pending.map((p) => p.name).join(" · ")]
+                ]],
+                ["button", {class: "MUS_QBTN button is-primary", type: "button",
+                            i18n: "authorise"},
+                    t("authorise"), {click: () => authorize_all()}]
+            ]]));
+    }
 
     /*  A file that vanished, or a pick with nothing playable in it. */
     if(store_state.notice) {

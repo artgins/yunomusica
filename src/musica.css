@@ -1063,3 +1063,33 @@ img.MUS_ART { object-fit: cover; }
  *====================================================================*/
 [data-theme="dark"] .MUS_NOTICE { color: var(--bulma-text, #eee); }
 [data-theme="dark"] .MUS_ABOUT_BACKDROP { background: rgba(0, 0, 0, 0.7); }
+
+
+/*======================================================================
+ *      Authorisation banner
+ *
+ *      Chrome returns a folder handle across launches but not the
+ *      permission on it, and no API asks for that to change. The step
+ *      cannot be removed, so it is put on the home screen where the user
+ *      already is, instead of one trip to Sources per folder.
+ *====================================================================*/
+.MUS_AUTHBAR {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 0.9rem;
+    margin-top: 0.9rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 14px;
+    background: var(--mus-accent-soft);
+    border: 1px solid var(--mus-accent);
+}
+.MUS_AUTHBAR_TXT { flex: 1; min-width: 14ch; display: flex; flex-direction: column; }
+.MUS_AUTHBAR_TXT > span:first-child { font-weight: 600; font-size: 0.9rem; }
+.MUS_AUTHBAR_WHICH {
+    font-size: 0.78rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

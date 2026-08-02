@@ -74,7 +74,9 @@ const de = {
         "nothing is copied":
             "Es wird nichts kopiert und nichts hochgeladen. Gespeichert wird nur ein Verweis auf das, was ohnehin auf deiner Festplatte liegt.",
         "allow on every visit":
-            "Wenn der Browser nach dem Ordner fragt, wähle „Bei jedem Besuch zulassen“. Alles andere gilt nur für diese Sitzung, und der Ordner fragt beim nächsten Mal erneut. Diese Option erscheint, wenn du die App installierst (Zum Startbildschirm hinzufügen).",
+            "Der Ordner wird gemerkt, die Freigabe darauf verwaltet aber der Browser. Chrome unter Android fragt bei jedem Start erneut, und keine Einstellung dieser App ändert das — Freigeben ist deshalb ein Tippen auf dem Player-Bildschirm, auf dem du landest. Bietet dein Browser „Bei jedem Besuch zulassen“ an, fragt er danach nicht mehr.",
+        "folders need authorising":
+            "Ordner, die freigegeben werden müssen",
         "sources persist":
             "Dieser Browser merkt sich deine Ordner über Sitzungen hinweg. Nach dem Neuladen genügt ein Klick, um sie wieder freizugeben.",
         "storage may be cleared":

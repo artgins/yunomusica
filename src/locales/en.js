@@ -89,7 +89,9 @@ const en = {
         "nothing is copied":
             "Nothing is copied and nothing is uploaded. Only a reference to what is already on your disk is stored.",
         "allow on every visit":
-            "When the browser asks for a folder, choose “Allow on every visit”. Anything else lasts only for this session, and the folder will ask again next time. Installing this app (Add to home screen) is what makes that choice available.",
+            "A folder is remembered, but the permission on it is the browser's to keep. Chrome on Android asks again at every launch, and no setting in this app can change that — so authorising is one tap on the player screen, where you land. If your browser offers “Allow on every visit”, choosing it means it will not ask again.",
+        "folders need authorising":
+            "Folders waiting to be authorised",
         "sources persist":
             "This browser remembers your folders between sessions. After a reload one click re-authorises them.",
         "storage may be cleared":

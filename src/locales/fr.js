@@ -74,7 +74,9 @@ const fr = {
         "nothing is copied":
             "Rien n'est copié ni envoyé. Seule une référence à ce qui est déjà sur votre disque est conservée.",
         "allow on every visit":
-            "Quand le navigateur demande le dossier, choisissez « Autoriser à chaque visite ». Toute autre option ne dure que cette session, et le dossier redemandera la prochaine fois. Cette option apparaît si vous installez l’application (Ajouter à l’écran d’accueil).",
+            "Le dossier est retenu, mais l’autorisation qui va avec appartient au navigateur. Chrome sur Android la redemande à chaque lancement, et aucun réglage de cette application n’y change rien — autoriser tient donc en un appui sur l’écran du lecteur, là où vous arrivez. Si votre navigateur propose « Autoriser à chaque visite », le choisir met fin aux questions.",
+        "folders need authorising":
+            "Dossiers en attente d’autorisation",
         "sources persist":
             "Ce navigateur retient vos dossiers d'une session à l'autre. Après un rechargement, un clic suffit à les réautoriser.",
         "storage may be cleared":

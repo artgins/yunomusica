@@ -170,6 +170,34 @@ async function query_permission(source)
     }
 }
 
+/*  Folders whose handle survived but whose permission did not.
+ *
+ *  A directory handle persists; the permission attached to it does not,
+ *  and no API asks for that to change — Chrome decides, and on Android
+ *  it decides "ask again next launch". So the app cannot remove the
+ *  step; it can only stop making the user go looking for it. */
+function pending_authorisation()
+{
+    return S.sources
+        .filter((s) => s.kind === "dir" && rt(s.id).permission !== "granted")
+        .map((s) => ({id: s.id, name: s.name}));
+}
+
+/*  One gesture, every pending folder. The browser may refuse the second
+ *  and later prompts of a single gesture; whatever stays pending simply
+ *  stays on the banner for another tap, which is still better than one
+ *  trip to Sources per folder. */
+async function authorize_all()
+{
+    let n = 0;
+    for(const p of pending_authorisation()) {
+        if(await authorize(p.id)) {
+            n++;
+        }
+    }
+    return n;
+}
+
 /*  Must be called from a user gesture, or the browser refuses. */
 async function authorize(id)
 {
@@ -675,6 +703,8 @@ export {
     add_dir,
     add_files,
     authorize,
+    authorize_all,
+    pending_authorisation,
     scan,
     remove_source,
 };

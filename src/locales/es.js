@@ -79,7 +79,9 @@ const es = {
         "nothing is copied":
             "No se copia nada ni se sube nada. Solo se guarda una referencia a lo que ya está en tu disco.",
         "allow on every visit":
-            "Cuando el navegador pida la carpeta, elige «Permitir en cada visita». Cualquier otra opción dura solo esta sesión y la carpeta te lo volverá a preguntar. Esa opción aparece si instalas la app (Añadir a pantalla de inicio).",
+            "La carpeta se recuerda, pero el permiso sobre ella lo gestiona el navegador. Chrome en Android lo vuelve a pedir en cada arranque, y ningún ajuste de esta app puede evitarlo — por eso autorizar es un toque en la pantalla del reproductor, donde caes al abrir. Si tu navegador ofrece «Permitir en cada visita», al elegirlo dejará de preguntar.",
+        "folders need authorising":
+            "Carpetas pendientes de autorizar",
         "sources persist":
             "Este navegador recuerda tus carpetas entre sesiones. Al recargar basta un clic para volver a autorizarlas.",
         "storage may be cleared":

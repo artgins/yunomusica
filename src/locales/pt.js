@@ -74,7 +74,9 @@ const pt = {
         "nothing is copied":
             "Nada é copiado nem enviado. Guarda-se apenas uma referência ao que já está no teu disco.",
         "allow on every visit":
-            "Quando o navegador pedir a pasta, escolhe «Permitir em todas as visitas». Qualquer outra opção dura apenas esta sessão e a pasta voltará a perguntar. Essa opção aparece se instalares a aplicação (Adicionar ao ecrã principal).",
+            "A pasta é lembrada, mas a permissão sobre ela é do navegador. O Chrome no Android volta a pedi-la em cada arranque, e nenhuma definição desta aplicação muda isso — por isso autorizar é um toque no ecrã do reprodutor, onde chegas ao abrir. Se o teu navegador oferecer «Permitir em todas as visitas», ao escolheres deixa de perguntar.",
+        "folders need authorising":
+            "Pastas à espera de autorização",
         "sources persist":
             "Este navegador lembra-se das tuas pastas entre sessões. Depois de recarregar, basta um clique para voltar a autorizá-las.",
         "storage may be cleared":
