@@ -35,6 +35,7 @@ import {
 } from "./music_store.js";
 
 import {add_dir, add_files, source_name} from "./sources_store.js";
+import {confirm_replace} from "./confirm_replace.js";
 
 import {t} from "i18next";
 
@@ -430,9 +431,21 @@ function track_buttons(t_)
     ]];
 }
 
+/*  Replacing the deck is destructive, so it asks first — and offers to
+    ADD instead, which is what the user usually meant when they did not
+    want the queue thrown away. With an empty deck nothing is asked. */
+async function play_all(gobj, get_tracks)
+{
+    let answer = await confirm_replace(yui_shell_of(gobj));
+    if(!answer) {
+        return;
+    }
+    queue_add(get_tracks(), answer);
+}
+
 /*  The pair of verbs a GROUP carries: play all (replace the queue) and
     add all. Deliberate, and about a whole album or artist. */
-function verb_buttons(get_tracks)
+function verb_buttons(gobj, get_tracks)
 {
     return ["div", {class: "MUS_ROWCTL"}, [
         ["button", {
@@ -443,7 +456,7 @@ function verb_buttons(get_tracks)
                 title: t("play"),
                 "data-i18n-title": "play"
             }, svg(P.play, 16),
-            {click: (ev) => { ev.stopPropagation(); queue_add(get_tracks(), "replace"); }}],
+            {click: (ev) => { ev.stopPropagation(); play_all(gobj, get_tracks); }}],
         ["button", {
                 class: "MUS_IBTN",
                 type: "button",
@@ -565,7 +578,7 @@ function render_groups(gobj, $content, view)
                     render(gobj);
                 }
             }],
-            verb_buttons(() => ordered_detail({kind: view, tracks: g.tracks}))
+            verb_buttons(gobj, () => ordered_detail({kind: view, tracks: g.tracks}))
         ]];
     });
 
@@ -589,7 +602,7 @@ function render_albums(gobj, $content)
                     render(gobj);
                 }
             }],
-            verb_buttons(() => ordered_detail({kind: "albums", tracks: a.tracks}))
+            verb_buttons(gobj, () => ordered_detail({kind: "albums", tracks: a.tracks}))
         ]];
     });
     $content.appendChild(createElement2(["div", {class: "MUS_GRID"}, cards]));
@@ -636,7 +649,7 @@ function render_detail(gobj, $content)
                 ["div", {class: "MUS_QACTIONS"}, [
                     ["button", {class: "MUS_QBTN button is-primary", type: "button"},
                         [ico(P.play, 15), ["span", {i18n: "play all"}, t("play all")]],
-                        {click: () => queue_add(ordered, "replace")}],
+                        {click: () => play_all(gobj, () => ordered)}],
                     ["button", {class: "MUS_QBTN button", type: "button"},
                         [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
                         {click: () => queue_add(ordered, "append")}]

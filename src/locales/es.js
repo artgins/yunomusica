@@ -69,6 +69,14 @@ const es = {
         "unknown album":        "Sin álbum",
         "unknown genre":        "Sin género",
         "play all":             "Reproducir todo",
+        "replace the queue":
+            "¿Sustituir lo que hay en el plato?",
+        "replace warning":
+            "Reproducir esto descarta la cola que tienes ahora y empieza por el principio de lo que has elegido.",
+        "replace and play":
+            "Sustituir y reproducir",
+        "on the deck":
+            "ya en el plato",
         "preview":              "Escuchar",
         "previewing":           "Escuchando",
         "temporary queue":      "Cola montada a mano",

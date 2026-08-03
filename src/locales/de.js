@@ -65,6 +65,14 @@ const de = {
         "unknown album":        "Unbekanntes Album",
         "unknown genre":        "Unbekanntes Genre",
         "play all":             "Alles abspielen",
+        "replace the queue":
+            "Ersetzen, was auf dem Deck liegt?",
+        "replace warning":
+            "Das verwirft deine jetzige Warteschlange und beginnt am Anfang des Gewählten.",
+        "replace and play":
+            "Ersetzen und abspielen",
+        "on the deck":
+            "bereits auf dem Deck",
         "preview":              "Anhören",
         "previewing":           "Wird angehört",
         "temporary queue":      "Von Hand zusammengestellte Warteschlange",

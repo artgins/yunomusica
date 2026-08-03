@@ -65,6 +65,14 @@ const ru = {
         "unknown album":        "Неизвестный альбом",
         "unknown genre":        "Неизвестный жанр",
         "play all":             "Воспроизвести всё",
+        "replace the queue":
+            "Заменить то, что на деке?",
+        "replace warning":
+            "Это отбросит вашу нынешнюю очередь и начнёт с начала выбранного.",
+        "replace and play":
+            "Заменить и включить",
+        "on the deck":
+            "уже на деке",
         "preview":              "Послушать",
         "previewing":           "Прослушивание",
         "temporary queue":      "Очередь, собранная вручную",

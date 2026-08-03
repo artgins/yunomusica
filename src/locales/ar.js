@@ -69,6 +69,14 @@ const ar = {
         "unknown album":        "ألبوم غير معروف",
         "unknown genre":        "نوع غير معروف",
         "play all":             "تشغيل الكل",
+        "replace the queue":
+            "هل تستبدل ما على المنصة؟",
+        "replace warning":
+            "تشغيل هذا يتخلّص من قائمتك الحالية ويبدأ من أول ما اخترته.",
+        "replace and play":
+            "استبدال وتشغيل",
+        "on the deck":
+            "على المنصة بالفعل",
         "preview":              "استماع",
         "previewing":           "جارٍ الاستماع",
         "temporary queue":      "قائمة أُعدّت يدويًا",

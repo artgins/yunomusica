@@ -27,6 +27,7 @@ import {
 } from "./playlists_store.js";
 
 import {subscribe, queue_add, set_queue_origin} from "./music_store.js";
+import {confirm_replace} from "./confirm_replace.js";
 
 import {t} from "i18next";
 
@@ -216,12 +217,19 @@ function build_list_row(gobj, p)
         ["button", {class: "MUS_QBTN button is-primary", type: "button",
                     ...disabled_if(!playable)},
             [ico(P.play, 15), ["span", {i18n: "play"}, t("play")]],
-            {click: () => {
-                queue_add(r.tracks, "replace");
-                /*  Order matters: "replace" detaches the queue from
-                    whatever it was, so the list is stamped on after. */
-                set_queue_origin(p.id, p.name);
+            {click: async () => {
                 let shell = yui_shell_of(gobj);
+                let answer = await confirm_replace(shell);
+                if(!answer) {
+                    return;
+                }
+                queue_add(r.tracks, answer);
+                /*  Order matters: "replace" detaches the queue from
+                    whatever it was, so the list is stamped on after.
+                    Appending leaves the deck as whatever it already was. */
+                if(answer === "replace") {
+                    set_queue_origin(p.id, p.name);
+                }
                 if(shell) {
                     yui_shell_navigate(shell, "/player");
                 }

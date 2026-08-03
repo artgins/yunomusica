@@ -1023,6 +1023,41 @@ img.MUS_ART { object-fit: cover; }
 
 
 /*======================================================================
+ *      "Replace the queue?"
+ *====================================================================*/
+.MUS_CONFIRM_CARD {
+    width: min(460px, 100%);
+    border-radius: 18px;
+    padding: 1.4rem;
+    background: var(--bulma-scheme-main, #fff);
+    color: var(--bulma-text, #1b1b1b);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+.MUS_CONFIRM_TITLE {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem;
+}
+.MUS_CONFIRM_WHAT { margin: 0 0 0.5rem; font-size: 0.9rem; }
+.MUS_CONFIRM_WHAT > span + span { margin-inline-start: 0.3rem; }
+.MUS_CONFIRM_N { font-weight: 700; font-variant-numeric: tabular-nums; }
+.MUS_CONFIRM_LIST { color: var(--mus-accent); font-weight: 600; }
+.MUS_CONFIRM_BODY {
+    margin: 0 0 1.2rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--bulma-text-weak, #8a8a8a);
+}
+.MUS_CONFIRM_ACTIONS {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+
+/*======================================================================
  *      The welcome / help / credits dialog
  *====================================================================*/
 .MUS_ABOUT_BACKDROP {

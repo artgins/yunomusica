@@ -65,6 +65,14 @@ const fr = {
         "unknown album":        "Album inconnu",
         "unknown genre":        "Genre inconnu",
         "play all":             "Tout lire",
+        "replace the queue":
+            "Remplacer ce qui est sur la platine ?",
+        "replace warning":
+            "Lire ceci écarte la file actuelle et repart du début de ce que vous avez choisi.",
+        "replace and play":
+            "Remplacer et lire",
+        "on the deck":
+            "déjà sur la platine",
         "preview":              "Écouter",
         "previewing":           "Écoute",
         "temporary queue":      "File composée à la main",

@@ -79,6 +79,14 @@ const en = {
         "unknown album":        "Unknown album",
         "unknown genre":        "Unknown genre",
         "play all":             "Play all",
+        "replace the queue":
+            "Replace what is on the deck?",
+        "replace warning":
+            "Playing this discards the queue you have now, and starts from the beginning of what you chose.",
+        "replace and play":
+            "Replace and play",
+        "on the deck":
+            "already on the deck",
         "preview":              "Preview",
         "previewing":           "Previewing",
         "temporary queue":      "Queue put together by hand",

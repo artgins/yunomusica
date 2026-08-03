@@ -65,6 +65,14 @@ const hi = {
         "unknown album":        "अज्ञात ऐल्बम",
         "unknown genre":        "अज्ञात शैली",
         "play all":             "सभी चलाएँ",
+        "replace the queue":
+            "डेक पर जो है उसे बदलें?",
+        "replace warning":
+            "यह चलाने से आपकी मौजूदा कतार हट जाएगी और चुनी हुई चीज़ शुरू से बजेगी।",
+        "replace and play":
+            "बदलें और चलाएँ",
+        "on the deck":
+            "पहले से डेक पर",
         "preview":              "सुनें",
         "previewing":           "सुना जा रहा है",
         "temporary queue":      "हाथ से बनाई कतार",

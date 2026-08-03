@@ -65,6 +65,14 @@ const ja = {
         "unknown album":        "不明なアルバム",
         "unknown genre":        "不明なジャンル",
         "play all":             "すべて再生",
+        "replace the queue":
+            "デッキの内容を置き換えますか？",
+        "replace warning":
+            "これを再生すると今のキューは破棄され、選んだものの先頭から始まります。",
+        "replace and play":
+            "置き換えて再生",
+        "on the deck":
+            "すでにデッキにあります",
         "preview":              "試聴",
         "previewing":           "試聴中",
         "temporary queue":      "手作業で組んだキュー",

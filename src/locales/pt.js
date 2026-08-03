@@ -65,6 +65,14 @@ const pt = {
         "unknown album":        "Álbum desconhecido",
         "unknown genre":        "Género desconhecido",
         "play all":             "Reproduzir tudo",
+        "replace the queue":
+            "Substituir o que está no prato?",
+        "replace warning":
+            "Reproduzir isto descarta a fila que tens agora e começa do início do que escolheste.",
+        "replace and play":
+            "Substituir e reproduzir",
+        "on the deck":
+            "já no prato",
         "preview":              "Ouvir",
         "previewing":           "A ouvir",
         "temporary queue":      "Fila montada à mão",

@@ -65,6 +65,14 @@ const zh = {
         "unknown album":        "未知专辑",
         "unknown genre":        "未知流派",
         "play all":             "全部播放",
+        "replace the queue":
+            "要替换播放台上的内容吗？",
+        "replace warning":
+            "播放这个会丢弃你现在的队列，并从所选内容的开头开始。",
+        "replace and play":
+            "替换并播放",
+        "on the deck":
+            "已在播放台上",
         "preview":              "试听",
         "previewing":           "试听中",
         "temporary queue":      "手动编排的队列",
