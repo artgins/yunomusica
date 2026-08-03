@@ -803,9 +803,10 @@ img.MUS_ART { object-fit: cover; }
  *====================================================================*/
 .MUS_CREDITS {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
+    gap: 0.35rem 1rem;
     margin-top: 2.5rem;
     padding-top: 1rem;
     border-top: 1px solid var(--bulma-border-weak, #ededed);
@@ -818,6 +819,7 @@ img.MUS_ART { object-fit: cover; }
     font-weight: 600;
 }
 .MUS_CREDITS_BRAND:hover { color: var(--mus-accent); }
+.MUS_CREDITS_COPY { flex-basis: 100%; text-align: center; opacity: 0.85; }
 .MUS_CREDITS_HELP {
     border: none;
     background: none;
@@ -1163,6 +1165,11 @@ img.MUS_ART { object-fit: cover; }
 .MUS_ABOUT_YUNETA { font-weight: 600; }
 .MUS_ABOUT_TAGLINE {
     font-size: 0.78rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+}
+.MUS_ABOUT_COPY {
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
     color: var(--bulma-text-weak, #8a8a8a);
 }
 .MUS_ABOUT_VERSION {

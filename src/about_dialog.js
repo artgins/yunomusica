@@ -133,6 +133,11 @@ function build_footer(first_run)
             }, t("made with yuneta")],
             ["span", {class: "MUS_ABOUT_TAGLINE", i18n: "about tagline"},
                 t("about tagline")],
+            /*  Not translated on purpose: a copyright line and a licence
+                identifier are the same in every language, and turning
+                them into ten strings is ten chances to get a legal
+                notice wrong. */
+            ["span", {class: "MUS_ABOUT_COPY"}, "© 2026 ArtGins · MIT"],
             /*  Which build is this? Baked in at compile time, so it
                 cannot drift from what is actually running. */
             ["span", {class: "MUS_ABOUT_VERSION"},

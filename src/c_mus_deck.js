@@ -247,7 +247,8 @@ function build_ui(gobj)
                 i18n: "made with yuneta"
             }, t("made with yuneta")],
             ["button", {class: "MUS_CREDITS_HELP", type: "button", i18n: "help"},
-                t("help"), {click: () => open_help(gobj)}]
+                t("help"), {click: () => open_help(gobj)}],
+            ["span", {class: "MUS_CREDITS_COPY"}, "© 2026 ArtGins"]
         ]]
     );
 
