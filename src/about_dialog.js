@@ -122,7 +122,11 @@ function build_footer(first_run)
                 i18n: "made by artgins"
             }, t("made by artgins")],
             ["span", {class: "MUS_ABOUT_TAGLINE", i18n: "about tagline"},
-                t("about tagline")]
+                t("about tagline")],
+            /*  Which build is this? Baked in at compile time, so it
+                cannot drift from what is actually running. */
+            ["span", {class: "MUS_ABOUT_VERSION"},
+                "v" + __APP_VERSION__ + " · " + __BUILD_STAMP__]
         ]]);
 
     return ["footer", {class: "MUS_ABOUT_FOOT"}, [

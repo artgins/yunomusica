@@ -416,7 +416,7 @@ function build_source_row(s)
         if(s.rescannable) {
             actions.push(["button", {class: "MUS_QBTN button", type: "button"},
                 [ico(P.refresh, 15), ["span", {i18n: "rescan"}, t("rescan")]],
-                {click: () => scan(s.id)}]);
+                {click: () => scan(s.id, true)}]);
         }
         actions.push(["button", {class: "MUS_QBTN button", type: "button",
                                  ...disabled_if(!s.count)},

@@ -16,8 +16,20 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import { defineConfig } from "vite";
+import { readFileSync } from "fs";
+
+/*  The version, and the moment this bundle was built, baked in as
+    constants. Both are shown in the help dialog and in the Sources
+    diagnostics, so "am I looking at the latest one?" is a question the
+    app answers itself instead of one settled by clearing caches. */
+const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
+const stamp = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
 
 export default defineConfig({
+    define: {
+        __APP_VERSION__: JSON.stringify(pkg.version),
+        __BUILD_STAMP__: JSON.stringify(stamp),
+    },
     /*  Hosted from the domain root (/yuneta/gui/yunomusica.com). */
     base: "./",
     resolve: {

@@ -292,7 +292,8 @@ const byTrackNo = (a,b) => (a.track - b.track) || collator.compare(a.title, b.ti
 
 const S = {
     tracks:  [],
-    covers:  new Map(),
+    covers:  new Map(),         // album key -> object URL, for painting
+    cover_blobs: new Map(),     // album key -> the blob itself, for storing
     uid_seq: 1,
     /*  ingest progress */
     loading: false,
@@ -346,7 +347,12 @@ function track_count()
 
 /*  Read `files` into the library, tagging every track with the source
     they came from. Returns {ok, count}. */
-async function ingest(files, source_id)
+/*  `cached` maps a path to the tag data already parsed for it in an
+    earlier session. A hit means the file is not opened at all — which is
+    the difference between a reload that takes a second and one that
+    re-reads eight thousand files. A miss (a new or renamed file) is read
+    normally, so a rescan still picks up what changed. */
+async function ingest(files, source_id, cached)
 {
     const list = [...files].filter(is_audio);
     S.seen = [...files].length;
@@ -376,29 +382,47 @@ async function ingest(files, source_id)
             break;
         }
         const f = list[i];
-        const guess = fromPath(f);
-        const tag = await read_tags(f);
+        const path = f.webkitRelativePath || f.name;
+        let meta = cached ? cached.get(path) : null;
 
-        const album  = (tag.album  || guess.album  || UNKNOWN_ALBUM).trim();
-        const artist = (tag.artist || guess.artist || UNKNOWN_ARTIST).trim();
-        const albumArtist = (tag.albumArtist || artist).trim();
-        const key = norm(albumArtist) + "|" + norm(album);
+        if(!meta) {
+            const guess = fromPath(f);
+            const tag = await read_tags(f);
 
-        if(tag.cover && !S.covers.has(key)) {
-            S.covers.set(key, URL.createObjectURL(tag.cover));
+            const album  = (tag.album  || guess.album  || UNKNOWN_ALBUM).trim();
+            const artist = (tag.artist || guess.artist || UNKNOWN_ARTIST).trim();
+            const albumArtist = (tag.albumArtist || artist).trim();
+            const key = norm(albumArtist) + "|" + norm(album);
+
+            if(tag.cover && !S.cover_blobs.has(key)) {
+                S.cover_blobs.set(key, tag.cover);
+                S.covers.set(key, URL.createObjectURL(tag.cover));
+            }
+
+            meta = {
+                title: (tag.title || guess.title || f.name).trim(),
+                artist, albumArtist, album,
+                genre: cleanGenre(tag.genre) || UNKNOWN_GENRE,
+                track: parseInt((tag.track || guess.track || "0").split("/")[0], 10) || 0,
+                year: (tag.year || "").slice(0,4),
+                folder: guess.folder, key
+            };
         }
 
         S.tracks.push({
             uid: S.uid_seq++,
             source_id: source_id || "",
-            path: f.webkitRelativePath || f.name,
+            path: path,
             file: f,
-            title: (tag.title || guess.title || f.name).trim(),
-            artist, albumArtist, album,
-            genre: cleanGenre(tag.genre) || UNKNOWN_GENRE,
-            track: parseInt((tag.track || guess.track || "0").split("/")[0], 10) || 0,
-            year: (tag.year || "").slice(0,4),
-            folder: guess.folder, key
+            title: meta.title,
+            artist: meta.artist,
+            albumArtist: meta.albumArtist,
+            album: meta.album,
+            genre: meta.genre,
+            track: meta.track,
+            year: meta.year,
+            folder: meta.folder,
+            key: meta.key
         });
         added++;
 
@@ -446,6 +470,49 @@ function cancel_ingest(source_id)
 function scan_elapsed()
 {
     return S.load_started ? (Date.now() - S.load_started) : 0;
+}
+
+
+/***************************************************************
+ *      The tag cache
+ *
+ *  What a scan produced, in a shape that can be stored and fed
+ *  back to the next one. Only what was PARSED — never the File,
+ *  which the source keeps itself.
+ ***************************************************************/
+function tags_of_source(source_id)
+{
+    let out = [];
+    for(const t of S.tracks) {
+        if(t.source_id !== source_id) {
+            continue;
+        }
+        out.push([t.path, {
+            title: t.title, artist: t.artist, albumArtist: t.albumArtist,
+            album: t.album, genre: t.genre, track: t.track, year: t.year,
+            folder: t.folder, key: t.key
+        }]);
+    }
+    return out;
+}
+
+function covers_snapshot()
+{
+    return [...S.cover_blobs.entries()];
+}
+
+/*  Cover art comes back from store as blobs; turn them into the object
+    URLs the views paint from. Without this a cached scan would show
+    every album with the fallback glyph. */
+function prime_covers(entries)
+{
+    for(const [key, blob] of (entries || [])) {
+        if(!blob || S.covers.has(key)) {
+            continue;
+        }
+        S.cover_blobs.set(key, blob);
+        S.covers.set(key, URL.createObjectURL(blob));
+    }
 }
 
 /*  A source was removed or is being rescanned: forget its tracks, and
@@ -881,6 +948,9 @@ export {
     ingest,
     cancel_ingest,
     scan_elapsed,
+    tags_of_source,
+    covers_snapshot,
+    prime_covers,
     drop_source_tracks,
     clear_notice,
     groups_for,

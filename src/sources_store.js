@@ -27,10 +27,19 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {
-    STORE_SOURCES, idb_all, idb_put, idb_del, idb_available,
-    request_persistence, storage_persisted,
+    STORE_SOURCES, STORE_FILES, STORE_TAGS, STORE_COVERS,
+    idb_all, idb_get, idb_put, idb_del, idb_del_prefix, idb_get_prefix,
+    idb_available, request_persistence, storage_persisted,
 } from "./idb.js";
-import {ingest, drop_source_tracks, cancel_ingest} from "./music_store.js";
+import {
+    ingest, drop_source_tracks, cancel_ingest,
+    tags_of_source, covers_snapshot, prime_covers,
+} from "./music_store.js";
+
+/*  Files are stored in batches. One record holding every File of a big
+    folder exceeds the structured-clone limit and the write is refused,
+    which is exactly how 8847 files went missing on Firefox. */
+const FILES_PER_CHUNK = 250;
 
 
 /***************************************************************
@@ -72,9 +81,24 @@ const S = {
     persistent: false,      // IndexedDB actually works here
     preparing: false,       // the browser is still handing over a folder
     stopping: false,        // Stop pressed, waiting for the loop to break
-    write_failed: false,    // the last store attempt did not land
+    write_failed: new Set(),  // ids of sources whose store attempt did not land
     durable: null,          // storage is exempt from eviction (null = unknown)
 };
+
+/*  Put the relative path back on a File that came out of store, so it
+    reads the same as one straight from the picker. */
+function with_path(f, path)
+{
+    if(f && path && !f.webkitRelativePath) {
+        try {
+            Object.defineProperty(f, "webkitRelativePath", {value: path});
+        } catch(e) {
+            /*  Frozen File: the tag cache will miss for this one and it
+                gets read again, which is correct, just slower. */
+        }
+    }
+    return f;
+}
 
 function rt(id)
 {
@@ -235,7 +259,20 @@ async function load_sources()
     S.sources = (rows || []).sort((a, b) => (a.added || 0) - (b.added || 0));
     for(const s of S.sources) {
         rt(s.id).permission = await query_permission(s);
+        if(s.kind === "files" && !s.files) {
+            let chunks = await idb_get_prefix(STORE_FILES, s.id + ":");
+            s.files = [];
+            for(const c of chunks) {
+                for(const it of (c.items || [])) {
+                    s.files.push(with_path(it.file, it.path));
+                }
+            }
+        }
     }
+    /*  Album art comes back as blobs; without this every album would
+        show the fallback glyph until the next full rescan. */
+    let art = await idb_all(STORE_COVERS);
+    prime_covers((art || []).map((r) => [r.key, r.blob]));
     S.loaded = true;
     emit();
 
@@ -256,21 +293,54 @@ async function load_sources()
  ***************************************************************/
 async function persist(source)
 {
-    /*  Store the reference, never the runtime state. */
+    /*  Store the reference, never the runtime state. The File objects go
+        in their own chunked records; keeping them here made this one
+        write too big to succeed. */
     let ok = await idb_put(STORE_SOURCES, {
         id:     source.id,
         name:   source.name,
         kind:   source.kind,
         handle: source.handle || null,
-        files:  source.files  || null,
+        files:  null,
         added:  source.added,
         count:  source.count || 0,
     });
+
+    if(ok && source.kind === "files" && source.files) {
+        await idb_del_prefix(STORE_FILES, source.id + ":");
+        for(let i = 0; i < source.files.length; i += FILES_PER_CHUNK) {
+            let n = String(Math.floor(i / FILES_PER_CHUNK)).padStart(6, "0");
+            /*  The path is carried BESIDE the File. `webkitRelativePath`
+                is not part of what structured clone keeps, so a restored
+                File knows only its bare name — and the tag cache, which
+                is keyed by path, would miss on every single file and
+                read the whole library again. */
+            let wrote = await idb_put(STORE_FILES, {
+                id: source.id + ":" + n,
+                items: source.files.slice(i, i + FILES_PER_CHUNK).map((f) => ({
+                    path: f.webkitRelativePath || f.name,
+                    file: f,
+                })),
+            });
+            if(!wrote) {
+                ok = false;
+                break;
+            }
+        }
+    }
     /*  A write that did not land must not pass for one that did: the
         user would only find out on the next restart, when the folder is
-        not there any more. */
-    S.write_failed = !ok;
-    if(!ok) {
+        not there any more.
+
+        Recorded PER SOURCE. A single global flag was cleared by the next
+        unrelated successful write, so the Sources screen and the
+        diagnostics could disagree about the very same failure — which
+        is exactly what happened when Firefox refused a folder of 8847
+        files and then a small preference write reset the flag. */
+    if(ok) {
+        S.write_failed.delete(source.id);
+    } else {
+        S.write_failed.add(source.id);
         console.error("yunomúsica: could not store the source", source.name);
     }
     return ok;
@@ -278,7 +348,7 @@ async function persist(source)
 
 function write_failed()
 {
-    return S.write_failed;
+    return S.write_failed.size > 0;
 }
 
 /*  Adding a source is the moment to ask the browser to keep what we
@@ -319,6 +389,8 @@ async function diagnose()
     let lines = [];
     const add = (k, v) => lines.push({k: k, v: String(v)});
 
+    add("version", __APP_VERSION__ + "  built " + __BUILD_STAMP__);
+
     let mode = "browser";
     if(typeof matchMedia === "function") {
         for(const m of ["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"]) {
@@ -332,7 +404,8 @@ async function diagnose()
     add("showDirectoryPicker", fsa_supported() ? "yes" : "NO");
     add("indexedDB", S.persistent ? "yes" : "NO");
     add("storage.persisted", S.durable === null ? "unknown" : S.durable);
-    add("last write", S.write_failed ? "FAILED" : "ok");
+    add("last write", S.write_failed.size
+        ? ("FAILED for " + S.write_failed.size + " source(s)") : "ok");
     if(typeof navigator !== "undefined" && navigator.storage && navigator.storage.estimate) {
         try {
             let e = await navigator.storage.estimate();
@@ -464,15 +537,18 @@ function pick_with_input(as_dir)
             its focus back when it does. So: focus returns and no files
             have arrived => the browser is still handing them over. Say
             so. */
-        let armed = 0;
-        const on_focus = function() {
-            armed = setTimeout(function() {
-                if(S.preparing !== true) {
-                    S.preparing = true;
-                    emit();
-                }
-            }, 400);
-        };
+        /*  Armed from the click, not from the focus event. Firefox does
+            not always take focus away for the dialog, so waiting for it
+            back meant the message never appeared — and that gap is
+            precisely where the app looked dead. While the picker is
+            still open the bar is behind it anyway. */
+        let armed = setTimeout(function() {
+            if(S.preparing !== true) {
+                S.preparing = true;
+                emit();
+            }
+        }, 400);
+        const on_focus = function() {};
         const cancelled = function() {
             cleanup();
             resolve("");
@@ -572,7 +648,7 @@ async function walk_dir(handle, path, out)
     }
 }
 
-async function scan(id)
+async function scan(id, force)
 {
     let source = find(id);
     if(!source) {
@@ -604,7 +680,19 @@ async function scan(id)
 
     /*  A rescan replaces this source's tracks; it never doubles them. */
     drop_source_tracks(id);
-    let res = await ingest(files, id);
+
+    /*  What was parsed last time, by path. A hit means the file is not
+        opened at all, so a reload costs a directory walk instead of
+        eight thousand file reads. `force` (the Rescan button) throws the
+        cache away and reads everything again. */
+    let cached = null;
+    if(!force) {
+        let row = await idb_get(STORE_TAGS, id);
+        if(row && row.tags) {
+            cached = new Map(row.tags);
+        }
+    }
+    let res = await ingest(files, id, cached);
 
     /*  The source can be removed WHILE it is being read. Everything the
         read added since then belongs to a source that no longer exists,
@@ -638,6 +726,16 @@ async function scan(id)
         had already stopped and the app was busy saving. */
     emit();
     await persist(source);
+
+    /*  Keep what this scan learned, so the next start does not have to
+        learn it again. */
+    if(!res || !res.cancelled) {
+        await idb_put(STORE_TAGS, {source_id: id, tags: tags_of_source(id)});
+        for(const [key, blob] of covers_snapshot()) {
+            await idb_put(STORE_COVERS, {key: key, blob: blob});
+        }
+    }
+
     emit();
     return source.count;
 }
@@ -663,6 +761,8 @@ async function remove_source(id)
 
     drop_source_tracks(id);
     await idb_del(STORE_SOURCES, id);
+    await idb_del(STORE_TAGS, id);
+    await idb_del_prefix(STORE_FILES, id + ":");
     emit();
 }
 

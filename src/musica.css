@@ -550,17 +550,23 @@ img.MUS_ART { object-fit: cover; }
 
 .MUS_GRID {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.9rem;
     padding: 0.3rem;
 }
-@media (min-width: 560px) { .MUS_GRID { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 900px) { .MUS_GRID { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 560px) { .MUS_GRID { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 900px) { .MUS_GRID { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
-.MUS_CARD { display: flex; flex-direction: column; }
+/*  min-width:0 is not decoration. A grid item defaults to min-width:auto,
+    so it refuses to shrink below its content — and .MUS_T1 is nowrap, so
+    one long album name widened its whole column, blew the grid past the
+    viewport and gave the page a horizontal scrollbar with two giant
+    cards on it. */
+.MUS_CARD { display: flex; flex-direction: column; min-width: 0; }
 .MUS_CARDMAIN {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     gap: 1px;
     border: none;
     background: none;
@@ -1054,6 +1060,13 @@ img.MUS_ART { object-fit: cover; }
 .MUS_ABOUT_TAGLINE {
     font-size: 0.78rem;
     color: var(--bulma-text-weak, #8a8a8a);
+}
+.MUS_ABOUT_VERSION {
+    margin-top: 0.35rem;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.7rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    direction: ltr;
 }
 .MUS_ABOUT_CLOSE.button { border-radius: 10px; }
 

@@ -25,11 +25,19 @@
  ***********************************************************************/
 
 const DB_NAME = "yunomusica";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const STORE_SOURCES   = "sources";
 const STORE_PLAYLISTS = "playlists";
 const STORE_PREFS     = "prefs";
+/*  A source's File objects, in chunks. One record holding thousands of
+    them exceeds the structured-clone limit and the write is refused —
+    which is how a whole folder was silently lost on Firefox. */
+const STORE_FILES     = "source_files";
+/*  The tags already parsed for a source, by path. Re-reading 8000 files
+    on every reload is minutes of work to reach a result we already had. */
+const STORE_TAGS      = "source_tags";
+const STORE_COVERS    = "covers";
 
 let db_promise = null;
 
@@ -65,6 +73,15 @@ function open_db()
             }
             if(!db.objectStoreNames.contains(STORE_PREFS)) {
                 db.createObjectStore(STORE_PREFS, {keyPath: "key"});
+            }
+            if(!db.objectStoreNames.contains(STORE_FILES)) {
+                db.createObjectStore(STORE_FILES, {keyPath: "id"});
+            }
+            if(!db.objectStoreNames.contains(STORE_TAGS)) {
+                db.createObjectStore(STORE_TAGS, {keyPath: "source_id"});
+            }
+            if(!db.objectStoreNames.contains(STORE_COVERS)) {
+                db.createObjectStore(STORE_COVERS, {keyPath: "key"});
             }
         };
         req.onsuccess = function() {
@@ -141,6 +158,23 @@ function idb_del(store, key)
     return run(store, "readwrite", (os) => os.delete(key));
 }
 
+/*  Every record whose key starts with `prefix` — how a source's file
+    chunks are removed, since they are keyed "<source id>:<n>". */
+function idb_del_prefix(store, prefix)
+{
+    return run(store, "readwrite", function(os) {
+        return os.delete(IDBKeyRange.bound(prefix, prefix + "￿"));
+    });
+}
+
+/*  Read back every record under that prefix, in key order. */
+function idb_get_prefix(store, prefix)
+{
+    return run(store, "readonly", function(os) {
+        return os.getAll(IDBKeyRange.bound(prefix, prefix + "￿"));
+    }).then((r) => r || []);
+}
+
 
 /***************************************************************
  *  Preferences: a key/value pair each, so a bad value in one
@@ -210,10 +244,15 @@ export {
     STORE_SOURCES,
     STORE_PLAYLISTS,
     STORE_PREFS,
+    STORE_FILES,
+    STORE_TAGS,
+    STORE_COVERS,
     idb_all,
     idb_get,
     idb_put,
     idb_del,
+    idb_del_prefix,
+    idb_get_prefix,
     pref_get,
     pref_set,
     idb_available,
