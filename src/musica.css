@@ -44,6 +44,13 @@
     --mus-accent-ink: #191308;
     --bulma-primary-h: 46deg;  --bulma-primary-s: 68%;  --bulma-primary-l: 47%;
     --bulma-link-h: 46deg;     --bulma-link-s: 68%;     --bulma-link-l: 47%;
+    /*  What Bulma writes ON the accent — the shell's active nav item
+        uses --bulma-link-invert. Left to Bulma it came out near-white,
+        so the selected nav item was white on bright gold: 1.98:1, and
+        it glared next to our own buttons, which have always used dark
+        ink. Tie it to the same ink. */
+    --bulma-primary-invert-l: 8%;
+    --bulma-link-invert-l: 8%;
 }
 
 /*  Derived from whatever the accent currently is. */
@@ -56,41 +63,49 @@
     is unreadable as text on white. Contrast is measured, not judged —
     every pair below clears 4.5:1 for ink on accent. */
 [data-palette="gold"] {
+    --bulma-primary-invert-l: 97%;  --bulma-link-invert-l: 97%;
     --mus-accent: #8A6A10;  --mus-accent-ink: #FFF7E0;
     --bulma-primary-h: 44deg;  --bulma-primary-s: 79%;  --bulma-primary-l: 30%;
     --bulma-link-h: 44deg;     --bulma-link-s: 79%;     --bulma-link-l: 30%;
 }
 [data-theme="dark"][data-palette="gold"] {
+    --bulma-primary-invert-l: 8%;   --bulma-link-invert-l: 8%;
     --mus-accent: #D5AC29;  --mus-accent-ink: #191308;
     --bulma-primary-l: 50%;  --bulma-link-l: 50%;
 }
 
 [data-palette="ice"] {
+    --bulma-primary-invert-l: 97%;  --bulma-link-invert-l: 97%;
     --mus-accent: #0E7387;  --mus-accent-ink: #F2FDFF;
     --bulma-primary-h: 190deg;  --bulma-primary-s: 81%;  --bulma-primary-l: 29%;
     --bulma-link-h: 190deg;     --bulma-link-s: 81%;     --bulma-link-l: 29%;
 }
 [data-theme="dark"][data-palette="ice"] {
+    --bulma-primary-invert-l: 8%;   --bulma-link-invert-l: 8%;
     --mus-accent: #9BE6F5;  --mus-accent-ink: #05222B;
     --bulma-primary-l: 78%;  --bulma-link-l: 78%;
 }
 
 [data-palette="rose"] {
+    --bulma-primary-invert-l: 97%;  --bulma-link-invert-l: 97%;
     --mus-accent: #B32C68;  --mus-accent-ink: #FFF3F8;
     --bulma-primary-h: 331deg;  --bulma-primary-s: 61%;  --bulma-primary-l: 44%;
     --bulma-link-h: 331deg;     --bulma-link-s: 61%;     --bulma-link-l: 44%;
 }
 [data-theme="dark"][data-palette="rose"] {
+    --bulma-primary-invert-l: 8%;   --bulma-link-invert-l: 8%;
     --mus-accent: #F58BB8;  --mus-accent-ink: #2B0716;
     --bulma-primary-l: 75%;  --bulma-link-l: 75%;
 }
 
 [data-palette="leaf"] {
+    --bulma-primary-invert-l: 97%;  --bulma-link-invert-l: 97%;
     --mus-accent: #3B7A2E;  --mus-accent-ink: #F3FFEF;
     --bulma-primary-h: 110deg;  --bulma-primary-s: 45%;  --bulma-primary-l: 33%;
     --bulma-link-h: 110deg;     --bulma-link-s: 45%;     --bulma-link-l: 33%;
 }
 [data-theme="dark"][data-palette="leaf"] {
+    --bulma-primary-invert-l: 8%;   --bulma-link-invert-l: 8%;
     --mus-accent: #9BE58B;  --mus-accent-ink: #0B2207;
     --bulma-primary-l: 72%;  --bulma-link-l: 72%;
 }
@@ -312,6 +327,16 @@
     height: auto;
     padding: 0.45rem 0.8rem;
 }
+/*  Take the accent and its ink straight from the palette rather than
+    through Bulma's derived invert: the two were computed from different
+    hues and drifted apart, so a primary button and the selected nav item
+    ended up with different text on the same colour. */
+.MUS_QBTN.button.is-primary {
+    background-color: var(--mus-accent);
+    border-color: transparent;
+    color: var(--mus-accent-ink);
+}
+.MUS_QBTN.button.is-primary:hover { filter: brightness(1.06); }
 
 
 /*======================================================================
