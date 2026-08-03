@@ -199,3 +199,7 @@ The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
   path has to be stored beside it, or the tag cache misses on every single file.
 - `createElement2` trims text nodes: the space between a figure and its noun
   comes from the CSS, not from the markup.
+- The manifest carries **no `orientation`**, on purpose. `"any"` looks like "we
+  do not care", but an installed PWA reads *any* value as the app claiming
+  orientation control, and it overrides the device's rotation lock. Only the
+  absence of the member defers to the user.
