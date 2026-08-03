@@ -163,6 +163,20 @@ const ja = {
         "made by artgins":      "ArtGins 制作",
         "made with yuneta":     "Yuneta で構築",
         "about tagline":        "分散システムのためのイベント駆動フレームワーク。",
+
+        "history":              "履歴",
+        "recent":               "最近",
+        "favourite lists":      "リスト",
+        "favourite tracks":     "曲",
+        "favourite albums":     "アルバム",
+        "favourite artists":    "アーティスト",
+        "no history yet":       "まだ何も聴いていません。",
+        "how history works":    "再生した内容はこの端末に記録されます。どのリストとキューを、実際にどれだけ鳴らしたか。どこにも送信されず、すべて削除できます。",
+        "clear history":        "履歴を削除",
+        "delete the history?":  "履歴をすべて削除しますか？",
+        "times":                "回",
+        "plays":                "再生",
+        "listened":             "再生時間",
     },
 };
 

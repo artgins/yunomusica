@@ -163,6 +163,21 @@ const en = {
         "how to save a list":   "Build a queue on the player, then save it with a name.",
         "delete this list":     "Delete this list?",
 
+        /* ---- the history ---- */
+        "history":              "History",
+        "recent":               "Recent",
+        "favourite lists":      "Lists",
+        "favourite tracks":     "Tracks",
+        "favourite albums":     "Albums",
+        "favourite artists":    "Artists",
+        "no history yet":       "Nothing has been listened to yet.",
+        "how history works":    "What you play is noted here, on the device: which lists and queues, and how long each one really sounded. Nothing is sent anywhere, and you can delete all of it.",
+        "clear history":        "Delete the history",
+        "delete the history?":  "Delete the whole history?",
+        "times":                "times",
+        "plays":                "plays",
+        "listened":             "listened",
+
         /* ---- help and credits ---- */
         "your music your way":  "Your music, the way you want to see it.",
         "about lead":

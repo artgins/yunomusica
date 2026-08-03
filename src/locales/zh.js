@@ -163,6 +163,20 @@ const zh = {
         "made by artgins":      "由 ArtGins 制作",
         "made with yuneta":     "使用 Yuneta 构建",
         "about tagline":        "一个面向分布式系统的事件驱动框架。",
+
+        "history":              "历史",
+        "recent":               "最近",
+        "favourite lists":      "列表",
+        "favourite tracks":     "曲目",
+        "favourite albums":     "专辑",
+        "favourite artists":    "艺人",
+        "no history yet":       "还没有听过任何东西。",
+        "how history works":    "你播放的内容记录在本设备上：哪些列表和队列，以及每个真正播放了多久。不会发送到任何地方，你可以全部删除。",
+        "clear history":        "删除历史",
+        "delete the history?":  "删除全部历史？",
+        "times":                "次",
+        "plays":                "播放",
+        "listened":             "已听",
     },
 };
 

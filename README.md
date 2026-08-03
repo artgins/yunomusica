@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.7.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.8.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -9,10 +9,10 @@ it.
 
 Built with **Vite + Yuneta (`@yuneta/gobj-ui`)**: the declarative shell
 `C_YUI_SHELL` + `C_YUI_NAV` provides the top bar and the menu (a side rail on
-desktop, an icon bar at the bottom on mobile); the rest is five app gclasses and
-three domain stores.
+desktop, an icon bar at the bottom on mobile); the rest is six app gclasses and
+four domain stores.
 
-## The four screens
+## The five screens
 
 **Player** (home) — the first thing you see is the transport: play/pause,
 previous, next, shuffle, repeat, the cover, the title of what is sounding and
@@ -53,6 +53,24 @@ nothing, it takes a folder **whole** (that one and every folder below it), and
 it tells you what your browser can and cannot remember.
 
 **Lists** — the queues you saved with a name.
+
+**History** — what you have actually been listening to. Five chips over one
+record: the occasions themselves, newest first, and then the favourites that
+fall out of them — lists, tracks, albums, artists.
+
+Nothing is marked by hand. A star is a chore, and what somebody plays is a
+better answer than what they say they like. The counting is of **listening**,
+not of wall clock: a paused deck adds nothing, a seek forward credits nothing,
+and a play counts at twenty seconds or half the track, whichever comes first —
+so skimming an album does not look like a night with it.
+
+An occasion keeps its own references, which is the point of the screen: **a
+queue you built by hand, liked, and never saved as a list** used to be lost the
+moment you loaded something else. Now it is one button away.
+
+It is a record of behaviour, so it obeys the same two rules as everything else
+here: it never leaves the device, and it can be deleted — whole, from the
+screen that shows it.
 
 ## Play is explicit
 
@@ -210,6 +228,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `confirm` | "Play all" eats a queue without asking |
 | `fitmobile` | something runs off the side of a phone |
 | `follow` | the banner scrolls away, or the queue stops following the music |
+| `history` | listening is not recorded, not read back, or not deletable |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
 
 Two things they are strict about, both learned the hard way:
@@ -251,12 +270,14 @@ The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
 | `src/c_mus_view.js` | **Library**: the five groupings and their drill-down |
 | `src/c_mus_sources.js` | **Sources**: authorised folders, permissions, rescan, diagnostics |
 | `src/c_mus_lists.js` | **Lists**: the saved queues |
+| `src/c_mus_history.js` | **History**: the occasions, and the favourites from them |
 | `src/about_dialog.js` | the welcome / help / credits dialog |
 | `src/confirm_replace.js` | "replace what is on the deck?" — add, replace or cancel |
 | `src/update_check.js` | is this tab still running the deployed bundle? |
 | `src/music_store.js` | domain: ID3, library, queue, preview and playback |
 | `src/sources_store.js` | the authorised sources, their recursive walk and their diagnostics |
 | `src/playlists_store.js` | the saved lists and how they resolve |
+| `src/history_store.js` | what was listened to: occasions, play counts, favourites |
 | `src/idb.js` | the minimal wrapper over IndexedDB |
 | `src/locales/` | `locales.js` plus the ten translation files |
 | `src/musica.css` | the app's styling, palettes included |

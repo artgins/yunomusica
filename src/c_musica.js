@@ -54,6 +54,7 @@ import {
     stop_scan, is_stopping,
 } from "./sources_store.js";
 import {load_playlists} from "./playlists_store.js";
+import {load_history, start_history, flush_history} from "./history_store.js";
 import {pref_get, pref_set} from "./idb.js";
 
 import {switch_locale, current_locale} from "./locales/locales.js";
@@ -101,6 +102,7 @@ let PRIVATE_DATA = {
     strips:   null,     // ResizeObserver keeping the bottom strips honest
     unsub:    null,
     unsub_src: null,
+    unsub_hist: null,   // the listening history, fed from the store's channels
     tint_key: null,     // last cover a tint was computed from
     on_deck:  true,     // the deck route is showing
 };
@@ -214,6 +216,11 @@ function mt_stop(gobj)
         priv.unsub_src();
         priv.unsub_src = null;
     }
+    if(priv.unsub_hist) {
+        flush_history();
+        priv.unsub_hist();
+        priv.unsub_hist = null;
+    }
     if(priv.scan_timer) {
         clearInterval(priv.scan_timer);
         priv.scan_timer = 0;
@@ -260,6 +267,10 @@ async function boot(gobj)
     start_update_watch();
 
     await load_playlists();
+    /*  Before the queue is restored, so the counters are in memory by
+        the time the first track can sound. */
+    await load_history();
+    priv.unsub_hist = start_history();
     await load_sources();
 
     /*  The deck as it was left: which list, which track, how far in. */
@@ -464,10 +475,14 @@ function build_player(gobj)
         tab can go away at any moment. */
     window.addEventListener("pagehide", function() {
         pref_set("queue", queue_snapshot());
+        /*  Whatever is being listened to right now is written on a
+            timer; the tab going away is the moment there is no later. */
+        flush_history();
     });
     document.addEventListener("visibilitychange", function() {
         if(document.visibilityState === "hidden") {
             pref_set("queue", queue_snapshot());
+            flush_history();
         }
     });
 

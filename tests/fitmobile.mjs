@@ -82,6 +82,10 @@ await check("#/library", "library");
 
 await check("#/sources", "sources");
 await check("#/lists", "lists");
+/*  Last, and after the .MUS_CHIP clicks above: keep_alive leaves every
+    visited view mounted, and history has chips of its own — an
+    unscoped nth(4) would start hitting the wrong strip. */
+await check("#/history", "history");
 
 const bad = report(page) + bad_routes;
 await browser.close();

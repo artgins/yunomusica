@@ -163,6 +163,20 @@ const ru = {
         "made by artgins":      "Сделано в ArtGins",
         "made with yuneta":     "Сделано на Yuneta",
         "about tagline":        "Событийно-ориентированный фреймворк для распределённых систем.",
+
+        "history":              "История",
+        "recent":               "Недавнее",
+        "favourite lists":      "Списки",
+        "favourite tracks":     "Треки",
+        "favourite albums":     "Альбомы",
+        "favourite artists":    "Исполнители",
+        "no history yet":       "Пока ничего не прослушано.",
+        "how history works":    "То, что вы играете, записывается здесь, на устройстве: какие списки и очереди и сколько каждая на самом деле звучала. Никуда не отправляется, и вы можете удалить всё.",
+        "clear history":        "Удалить историю",
+        "delete the history?":  "Удалить всю историю?",
+        "times":                "раз",
+        "plays":                "прослушиваний",
+        "listened":             "прослушано",
     },
 };
 

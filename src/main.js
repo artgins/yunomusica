@@ -4,7 +4,7 @@
  *      yunomúsica — entry point.
  *
  *      Wires the gobj-js kernel + the v2 shell/nav stack, registers the
- *      app's gclasses (C_MUSICA host + the four routed views), and starts
+ *      app's gclasses (C_MUSICA host + the five routed views), and starts
  *      a yuno whose default service hosts the shell. All navigation
  *      structure lives in app_config.json.
  *
@@ -33,6 +33,7 @@ import {register_c_mus_deck}    from "./c_mus_deck.js";
 import {register_c_mus_view}    from "./c_mus_view.js";
 import {register_c_mus_sources} from "./c_mus_sources.js";
 import {register_c_mus_lists}   from "./c_mus_lists.js";
+import {register_c_mus_history} from "./c_mus_history.js";
 
 import {setup_locale} from "./locales/locales.js";
 
@@ -61,6 +62,7 @@ function main()
     register_c_mus_view();
     register_c_mus_sources();
     register_c_mus_lists();
+    register_c_mus_history();
 
     /*  i18n before anything paints: the locale also decides the writing
         direction the whole layout is built in. */

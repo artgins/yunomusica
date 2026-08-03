@@ -4,11 +4,15 @@
  *      A very small promise wrapper over IndexedDB — the only thing
  *      yunomúsica persists in.
  *
- *      Three stores:
+ *      The stores:
  *        - "sources"   the folders and file sets the user authorised.
  *        - "playlists" the lists the user saved.
  *        - "prefs"     small app preferences (theme, locale, "don't show
  *                      the welcome again").
+ *        - "history"   the listening occasions, and
+ *        - "plays"     a counter per track. Both are a record of
+ *                      behaviour, so both can be wiped whole from the
+ *                      screen that shows them.
  *
  *      Why IndexedDB and not localStorage: the two things worth keeping
  *      are NOT strings. A FileSystemDirectoryHandle and a File are
@@ -25,7 +29,7 @@
  ***********************************************************************/
 
 const DB_NAME = "yunomusica";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const STORE_SOURCES   = "sources";
 const STORE_PLAYLISTS = "playlists";
@@ -38,6 +42,12 @@ const STORE_FILES     = "source_files";
     on every reload is minutes of work to reach a result we already had. */
 const STORE_TAGS      = "source_tags";
 const STORE_COVERS    = "covers";
+/*  What has been listened to: the occasions, and a counter per track.
+    See history_store.js — and note that a record of behaviour is the
+    one thing here the user may want gone, which is why clearing them
+    is a first-class operation and not a devtools errand. */
+const STORE_HISTORY   = "history";
+const STORE_PLAYS     = "plays";
 
 let db_promise = null;
 
@@ -82,6 +92,12 @@ function open_db()
             }
             if(!db.objectStoreNames.contains(STORE_COVERS)) {
                 db.createObjectStore(STORE_COVERS, {keyPath: "key"});
+            }
+            if(!db.objectStoreNames.contains(STORE_HISTORY)) {
+                db.createObjectStore(STORE_HISTORY, {keyPath: "id"});
+            }
+            if(!db.objectStoreNames.contains(STORE_PLAYS)) {
+                db.createObjectStore(STORE_PLAYS, {keyPath: "key"});
             }
         };
         req.onsuccess = function() {
@@ -156,6 +172,13 @@ function idb_put(store, value)
 function idb_del(store, key)
 {
     return run(store, "readwrite", (os) => os.delete(key));
+}
+
+/*  Everything in a store. Used to wipe the listening history, which is
+    the one thing here the user is entitled to make disappear whole. */
+function idb_clear(store)
+{
+    return run(store, "readwrite", (os) => os.clear());
 }
 
 /*  Every record whose key starts with `prefix` — how a source's file
@@ -247,10 +270,13 @@ export {
     STORE_FILES,
     STORE_TAGS,
     STORE_COVERS,
+    STORE_HISTORY,
+    STORE_PLAYS,
     idb_all,
     idb_get,
     idb_put,
     idb_del,
+    idb_clear,
     idb_del_prefix,
     idb_get_prefix,
     pref_get,

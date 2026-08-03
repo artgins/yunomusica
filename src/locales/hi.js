@@ -163,6 +163,20 @@ const hi = {
         "made by artgins":      "ArtGins द्वारा निर्मित",
         "made with yuneta":     "Yuneta से बनाया गया",
         "about tagline":        "वितरित सिस्टम के लिए एक इवेंट-चालित फ़्रेमवर्क।",
+
+        "history":              "इतिहास",
+        "recent":               "हाल का",
+        "favourite lists":      "सूचियाँ",
+        "favourite tracks":     "ट्रैक",
+        "favourite albums":     "एल्बम",
+        "favourite artists":    "कलाकार",
+        "no history yet":       "अभी तक कुछ नहीं सुना गया।",
+        "how history works":    "आप जो बजाते हैं वह यहीं इसी डिवाइस पर दर्ज होता है: कौन-सी सूचियाँ और कतारें, और हर एक कितनी देर वाकई बजी। कहीं कुछ नहीं भेजा जाता, और आप सब कुछ मिटा सकते हैं।",
+        "clear history":        "इतिहास मिटाएँ",
+        "delete the history?":  "पूरा इतिहास मिटाएँ?",
+        "times":                "बार",
+        "plays":                "बजाया",
+        "listened":             "सुना",
     },
 };
 

@@ -148,6 +148,12 @@
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath fill-rule='evenodd' d='M0 80V229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7H48C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z'/%3E%3C/svg%3E");
 }
 
+/*  History — a clock. */
+.mi-clock::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill-rule='evenodd' d='M256 8a248 248 0 1 0 0 496 248 248 0 0 0 0-496zm-24 112h48v136h112v48H232z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill-rule='evenodd' d='M256 8a248 248 0 1 0 0 496 248 248 0 0 0 0-496zm-24 112h48v136h112v48H232z'/%3E%3C/svg%3E");
+}
+
 /*  Language — a globe. */
 .mi-globe::before {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M256 8a248 248 0 1 0 0 496 248 248 0 0 0 0-496zm0 48c30 0 61 51 71 128h-142c10-77 41-128 71-128zM64 256c0-16 2-31 5-46h115a582 582 0 0 0 0 92H69c-3-15-5-30-5-46zm18 78h106c10 60 30 106 53 128-70-17-127-66-159-128zm106-156H82c32-62 89-111 159-128-23 22-43 68-53 128zm68 250c-30 0-61-51-71-128h142c-10 77-41 128-71 128zm77-172H179a542 542 0 0 1 0-92h154a542 542 0 0 1 0 92zm9 206c23-22 43-68 53-128h106c-32 62-89 111-159 128zm62-172a582 582 0 0 0 0-92h115a196 196 0 0 1 0 92H404zm-9-112c-10-60-30-106-53-128 70 17 127 66 159 128H395z'/%3E%3C/svg%3E");
@@ -967,6 +973,31 @@ img.MUS_ART { object-fit: cover; }
 .MUS_SRCMETA { flex: 1; min-width: 14ch; }
 .MUS_SRCMETA .MUS_T2 { white-space: normal; }
 .MUS_SRCSTATE { font-size: 0.8rem; flex-basis: 100%; }
+
+/*======================================================================
+ *      History
+ *
+ *      The rows are the same as the sources' and the lists'; only the
+ *      foot is its own — the line that says what is being recorded, and
+ *      the button that throws it away. Both belong at the bottom: it is
+ *      an explanation, not a warning, and the screen above it is the
+ *      point.
+ *====================================================================*/
+.MUS_HISTFOOT {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--bulma-border-weak, #ededed);
+    font-size: 0.85rem;
+}
+.MUS_HISTFOOT p { margin: 0; flex: 1; min-width: 18ch; }
+/*  A figure and its noun are two nodes, so the space between them is
+    the stylesheet's job — createElement2 trims text nodes. */
+.MUS_SRCMETA .MUS_T2 > span + span { margin-inline-start: 0.3rem; }
 
 /*  A source being read says so in the accent colour, with a spinner and
     a bar. Grey small print next to "0 tracks" read as broken. */

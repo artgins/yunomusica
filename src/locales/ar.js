@@ -167,6 +167,20 @@ const ar = {
         "made by artgins":      "من صنع ArtGins",
         "made with yuneta":     "مصنوع باستخدام Yuneta",
         "about tagline":        "إطار عمل مدفوع بالأحداث للأنظمة الموزَّعة.",
+
+        "history":              "السجل",
+        "recent":               "الأحدث",
+        "favourite lists":      "القوائم",
+        "favourite tracks":     "المقاطع",
+        "favourite albums":     "الألبومات",
+        "favourite artists":    "الفنانون",
+        "no history yet":       "لم تستمع إلى أي شيء بعد.",
+        "how history works":    "ما تشغّله يُسجَّل هنا، على الجهاز: أي قوائم وأي طوابير، وكم استمر كل منها فعلاً. لا يُرسَل شيء إلى أي مكان، ويمكنك حذف الكل.",
+        "clear history":        "حذف السجل",
+        "delete the history?":  "حذف السجل كله؟",
+        "times":                "مرات",
+        "plays":                "تشغيلات",
+        "listened":             "استُمع",
     },
 };
 
