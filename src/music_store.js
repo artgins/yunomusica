@@ -327,9 +327,26 @@ const AUDIO_RE = /\.(mp3|m4a|flac|ogg|opus|wav|aac|wma|mp4|3gp|mid|midi|amr|aiff
  *  matching the name alone silently rejected a whole phone's music
  *  library — the folder read as "no audio here" or as nothing at all.
  *  The browser already knows the MIME type; ask it too. */
+/*  Playlists are typed as audio and are not audio.
+ *
+ *  A .m3u comes through as "audio/x-mpegurl", so accepting anything
+ *  audio/* let every playlist file in a folder appear as a track that
+ *  cannot play. Browsers disagree about these types, which is one way
+ *  the same folder produces different track counts in Chrome and in
+ *  Firefox. */
+const NOT_AUDIO_RE = /\.(m3u8?|pls|cue|wpl|asx|xspf|nfo|log|sfv)$/i;
+const NOT_AUDIO_TYPES = {
+    "audio/x-mpegurl": 1, "audio/mpegurl": 1, "application/vnd.apple.mpegurl": 1,
+    "audio/x-scpls": 1, "audio/scpls": 1,
+};
+
 function is_audio(f)
 {
-    if(AUDIO_RE.test(f.name || "")) {
+    const name = f.name || "";
+    if(NOT_AUDIO_RE.test(name) || NOT_AUDIO_TYPES[f.type]) {
+        return false;
+    }
+    if(AUDIO_RE.test(name)) {
         return true;
     }
     return !!(f.type && f.type.indexOf("audio/") === 0);
@@ -948,6 +965,7 @@ export {
     ingest,
     cancel_ingest,
     scan_elapsed,
+    is_audio,
     tags_of_source,
     covers_snapshot,
     prime_covers,

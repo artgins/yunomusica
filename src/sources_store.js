@@ -33,7 +33,7 @@ import {
 } from "./idb.js";
 import {
     ingest, drop_source_tracks, cancel_ingest,
-    tags_of_source, covers_snapshot, prime_covers,
+    tags_of_source, covers_snapshot, prime_covers, is_audio,
 } from "./music_store.js";
 
 /*  Files are stored in batches. One record holding every File of a big
@@ -304,6 +304,7 @@ async function persist(source)
         files:  null,
         added:  source.added,
         count:  source.count || 0,
+        seen:   source.seen || 0,
     });
 
     if(ok && source.kind === "files" && source.files) {
@@ -420,10 +421,28 @@ async function diagnose()
     for(const s of S.sources) {
         let r = rt(s.id);
         let perm = await query_permission(s);
-        let n = (s.kind === "dir") ? "?" : ((s.files && s.files.length) || 0);
+        let n = (s.files && s.files.length) || 0;
         add(`source "${s.name}"`,
-            `kind=${s.kind} permission=${perm} stored=${n} tracks=${s.count || 0}` +
+            `kind=${s.kind} permission=${perm} walked=${s.seen || "?"} ` +
+            `audio=${s.count || 0} stored=${n}` +
             (r.error ? ` error=${r.error}` : ""));
+
+        /*  Of the files that were NOT taken, what were they? A handful of
+            extensions explains a count gap far better than the gap does. */
+        if(s.kind === "files" && s.files && s.files.length) {
+            let rejected = new Map();
+            for(const f of s.files) {
+                if(is_audio(f)) {
+                    continue;
+                }
+                let ext = (f.name.match(/\.[^.]{1,5}$/) || ["(none)"])[0].toLowerCase();
+                rejected.set(ext, (rejected.get(ext) || 0) + 1);
+            }
+            let top = [...rejected.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+            add("   not audio", top.length
+                ? top.map(([e, n2]) => e + "×" + n2).join(" ")
+                : "none");
+        }
 
         /*  The real question: can a stored reference still be READ? */
         let probe = "n/a";
@@ -677,6 +696,12 @@ async function scan(id, force)
         emit();
         return 0;
     }
+
+    /*  How many files the walk actually handed over, audio or not. Two
+        browsers reporting different track counts for the same folder is
+        either a different WALK or a different idea of what counts as
+        audio, and only this number tells them apart. */
+    source.seen = files.length;
 
     /*  A rescan replaces this source's tracks; it never doubles them. */
     drop_source_tracks(id);
