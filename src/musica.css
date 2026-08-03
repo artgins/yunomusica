@@ -1014,7 +1014,11 @@ img.MUS_ART { object-fit: cover; }
     cursor: pointer;
 }
 .MUS_PCTL button:hover { background: var(--bulma-background, rgba(0, 0, 0, 0.06)); }
-.MUS_PPLAY {
+/*  Scoped through .MUS_PCTL on purpose: `.MUS_PCTL button` above sets
+    `color: inherit`, and a bare `.MUS_PPLAY` loses to it on specificity,
+    which left the glyph painted in the bar's own text colour — near-white
+    on gold. The background only survived because it carried !important. */
+.MUS_PCTL .MUS_PPLAY {
     background: var(--mus-accent) !important;
     color: var(--mus-accent-ink);
     width: 44px !important;
