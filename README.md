@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.6.5** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.7.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -20,6 +20,29 @@ the seek bar. Below it, **the queue**: what you loaded, in the order you want
 it. Reorder it and take tracks out without stopping the music. It is the deck,
 and it says whether what is playing is a **saved list** (by name, and whether
 you have changed it since) or a queue put together by hand.
+
+The banner is where the record gets *looked* at. The cover sits in it and also
+behind it, blurred into a wash of its own colour; under the title a line cycles
+through what else is known — year, genre, track number, where this one sits in
+the queue. This is the one screen that fades anything: covers crossfade, the
+title lifts in, the facts change on their own. Everywhere else the DOM is
+swapped outright, which is right for a list being edited under a finger, and
+`prefers-reduced-motion` turns all of it into a cut.
+
+**The banner does not scroll — only the list does.** The deck is a column as
+tall as the shell zone, and the queue is the box inside it that moves. What is
+sounding should never be something you scroll back up to find.
+
+That is also what makes **following** possible: when the scroll has been still
+for ten seconds, the playing row comes back to the middle of the list and stays
+there as the queue advances. Any scroll of yours re-arms the wait from zero —
+while you are reading, the page is yours. The button on the queue header turns
+it off, and the wait is configurable for people who read slower than ten
+seconds:
+
+```js
+localStorage["yunomusica:follow_delay"] = 20    // seconds
+```
 
 **Library** — five ways of looking at the same tracks (artists, albums, genres,
 folders and the flat list), with a search box.
@@ -186,6 +209,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `select` | browsing changes what is sounding |
 | `confirm` | "Play all" eats a queue without asking |
 | `fitmobile` | something runs off the side of a phone |
+| `follow` | the banner scrolls away, or the queue stops following the music |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
 
 Two things they are strict about, both learned the hard way:
@@ -247,6 +271,15 @@ The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
   its own content and never comes back down. One long unbreakable string — a
   path, a list of folder names — then carries the view off the side of a phone.
   Same story with `min-width: auto` on grid items.
+- A view that wants to hold part of itself still has to be **exactly as tall as
+  the zone**: the shell gives it `flex: 1 0 auto`, and `height: 100%` is what
+  turns that basis into the zone's height. Without it the view grows past the
+  zone, the zone scrolls, and the "fixed" banner leaves with everything else.
+- Fading anything requires the node to **survive the repaint**. The deck's
+  banner is built once and updated in place for exactly that reason; a node
+  thrown away and made again has no previous state to animate from.
+- A programmatic smooth scroll emits the same `scroll` events a finger does. An
+  auto-scroll that re-arms its own idle timer follows itself for ever.
 - A `File` restored from IndexedDB **does not keep `webkitRelativePath`**. The
   path has to be stored beside it, or the tag cache misses on every single file.
 - `createElement2` trims text nodes: the space between a figure and its noun

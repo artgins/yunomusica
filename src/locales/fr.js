@@ -54,6 +54,7 @@ const fr = {
         "queue":                "File",
         "the queue is empty":   "La file est vide.",
         "clear queue":          "Vider la file",
+        "follow playing":       "Suivre ce qui joue",
         "save as list":         "Enregistrer comme liste",
         "move up":              "Monter",
         "move down":            "Descendre",

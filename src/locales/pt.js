@@ -54,6 +54,7 @@ const pt = {
         "queue":                "Fila",
         "the queue is empty":   "A fila está vazia.",
         "clear queue":          "Esvaziar a fila",
+        "follow playing":       "Acompanhar o que toca",
         "save as list":         "Guardar como lista",
         "move up":              "Subir",
         "move down":            "Descer",

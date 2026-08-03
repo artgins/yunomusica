@@ -40,7 +40,7 @@ import {
     preview_track, stop_preview, previewing,
     current_track, is_playing, toggle, step, prev,
     seek_fraction, set_shuffle, get_shuffle, set_repeat, get_repeat,
-    progress, fmt_time,
+    progress, fmt_time, queue_position,
 } from "./music_store.js";
 
 import {
@@ -59,6 +59,27 @@ import {t} from "i18next";
  ***************************************************************/
 const GCLASS_NAME = "C_MUS_DECK";
 
+/*  How long a fact stays on the banner before the next one fades in. */
+const FACT_MS = 4500;
+
+/*  How long the fade of a leaving fact lasts — must match the CSS. */
+const FACT_FADE_MS = 420;
+
+/*  Follow: how long the scroll has to sit still before the playing row
+    is brought back to the middle. Configurable in seconds, because ten
+    is a guess and the right number depends on how long the reader
+    takes: `localStorage["yunomusica:follow_delay"] = 20`. 0 or a
+    number that does not parse means the default. */
+const FOLLOW_MS_DEFAULT = 10000;
+
+/*  Close enough to the middle that scrolling again would be fidgeting. */
+const FOLLOW_SLACK_PX = 24;
+
+/*  A smooth scroll of ours emits scroll events exactly like a finger
+    does. Without a window in which they are ignored, our own scroll
+    re-arms the idle timer and the deck follows itself for ever. */
+const FOLLOW_SETTLE_MS = 900;
+
 const svg = (path, size) =>
     `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`;
 
@@ -76,6 +97,15 @@ const P = {
     file:    "M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zm0 7V3.5L18.5 9z",
     save:    "M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10z",
     trash:   "M9 3h6l1 2h4v2H4V5h4zM6 9h12l-1 12H7z",
+    follow:  "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A9 9 0 0 0 13 3.06V1h-2v2.06A9 9 0 0 0 3.06 11H1v2h2.06A9 9 0 0 0 11 20.94V23h2v-2.06A9 9 0 0 0 20.94 13H23v-2zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z",
+};
+
+/*  A value the tags did not carry is stored as its English key so that
+    it can be translated at paint time, like the library does. */
+const UNKNOWN_KEYS = {
+    "unknown artist": true,
+    "unknown album":  true,
+    "unknown genre":  true
 };
 
 /*  createElement2 treats a leading string as a tag name, so an inline
@@ -110,10 +140,39 @@ let PRIVATE_DATA = {
     unsub:      null,
     unsub_src:  null,   // sources channel, for the authorisation banner
     unsub_upd:  null,   // a newer build was deployed
-    $now:       null,   // the transport card
+    $now:       null,   // the transport card and the bars under it
     $queue:     null,   // the queue box
     naming:     false,  // the "save as list" row is open
     drag_from:  -1,
+
+    /*  The banner is built ONCE and updated in place. Rebuilding it on
+        every repaint is what made it impossible to fade anything: a
+        node that is thrown away and made again has no previous state
+        to animate from. */
+    $art:       null,   // the cover tile
+    $art_l:     [],     // its two <img> layers, for the crossfade
+    $bg_l:      [],     // the two blurred backdrop layers
+    $meta:      null,   // title + subtitle, faded as a block
+    $title:     null,
+    $sub:       null,
+    $facts:     null,   // the rotating line under the title
+    $transport: null,
+    $bars:      null,   // update / authorise / notice, rebuilt as before
+    cover:      null,   // the cover URL currently on the front layer
+    front:      0,      // which layer is the front one
+    track_key:  "",     // identity of the track the banner is showing
+    facts:      [],
+    fact_i:     0,
+    fact_timer: null,
+
+    /*  Follow the playing row. */
+    $scroll:     null,  // the only part of the deck that scrolls
+    $scroller:   null,
+    last_scroll: 0,
+    on_scroll:   null,
+    follow_timer: null,
+    settle_timer: null,
+    self_scroll: false,
 };
 
 let __gclass__ = null;
@@ -153,13 +212,17 @@ function mt_start(gobj)
         if(channel === "queue" || channel === "library") {
             paint_queue(gobj);
             paint_now(gobj);
+            follow_now(gobj, false);
         } else if(channel === "playing") {
             paint_now(gobj);
             paint_queue_highlight(gobj);
+            follow_now(gobj, false);
         } else if(channel === "time") {
             paint_time(gobj);
         }
     });
+
+    start_follow(gobj);
 
     /*  The authorisation banner lives on this screen, so it has to
         follow the sources too. */
@@ -195,6 +258,8 @@ function mt_stop(gobj)
         priv.unsub_upd();
         priv.unsub_upd = null;
     }
+    stop_facts(gobj);
+    stop_follow(gobj);
 }
 
 /***************************************************************
@@ -223,10 +288,11 @@ function build_ui(gobj)
 {
     let priv = gobj.priv;
 
-    let $now   = createElement2(["div", {class: "MUS_NOWCARD"}, []]);
+    let $now   = createElement2(["div", {class: "MUS_NOWCARD"}, [build_card(gobj)]]);
     let $queue = createElement2(["section", {class: "MUS_QUEUEBOX"}, []]);
     priv.$now = $now;
     priv.$queue = $queue;
+    $now.appendChild(priv.$bars);
 
     /*  The credit sits on the home screen, where it is actually seen,
         not only inside a dialog nobody opens twice. */
@@ -252,8 +318,20 @@ function build_ui(gobj)
         ]]
     );
 
+    /*  The banner and the bars stay put; only the list moves. What is
+        sounding is the one thing you should never have to scroll back
+        up to find, and on a phone the queue used to push it off the
+        top within half a dozen tracks.
+
+        This is also what makes following the music possible at all:
+        with the whole view scrolling inside the shell zone, "centre
+        the playing row" meant scrolling the transport away. */
+    let $scroll = createElement2(
+        ["div", {class: "MUS_DECKSCROLL"}, [$queue, $credits]]);
+    priv.$scroll = $scroll;
+
     let $c = createElement2(
-        ["div", {class: "C_MUS_DECK MUS_DECK"}, [$now, $queue, $credits]]
+        ["div", {class: "C_MUS_DECK MUS_DECK"}, [$now, $scroll]]
     );
     gobj_write_attr(gobj, "$container", $c);
 }
@@ -308,47 +386,329 @@ async function load_onto_deck(pick)
 
 
 
+/***************************************************************
+ *  The banner, built ONCE and updated in place.
+ *
+ *  A record is something to look at, and the deck is where it
+ *  gets looked at: the cover blurred across the whole card, the
+ *  cover itself in front of it, and under the title a line that
+ *  changes on its own — year, genre, track number, where this
+ *  one sits in the queue.
+ *
+ *  This is also the only place in the app that fades anything.
+ *  Everywhere else the DOM is swapped outright, which is right
+ *  for a list being edited under a finger; here nothing is being
+ *  operated, so a cut between two covers is just abrupt. Fading
+ *  needs the node to survive, though — a node thrown away and
+ *  made again has no previous state to animate from — hence the
+ *  handles kept in priv and the update-in-place below.
+ ***************************************************************/
+function build_card(gobj)
+{
+    let priv = gobj.priv;
+
+    /*  Two of everything that crossfades: the outgoing image has to
+        still be on screen while the incoming one arrives. */
+    priv.$bg_l = [
+        createElement2(["div", {class: "MUS_DECKBG_L"}]),
+        createElement2(["div", {class: "MUS_DECKBG_L"}])
+    ];
+    priv.$art_l = [
+        createElement2(["img", {class: "MUS_DECKART_L", alt: ""}]),
+        createElement2(["img", {class: "MUS_DECKART_L", alt: ""}])
+    ];
+
+    priv.$art = createElement2(
+        ["div", {class: "MUS_DECKART is-empty"}, [
+            priv.$art_l[0],
+            priv.$art_l[1],
+            ["span", {class: "MUS_DECKART_GLYPH"}, "♪"]
+        ]]);
+
+    priv.$title = createElement2(["h2", {class: "MUS_DECKTITLE"}, ""]);
+    priv.$sub   = createElement2(["p", {class: "MUS_DECKSUB"}, ""]);
+    priv.$facts = createElement2(["div", {class: "MUS_DECKFACTS"}]);
+    priv.$meta  = createElement2(
+        ["div", {class: "MUS_DECKMETA"}, [priv.$title, priv.$sub, priv.$facts]]);
+
+    priv.$transport = createElement2(["div", {class: "MUS_TRANSPORT"}]);
+    priv.$bars = createElement2(["div", {class: "MUS_DECKBARS"}]);
+
+    return createElement2(
+        ["div", {class: "MUS_DECKCARD"}, [
+            ["div", {class: "MUS_DECKBG", "aria-hidden": "true"},
+                [priv.$bg_l[0], priv.$bg_l[1]]],
+            ["div", {class: "MUS_DECKBODY"}, [
+                ["div", {class: "MUS_DECKHEAD"}, [priv.$art, priv.$meta]],
+                ["div", {class: "MUS_SEEK", role: "progressbar"},
+                    [["i", {class: "MUS_SEEK_FILL"}]],
+                    {click: (ev) => seek_at(ev, ev.currentTarget)}],
+                ["div", {class: "MUS_TIMES"}, [
+                    ["span", {class: "MUS_TCUR"}, "0:00"],
+                    ["span", {class: "MUS_TTOT"}, "0:00"]
+                ]],
+                priv.$transport
+            ]]
+        ]]);
+}
+
 function paint_now(gobj)
 {
     let priv = gobj.priv;
-    let $now = priv.$now;
-    if(!$now) {
+    if(!priv.$now) {
         return;
     }
-    clear($now);
-
     let track = current_track();
+
+    update_cover(gobj, track ? cover_url(track.key) : null);
+    update_meta(gobj, track);
+    update_transport(gobj);
+    paint_bars(gobj);
+    paint_time(gobj);
+    refresh_language(priv.$now, t);
+}
+
+/*  A tag the file did not carry is stored as its English key. */
+function tr(value)
+{
+    return UNKNOWN_KEYS[value] ? t(value) : value;
+}
+
+/***************************************************************
+ *  The cover, crossfaded. Two <img> layers in the tile and two
+ *  more behind the whole card; the incoming pair is only
+ *  revealed once it has decoded, or the fade goes through a
+ *  blank frame.
+ ***************************************************************/
+function update_cover(gobj, url)
+{
+    let priv = gobj.priv;
+    if(priv.cover === url) {
+        return;
+    }
+    priv.cover = url;
+    priv.$art.classList.toggle("is-empty", !url);
+
+    if(!url) {
+        priv.$art_l.forEach(function($l) {
+            $l.classList.remove("is-on");
+            /*  src="" is not "no image": it re-requests the page URL.
+                The attribute has to go. */
+            $l.removeAttribute("src");
+        });
+        priv.$bg_l.forEach(function($l) {
+            $l.classList.remove("is-on");
+            $l.style.backgroundImage = "";
+        });
+        return;
+    }
+
+    let back    = priv.front ? 0 : 1;
+    let $in     = priv.$art_l[back];
+    let $out    = priv.$art_l[priv.front];
+    let $bg_in  = priv.$bg_l[back];
+    let $bg_out = priv.$bg_l[priv.front];
+    priv.front = back;
+
+    const reveal = function() {
+        /*  The track may have changed again while this one decoded. */
+        if(priv.cover !== url) {
+            return;
+        }
+        $bg_in.style.backgroundImage = `url("${url}")`;
+        $in.classList.add("is-on");
+        $bg_in.classList.add("is-on");
+        $out.classList.remove("is-on");
+        $bg_out.classList.remove("is-on");
+    };
+
+    $in.src = url;
+    if($in.decode) {
+        /*  decode() rejects when the src is replaced mid-flight, and an
+            unhandled rejection is a console error — which the suite
+            counts as a failed run. Both arms land on the same guard. */
+        $in.decode().then(reveal, reveal);
+    } else {
+        $in.onload = reveal;
+    }
+}
+
+/***************************************************************
+ *  Title, subtitle and the rotating facts.
+ ***************************************************************/
+function update_meta(gobj, track)
+{
+    let priv = gobj.priv;
+    let key = track ? (track.source_id + "|" + track.path) : "";
+    let changed = (key !== priv.track_key);
+    priv.track_key = key;
+
+    if(changed) {
+        if(track) {
+            priv.$title.removeAttribute("data-i18n");
+            priv.$title.textContent = track.title;
+            priv.$sub.textContent = tr(track.artist) +
+                (track.album ? " · " + tr(track.album) : "");
+        } else {
+            priv.$title.setAttribute("data-i18n", "nothing cued");
+            priv.$title.textContent = t("nothing cued");
+            priv.$sub.textContent = "";
+        }
+        flash(priv.$meta);
+    }
+
+    let facts = facts_of(track);
+    if(changed || !same_facts(facts, priv.facts)) {
+        priv.facts = facts;
+        if(changed || priv.fact_i >= facts.length) {
+            priv.fact_i = 0;
+        }
+        show_fact(gobj, priv.fact_i, false);
+        start_facts(gobj);
+    }
+}
+
+/*  Restart a CSS animation on a node that is already in the document:
+    without the reflow the class goes off and on inside one frame and
+    the browser sees no change at all. */
+function flash($node)
+{
+    $node.classList.remove("is-swap");
+    void $node.offsetWidth;
+    $node.classList.add("is-swap");
+}
+
+/*  What the banner has to say beyond the title and the artist. The
+    album is not here: it is in the subtitle, where it stays put — the
+    record is the one thing that should never have to be waited for.
+
+    No fact interpolates a number into a sentence: the value is its own
+    node beside a plain noun, which is what keeps ten languages out of
+    the plural-rule business. */
+function facts_of(track)
+{
+    if(!track) {
+        return [];
+    }
+    let out = [];
+    if(track.year) {
+        out.push({k: "year", v: track.year});
+    }
+    if(track.genre) {
+        out.push({k: "genre", v: track.genre});
+    }
+    if(track.track) {
+        out.push({k: "track number", v: String(track.track)});
+    }
+    let pos = queue_position();
+    if(pos.length > 1 && pos.index >= 0) {
+        out.push({k: "queue", v: (pos.index + 1) + " / " + pos.length});
+    }
+    return out;
+}
+
+function same_facts(a, b)
+{
+    if(a.length !== b.length) {
+        return false;
+    }
+    return a.every((f, i) => f.k === b[i].k && f.v === b[i].v);
+}
+
+function show_fact(gobj, i, animate)
+{
+    let priv = gobj.priv;
+    let $box = priv.$facts;
+    if(!$box) {
+        return;
+    }
+    /*  Anything still fading out has had its turn. */
+    while($box.children.length > 1) {
+        $box.removeChild($box.firstChild);
+    }
+
+    let fact = priv.facts[i];
+    /*  `hidden` loses to any display rule; the style property does not. */
+    $box.style.display = fact ? "" : "none";
+    if(!fact) {
+        clear($box);
+        return;
+    }
+
+    let unknown = UNKNOWN_KEYS[fact.v];
+    let $new = createElement2(
+        ["span", {class: "MUS_FACT"}, [
+            ["span", {class: "MUS_FACT_K", i18n: fact.k}, t(fact.k)],
+            ["span", unknown
+                ? {class: "MUS_FACT_V", i18n: fact.v}
+                : {class: "MUS_FACT_V"},
+                unknown ? t(fact.v) : fact.v]
+        ]]);
+
+    if(!animate) {
+        clear($box);
+        $box.appendChild($new);
+        $new.classList.add("is-on");
+        return;
+    }
+
+    let $old = $box.lastElementChild;
+    if($old) {
+        /*  Both classes at once would leave the outgoing fact relying on
+            which rule the stylesheet happens to declare last. */
+        $old.classList.remove("is-on");
+        $old.classList.add("is-leaving");
+        setTimeout(function() {
+            if($old.parentNode) {
+                $old.parentNode.removeChild($old);
+            }
+        }, FACT_FADE_MS);
+    }
+    $box.appendChild($new);
+    /*  Appending a node and giving it its final class in the same frame
+        never transitions: there is no start value to come from. */
+    requestAnimationFrame(() => $new.classList.add("is-on"));
+}
+
+function start_facts(gobj)
+{
+    let priv = gobj.priv;
+    stop_facts(gobj);
+    if(priv.facts.length > 1) {
+        priv.fact_timer = setInterval(() => next_fact(gobj), FACT_MS);
+    }
+}
+
+function stop_facts(gobj)
+{
+    let priv = gobj.priv;
+    if(priv.fact_timer) {
+        clearInterval(priv.fact_timer);
+        priv.fact_timer = null;
+    }
+}
+
+function next_fact(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.facts.length || !priv.$facts) {
+        return;
+    }
+    /*  A tab in the background is not being read, and neither is a view
+        the user has navigated away from — this one is kept alive. */
+    if(document.hidden || !priv.$facts.offsetParent) {
+        return;
+    }
+    priv.fact_i = (priv.fact_i + 1) % priv.facts.length;
+    show_fact(gobj, priv.fact_i, true);
+}
+
+function update_transport(gobj)
+{
+    let priv = gobj.priv;
     let playing = is_playing();
-    let url = track ? cover_url(track.key) : null;
-
-    let $art = url
-        ? ["img", {class: "MUS_DECKART", src: url, alt: ""}]
-        : ["div", {class: "MUS_DECKART is-empty"}, "♪"];
-
-    let title = track ? track.title : t("nothing cued");
-    let sub = track
-        ? (track.artist + (track.album ? " · " + track.album : ""))
-        : "";
-
-    let $head = ["div", {class: "MUS_DECKHEAD"}, [
-        $art,
-        ["div", {class: "MUS_DECKMETA"}, [
-            ["h2", {class: "MUS_DECKTITLE",
-                    i18n: track ? undefined : "nothing cued"}, title],
-            ["p", {class: "MUS_DECKSUB"}, sub]
-        ]]
-    ]];
-
-    let $seek = ["div", {class: "MUS_SEEK", role: "progressbar"},
-        [["i", {class: "MUS_SEEK_FILL"}]],
-        {click: (ev) => seek_at(ev, ev.currentTarget)}];
-
-    let $times = ["div", {class: "MUS_TIMES"}, [
-        ["span", {class: "MUS_TCUR"}, "0:00"],
-        ["span", {class: "MUS_TTOT"}, "0:00"]
-    ]];
-
-    let $transport = ["div", {class: "MUS_TRANSPORT"}, [
+    clear(priv.$transport);
+    [
         tog_button("MUS_SHUFFLE", P.shuffle, 20, "shuffle", get_shuffle(),
             () => { set_shuffle(!get_shuffle()); paint_now(gobj); }),
         ctl_button("MUS_TPREV", P.prev, 26, "previous", () => prev()),
@@ -357,10 +717,18 @@ function paint_now(gobj)
         ctl_button("MUS_TNEXT", P.next, 26, "next", () => step(1)),
         tog_button("MUS_REPEAT", P.repeat, 20, "repeat", get_repeat(),
             () => { set_repeat(!get_repeat()); paint_now(gobj); })
-    ]];
+    ].forEach((spec) => priv.$transport.appendChild(createElement2(spec)));
+}
 
-    $now.appendChild(createElement2(
-        ["div", {class: "MUS_DECKCARD"}, [$head, $seek, $times, $transport]]));
+/***************************************************************
+ *  The bars under the card: a newer build, folders waiting to be
+ *  authorised, and whatever the store had to say. These do get
+ *  rebuilt — they come and go, and none of them fades.
+ ***************************************************************/
+function paint_bars(gobj)
+{
+    let $now = gobj.priv.$bars;
+    clear($now);
 
     /*  A tab opened before a deploy goes on running the old bundle, and
         the only symptom is that a fix appears not to have worked. Say
@@ -410,9 +778,6 @@ function paint_now(gobj)
                     svg(P.cross, 14), {click: () => clear_notice()}]
             ]]));
     }
-
-    paint_time(gobj);
-    refresh_language($now, t);
 }
 
 function ctl_button(cls, path, size, key, on_click)
@@ -523,7 +888,20 @@ function paint_queue(gobj)
                 ["button", {class: "MUS_QBTN button is-ghost", type: "button",
                             ...disabled_if(!queue.length)},
                     [ico(P.trash, 16), ["span", {i18n: "clear queue"}, t("clear queue")]],
-                    {click: () => queue_clear()}]
+                    {click: () => queue_clear()}],
+                /*  Last, and never disabled: it is a setting, not an
+                    action on the queue. Anything before it would also
+                    move the two buttons above, which the suite finds
+                    by position. */
+                ["button", {
+                        class: "MUS_QBTN MUS_TOG button is-ghost" +
+                            (follow_on() ? " is-on" : ""),
+                        type: "button",
+                        "aria-pressed": follow_on() ? "true" : "false"
+                    },
+                    [ico(P.follow, 16),
+                     ["span", {i18n: "follow playing"}, t("follow playing")]],
+                    {click: () => toggle_follow(gobj)}]
             ]]
         ]]
     );
@@ -639,6 +1017,174 @@ function paint_queue_highlight(gobj)
 
 
                     /***************************
+                     *      Follow the music
+                     ***************************/
+
+
+
+
+/***************************************************************
+ *  A long queue plays past the bottom of the screen and the row
+ *  that is sounding ends up somewhere the user cannot see. So:
+ *  when the scroll has been still for a while — long enough that
+ *  nobody is reading the part they scrolled to — the playing row
+ *  is brought back to the middle, and it stays there as the
+ *  queue advances.
+ *
+ *  Two rules make it a help rather than a fight:
+ *
+ *    - ANY scroll of the user's re-arms the wait from zero. While
+ *      they are looking at something, the page is theirs.
+ *    - Our own smooth scroll emits the same scroll events a
+ *      finger does, so it is fenced off with `self_scroll`.
+ *      Without that fence the deck follows itself for ever.
+ *
+ *  Ten seconds is a guess, and how long somebody needs depends on
+ *  what they are doing, so it is configurable:
+ *      localStorage["yunomusica:follow_delay"] = 20    // seconds
+ *  The button on the queue header turns the whole thing off.
+ ***************************************************************/
+function follow_on()
+{
+    try {
+        return localStorage.getItem("yunomusica:follow") !== "0";
+    } catch(e) {
+        return true;
+    }
+}
+
+function set_follow_on(on)
+{
+    try {
+        localStorage.setItem("yunomusica:follow", on ? "1" : "0");
+    } catch(e) {
+    }
+}
+
+function follow_delay()
+{
+    let secs = NaN;
+    try {
+        secs = parseFloat(localStorage.getItem("yunomusica:follow_delay"));
+    } catch(e) {
+    }
+    return (isFinite(secs) && secs > 0) ? secs * 1000 : FOLLOW_MS_DEFAULT;
+}
+
+function start_follow(gobj)
+{
+    let priv = gobj.priv;
+    priv.$scroller = priv.$scroll;
+    priv.last_scroll = 0;
+    if(!priv.$scroller) {
+        return;
+    }
+    priv.on_scroll = function() {
+        if(priv.self_scroll) {
+            return;             // that one was ours
+        }
+        priv.last_scroll = Date.now();
+        arm_follow(gobj);
+    };
+    priv.$scroller.addEventListener("scroll", priv.on_scroll, {passive: true});
+    arm_follow(gobj);
+}
+
+function stop_follow(gobj)
+{
+    let priv = gobj.priv;
+    if(priv.on_scroll && priv.$scroller) {
+        priv.$scroller.removeEventListener("scroll", priv.on_scroll);
+    }
+    priv.on_scroll = null;
+    priv.$scroller = null;
+    if(priv.follow_timer) {
+        clearTimeout(priv.follow_timer);
+        priv.follow_timer = null;
+    }
+    if(priv.settle_timer) {
+        clearTimeout(priv.settle_timer);
+        priv.settle_timer = null;
+    }
+    priv.self_scroll = false;
+}
+
+function arm_follow(gobj)
+{
+    let priv = gobj.priv;
+    if(priv.follow_timer) {
+        clearTimeout(priv.follow_timer);
+    }
+    priv.follow_timer = setTimeout(() => follow_now(gobj, true), follow_delay());
+}
+
+function follow_idle(gobj)
+{
+    return (Date.now() - gobj.priv.last_scroll) >= follow_delay();
+}
+
+/*  from_timer: the wait ran out. Otherwise this is a track change, and
+    it only centres if the user was not scrolling anyway. */
+function follow_now(gobj, from_timer)
+{
+    let priv = gobj.priv;
+    if(!follow_on() || document.hidden) {
+        return;
+    }
+    if(!from_timer && !follow_idle(gobj)) {
+        return;
+    }
+    let $c = gobj_read_attr(gobj, "$container");
+    /*  keep_alive leaves this view mounted while another one is on the
+        stage. Scrolling a page nobody is looking at is worse than not
+        following at all: they come back to a queue that moved. */
+    if(!$c || !$c.isConnected || !$c.offsetParent) {
+        return;
+    }
+    let $row = priv.$queue
+        ? priv.$queue.querySelector(".MUS_QROW.is-playing")
+        : null;
+    let $s = priv.$scroller;
+    if(!$row || !$s) {
+        return;
+    }
+
+    /*  Centre on the box the rows actually scroll in, not on the
+        window: the banner above it does not move. */
+    let box = $s.getBoundingClientRect();
+    let r = $row.getBoundingClientRect();
+    let delta = (r.top + r.height / 2) - (box.top + box.height / 2);
+    if(Math.abs(delta) < FOLLOW_SLACK_PX) {
+        return;                 // near enough; moving now would be fidgeting
+    }
+
+    priv.self_scroll = true;
+    if(priv.settle_timer) {
+        clearTimeout(priv.settle_timer);
+    }
+    priv.settle_timer = setTimeout(function() {
+        priv.self_scroll = false;
+    }, FOLLOW_SETTLE_MS);
+
+    let smooth = !(window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    $s.scrollBy({top: delta, left: 0, behavior: smooth ? "smooth" : "auto"});
+}
+
+function toggle_follow(gobj)
+{
+    set_follow_on(!follow_on());
+    paint_queue(gobj);
+    if(follow_on()) {
+        /*  Switching it on is itself a request to see what is playing. */
+        follow_now(gobj, true);
+    }
+}
+
+
+
+
+                    /***************************
                      *      Save as list
                      ***************************/
 
@@ -705,6 +1251,11 @@ function build_naming(gobj)
 
 function ac_language_changed(gobj, event, kw, src)
 {
+    /*  The subtitle composes artist and album into ONE string, and a
+        tag the file did not carry ("unknown album") is part of it —
+        refresh_language cannot reach inside a composed node. Forgetting
+        which track the banner is showing makes update_meta rewrite it. */
+    gobj.priv.track_key = null;
     paint_now(gobj);
     paint_queue(gobj);
     return 0;

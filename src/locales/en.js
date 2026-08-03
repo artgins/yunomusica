@@ -67,6 +67,7 @@ const en = {
         "queue":                "Queue",
         "the queue is empty":   "The queue is empty.",
         "clear queue":          "Clear the queue",
+        "follow playing":       "Follow what is playing",
         "save as list":         "Save as list",
         "move up":              "Move up",
         "move down":            "Move down",

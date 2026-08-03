@@ -54,6 +54,7 @@ const ru = {
         "queue":                "Очередь",
         "the queue is empty":   "Очередь пуста.",
         "clear queue":          "Очистить очередь",
+        "follow playing":       "Следовать за играющим",
         "save as list":         "Сохранить как список",
         "move up":              "Вверх",
         "move down":            "Вниз",

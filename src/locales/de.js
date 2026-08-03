@@ -54,6 +54,7 @@ const de = {
         "queue":                "Warteschlange",
         "the queue is empty":   "Die Warteschlange ist leer.",
         "clear queue":          "Warteschlange leeren",
+        "follow playing":       "Dem Laufenden folgen",
         "save as list":         "Als Liste speichern",
         "move up":              "Nach oben",
         "move down":            "Nach unten",

@@ -342,18 +342,78 @@
 /*======================================================================
  *      The deck (home): transport first, queue below
  *====================================================================*/
+/*  The deck is a COLUMN, not a page: the banner and the bars keep their
+    place and only the list under them scrolls. What is sounding is the
+    one thing that should never have to be scrolled back up to, and a
+    dozen tracks used to push it off the top of a phone.
+
+    The shell gives this view `flex: 1 0 auto; min-height: 0` inside a
+    zone that scrolls. height:100% turns that basis into exactly the
+    zone's height, so the view never overflows the zone and the zone
+    never scrolls — the box inside does. */
 .MUS_DECK {
     max-width: 900px;
     margin: 0 auto;
-    padding: 0.75rem 0.75rem 1.5rem;
+    padding: 0.75rem 0.75rem 0;
     box-sizing: border-box;     /* the padding must not add to the 100% */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+.MUS_NOWCARD { flex: none; }
+.MUS_DECKSCROLL {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 1.5rem;
+    /*  The follow scroll lands the row in the middle; without this the
+        browser can leave it under the sticky queue header. */
+    scroll-padding-block: 3rem;
 }
 
+/*  The card carries the cover twice: once in the tile, and once
+    blurred across the whole surface. `isolate` keeps the backdrop's
+    stacking to this card. */
 .MUS_DECKCARD {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     border-radius: 18px;
     padding: 1rem;
     background: var(--bulma-scheme-main-bis, #f7f7f7);
     border: 1px solid var(--bulma-border-weak, #ededed);
+}
+.MUS_DECKBG {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+/*  Two layers so one can fade in over the other. Blurred hard and held
+    well under half opacity: this is a wash of the record's colour, not
+    a picture — everything above it has to stay readable in both
+    schemes, and text over a sharp cover never is. */
+.MUS_DECKBG_L {
+    position: absolute;
+    inset: -12%;                /* the blur must not bleed a soft edge in */
+    background-size: cover;
+    background-position: center;
+    filter: blur(34px) saturate(1.35);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+/*  Measured against the worst case, which is not a photograph: a cover
+    that is one flat saturated colour blurs to that same colour, and at
+    0.30 it turned the whole card into a gold block. */
+.MUS_DECKBG_L.is-on { opacity: 0.22; }
+[data-theme="dark"] .MUS_DECKBG_L.is-on { opacity: 0.20; }
+
+.MUS_DECKBODY {
+    position: relative;
+    z-index: 1;
 }
 
 .MUS_DECKHEAD {
@@ -363,22 +423,48 @@
     margin-bottom: 0.9rem;
 }
 .MUS_DECKART {
+    position: relative;
     width: 88px;
     height: 88px;
     flex: none;
     border-radius: 14px;
-    object-fit: cover;
     background: var(--bulma-scheme-main-ter, #e8e8e8);
     display: grid;
     place-items: center;
     font-size: 30px;
     color: var(--bulma-text-weak, #8a8a8a);
     overflow: hidden;
+    box-shadow: 0 10px 26px -14px var(--mus-accent);
 }
+.MUS_DECKART_L {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.55s ease;
+}
+.MUS_DECKART_L.is-on { opacity: 1; }
+/*  The glyph is what is under the covers, so it only shows when there
+    is nothing on top of it. */
+.MUS_DECKART_GLYPH { opacity: 0; }
+.MUS_DECKART.is-empty .MUS_DECKART_GLYPH { opacity: 1; }
 @media (min-width: 700px) {
     .MUS_DECKART { width: 120px; height: 120px; }
 }
+/*  A phone in landscape has no height to give the banner. */
+@media (max-height: 520px) {
+    .MUS_DECKART { width: 64px; height: 64px; font-size: 22px; }
+}
 .MUS_DECKMETA { flex: 1; min-width: 0; }
+/*  Fades the whole block in when the track changes: one movement, not
+    three lines each doing their own. */
+.MUS_DECKMETA.is-swap { animation: mus-meta-in 0.45s ease both; }
+@keyframes mus-meta-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
 .MUS_DECKTITLE {
     font-size: 1.4rem;
     font-weight: 800;
@@ -396,6 +482,50 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/*  The line that changes on its own: year, genre, track number, where
+    this one sits in the queue. One fact at a time, each fading up as
+    the last one fades away — which is why the box keeps a fixed height
+    and the facts are stacked on top of each other instead of laid out
+    in the flow. A carousel that reflows the card every four seconds is
+    a fidget, not a detail. */
+.MUS_DECKFACTS {
+    position: relative;
+    height: 1.35rem;
+    margin-top: 0.45rem;
+    overflow: hidden;
+}
+.MUS_FACT {
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-start: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    max-width: 100%;
+    font-size: 0.82rem;
+    line-height: 1.35rem;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(0.5rem);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.MUS_FACT.is-on { opacity: 1; transform: none; }
+.MUS_FACT.is-leaving { opacity: 0; transform: translateY(-0.5rem); }
+.MUS_FACT_K {
+    flex: none;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--mus-accent);
+}
+.MUS_FACT_V {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--bulma-text-weak, #8a8a8a);
 }
 
 /*  Seek bar. The fill is absolutely positioned from the INLINE START, so
@@ -466,12 +596,20 @@
  *====================================================================*/
 .MUS_QUEUEBOX { margin-top: 1.5rem; }
 
+/*  Sticky inside the scrolling box: the queue can be a hundred rows
+    long and its own controls — save, clear, follow — should not be at
+    the top of a scroll away. It needs an opaque background or the rows
+    read through it. */
 .MUS_QHEAD {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 0.6rem;
+    padding-block: 0.75rem 0.6rem;
+    background: var(--bulma-scheme-main, #fff);
 }
 .MUS_QTITLE {
     font-size: 1.05rem;
@@ -1172,8 +1310,18 @@ img.MUS_ART { object-fit: cover; }
 }
 @keyframes mus-spin { to { transform: rotate(360deg); } }
 
+/*  The deck is the one screen that fades things, and a fade is exactly
+    what somebody who asked for less motion asked not to see. The
+    information still changes; it just cuts instead of sliding. The
+    follow scroll drops to "auto" in the same breath — that decision is
+    in the JS, where the behaviour is chosen. */
 @media (prefers-reduced-motion: reduce) {
     .MUS_SPINNER, .MUS_BAR_FILL.is-indeterminate { animation: none; }
+    .MUS_DECKMETA.is-swap { animation: none; }
+    .MUS_DECKART_L,
+    .MUS_DECKBG_L,
+    .MUS_FACT { transition: none; }
+    .MUS_FACT { transform: none; }
 }
 
 

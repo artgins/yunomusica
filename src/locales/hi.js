@@ -54,6 +54,7 @@ const hi = {
         "queue":                "कतार",
         "the queue is empty":   "कतार खाली है।",
         "clear queue":          "कतार खाली करें",
+        "follow playing":       "जो बज रहा है उसका अनुसरण करें",
         "save as list":         "सूची के रूप में सहेजें",
         "move up":              "ऊपर ले जाएँ",
         "move down":            "नीचे ले जाएँ",

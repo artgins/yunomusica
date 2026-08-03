@@ -58,6 +58,7 @@ const ar = {
         "queue":                "قائمة التشغيل",
         "the queue is empty":   "قائمة التشغيل فارغة.",
         "clear queue":          "إفراغ القائمة",
+        "follow playing":       "تتبّع ما يُشغَّل",
         "save as list":         "حفظ كقائمة",
         "move up":              "تحريك لأعلى",
         "move down":            "تحريك لأسفل",
