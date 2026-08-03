@@ -164,6 +164,44 @@ grep '"version"' package.json          # what is actually shipping
 curl -s https://yunomusica.com/version.json    # what is actually deployed
 ```
 
+## Tests
+
+```bash
+npm test                # the whole suite
+npm test -- select      # just the ones whose name matches
+npm run fixtures        # build the MP3 trees on their own (--force to rebuild)
+```
+
+Playwright driving a **real Chrome** (`CHROME_PATH`, default
+`/usr/bin/google-chrome`) against the **built bundle**, not the dev server:
+half of what is under test is what the build produces. `npm test` builds `dist/`
+if it is missing, generates the fixtures if they are missing, starts
+`vite preview` if nothing is listening, and shuts it down afterwards.
+
+| Test | What breaks if it goes red |
+|---|---|
+| `fallback` | a visitor lands in a language nobody chose |
+| `navink` | nav and primary buttons disagree about black-or-white ink |
+| `minink` | the mini-player's button, the one accent surface `navink` cannot see |
+| `select` | browsing changes what is sounding |
+| `confirm` | "Play all" eats a queue without asking |
+| `fitmobile` | something runs off the side of a phone |
+| `e2e` | the whole walk: play, edit, save, Arabic, reload |
+
+Two things they are strict about, both learned the hard way:
+
+- **Console errors fail the run.** A test that passes while the console fills
+  up has not passed.
+- **Palette and theme are driven through the app's own menus**, never by setting
+  `data-theme` from the test. Doing it from outside returns a style the browser
+  has not recalculated: light and dark come back identical — which is impossible —
+  and the test goes green over a broken app.
+
+The MP3 trees are **generated, not committed** (`tests/fixtures.mjs`, ~7 MB, and
+gitignored): silence from ffmpeg, ID3v2.3 tags written by hand, which also means
+a tag the parser has to survive can be forged in one line. `ffmpeg` is the only
+thing the suite needs that `npm install` does not bring.
+
 ## Deployment
 
 `npm run build` leaves the static site in `./dist`. `deploy_yunomusica.sh` takes a
@@ -198,6 +236,9 @@ The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
 | `src/idb.js` | the minimal wrapper over IndexedDB |
 | `src/locales/` | `locales.js` plus the ten translation files |
 | `src/musica.css` | the app's styling, palettes included |
+| `tests/run.mjs` | the runner: build, fixtures, server, one line per test |
+| `tests/lib.mjs` | browser, booted app, the two colour-maths functions |
+| `tests/fixtures.mjs` | generates the three MP3 trees the suite plays against |
 
 ## A few things that are expensive to work out twice
 
