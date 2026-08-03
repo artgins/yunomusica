@@ -72,6 +72,12 @@ const fr = {
         "edited":               "modifiée",
         "add music in sources": "Ajoutez de la musique dans Sources",
         "play this":            "Lire celui-ci",
+        "album":                  "Album",
+        "genre":                "Genre",
+        "year":                 "Année",
+        "track number":         "Piste",
+        "path":                 "Fichier",
+        "source":               "Source",
 
         "authorised sources":   "Dossiers autorisés",
         "add a folder":         "Ajouter un dossier",

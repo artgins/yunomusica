@@ -72,6 +72,12 @@ const ru = {
         "edited":               "изменён",
         "add music in sources": "Добавьте музыку в «Источниках»",
         "play this":            "Включить эту",
+        "album":                  "Альбом",
+        "genre":                "Жанр",
+        "year":                 "Год",
+        "track number":         "Трек",
+        "path":                 "Файл",
+        "source":               "Источник",
 
         "authorised sources":   "Разрешённые папки",
         "add a folder":         "Добавить папку",

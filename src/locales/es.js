@@ -76,6 +76,12 @@ const es = {
         "edited":               "modificada",
         "add music in sources": "Añade música en Fuentes",
         "play this":            "Reproducir esta",
+        "album":                  "Álbum",
+        "genre":                "Género",
+        "year":                 "Año",
+        "track number":         "Pista",
+        "path":                 "Fichero",
+        "source":               "Fuente",
 
         /* ---- las fuentes ---- */
         "authorised sources":   "Carpetas autorizadas",

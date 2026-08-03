@@ -475,6 +475,30 @@
 
 .MUS_ROWS { display: flex; flex-direction: column; }
 
+/*  A selected row and the details it unfolds are one block, so the
+    highlight covers both. */
+.MUS_ROWWRAP { border-radius: 12px; }
+.MUS_ROWWRAP.is-selected { background: var(--bulma-background, rgba(0, 0, 0, 0.05)); }
+.MUS_ROWWRAP.is-selected .MUS_ROW:hover { background: none; }
+.MUS_ROWWRAP.is-selected .MUS_T1 { font-weight: 600; }
+
+.MUS_DETAILS {
+    margin: 0;
+    padding: 0.1rem 0.6rem 0.7rem 3.9rem;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.15rem 0.7rem;
+    font-size: 0.78rem;
+}
+.MUS_DETAIL { display: contents; }
+.MUS_DETAILS dt { color: var(--bulma-text-weak, #8a8a8a); white-space: nowrap; }
+.MUS_DETAILS dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--bulma-text, #1b1b1b);
+}
+
 .MUS_ROW {
     display: flex;
     align-items: center;

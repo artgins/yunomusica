@@ -72,6 +72,12 @@ const ja = {
         "edited":               "変更あり",
         "add music in sources": "「ソース」で音楽を追加",
         "play this":            "これを再生",
+        "album":                  "アルバム",
+        "genre":                "ジャンル",
+        "year":                 "年",
+        "track number":         "トラック",
+        "path":                 "ファイル",
+        "source":               "ソース",
 
         "authorised sources":   "許可したフォルダー",
         "add a folder":         "フォルダーを追加",

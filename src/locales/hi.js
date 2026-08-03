@@ -72,6 +72,12 @@ const hi = {
         "edited":               "बदली गई",
         "add music in sources": "स्रोत में संगीत जोड़ें",
         "play this":            "यह चलाएँ",
+        "album":                  "ऐल्बम",
+        "genre":                "शैली",
+        "year":                 "वर्ष",
+        "track number":         "ट्रैक",
+        "path":                 "फ़ाइल",
+        "source":               "स्रोत",
 
         "authorised sources":   "अधिकृत फ़ोल्डर",
         "add a folder":         "एक फ़ोल्डर जोड़ें",

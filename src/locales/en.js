@@ -86,6 +86,12 @@ const en = {
         "edited":               "edited",
         "add music in sources": "Add music in Sources",
         "play this":            "Play this one",
+        "album":                  "Album",
+        "genre":                "Genre",
+        "year":                 "Year",
+        "track number":         "Track",
+        "path":                 "File",
+        "source":               "Source",
 
         /* ---- the sources ---- */
         "authorised sources":   "Authorised sources",

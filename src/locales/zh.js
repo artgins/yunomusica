@@ -72,6 +72,12 @@ const zh = {
         "edited":               "已修改",
         "add music in sources": "在「来源」中添加音乐",
         "play this":            "播放这首",
+        "album":                  "专辑",
+        "genre":                "流派",
+        "year":                 "年份",
+        "track number":         "音轨",
+        "path":                 "文件",
+        "source":               "来源",
 
         "authorised sources":   "已授权的文件夹",
         "add a folder":         "添加一个文件夹",

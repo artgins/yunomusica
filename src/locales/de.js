@@ -72,6 +72,12 @@ const de = {
         "edited":               "geändert",
         "add music in sources": "Musik unter Quellen hinzufügen",
         "play this":            "Diesen abspielen",
+        "album":                  "Album",
+        "genre":                "Genre",
+        "year":                 "Jahr",
+        "track number":         "Titel-Nr.",
+        "path":                 "Datei",
+        "source":               "Quelle",
 
         "authorised sources":   "Freigegebene Ordner",
         "add a folder":         "Einen Ordner hinzufügen",

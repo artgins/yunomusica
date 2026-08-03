@@ -76,6 +76,12 @@ const ar = {
         "edited":               "معدَّلة",
         "add music in sources": "أضف موسيقى من المصادر",
         "play this":            "تشغيل هذه",
+        "album":                  "الألبوم",
+        "genre":                "النوع",
+        "year":                 "السنة",
+        "track number":         "المقطوعة",
+        "path":                 "الملف",
+        "source":               "المصدر",
 
         "authorised sources":   "المجلدات المصرَّح بها",
         "add a folder":         "إضافة مجلد",

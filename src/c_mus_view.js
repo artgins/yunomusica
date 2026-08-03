@@ -34,7 +34,7 @@ import {
     queue_add, current_track, preview_track,
 } from "./music_store.js";
 
-import {add_dir, add_files} from "./sources_store.js";
+import {add_dir, add_files, source_name} from "./sources_store.js";
 
 import {t} from "i18next";
 
@@ -89,6 +89,7 @@ let PRIVATE_DATA = {
     view:     "artists",
     detail:   null,     // {kind, name, tracks} while drilled in
     search:   "",
+    selected: 0,        // uid of the row whose details are open
     unsub:    null,
     $chips:   null,
     $content: null,
@@ -297,11 +298,11 @@ function render(gobj)
     }
 
     if(priv.search) {
-        render_list($content, search(priv.search));
+        render_list(gobj, $content, search(priv.search));
     } else if(priv.detail) {
         render_detail(gobj, $content);
     } else if(priv.view === "all") {
-        render_list($content, all_tracks_sorted());
+        render_list(gobj, $content, all_tracks_sorted());
     } else if(priv.view === "albums") {
         render_albums(gobj, $content);
     } else {
@@ -398,7 +399,39 @@ function cover_spec(key, cls, fallback)
 }
 
 
-/*  The pair of verbs every row and every group header carries. */
+/*  A single track offers LISTEN and ADD — not play.
+ *
+ *  Play used to replace the whole queue for one row, which threw away
+ *  whatever the user had built to hear one song. Listening costs
+ *  nothing and commits to nothing; adding puts it on the deck. To play a
+ *  whole album outright there is "Play all" on the album itself, which
+ *  is a deliberate act on a deliberate thing. */
+function track_buttons(t_)
+{
+    return ["div", {class: "MUS_ROWCTL"}, [
+        ["button", {
+                class: "MUS_IBTN",
+                type: "button",
+                "aria-label": t("preview"),
+                "data-i18n-aria-label": "preview",
+                title: t("preview"),
+                "data-i18n-title": "preview"
+            }, svg(P.play, 16),
+            {click: (ev) => { ev.stopPropagation(); preview_track(t_); }}],
+        ["button", {
+                class: "MUS_IBTN",
+                type: "button",
+                "aria-label": t("add to queue"),
+                "data-i18n-aria-label": "add to queue",
+                title: t("add to queue"),
+                "data-i18n-title": "add to queue"
+            }, svg(P.plus, 16),
+            {click: (ev) => { ev.stopPropagation(); queue_add([t_], "append"); }}]
+    ]];
+}
+
+/*  The pair of verbs a GROUP carries: play all (replace the queue) and
+    add all. Deliberate, and about a whole album or artist. */
 function verb_buttons(get_tracks)
 {
     return ["div", {class: "MUS_ROWCTL"}, [
@@ -429,7 +462,27 @@ function verb_buttons(get_tracks)
  *  list a Play starts the queue from. showNum swaps the cover
  *  for the track number in album/folder detail.
  ***************************************************************/
-function track_row(t_, list, showNum)
+/*  What else is known about a track, shown under it when selected. */
+function track_details(t_)
+{
+    let rows = [
+        ["album", t_.album],
+        ["genre", t_.genre],
+        ["year", t_.year],
+        ["track number", t_.track ? String(t_.track) : ""],
+        ["source", source_name(t_.source_id)],
+        ["path", t_.path]
+    ];
+    return ["dl", {class: "MUS_DETAILS"},
+        rows.filter((r) => r[1]).map(([key, value]) => [
+            "div", {class: "MUS_DETAIL"}, [
+                ["dt", {i18n: key}, t(key)],
+                ["dd", {}, UNKNOWN_KEYS[value] ? t(value) : value]
+            ]
+        ])];
+}
+
+function track_row(gobj, t_, list, showNum)
 {
     let left = showNum
         ? ["div", {class: "MUS_NUM"}, t_.track ? String(t_.track) : "·"]
@@ -437,29 +490,38 @@ function track_row(t_, list, showNum)
 
     let subtitle = t_.artist + (t_.album && !showNum ? " · " + t_.album : "");
 
-    /*  Tapping the row does NOT play. Navigating a library must never
-        take over what is sounding — play is the button, and only the
-        button. The row offers a listen instead: hear it, then decide
-        whether it goes in the queue. */
-    return ["div", {class: "MUS_ROW", "data-tid": String(t_.uid)}, [
+    /*  Tapping the row SELECTS it and shows the rest of what is known
+        about the track. Navigating a library must never take over what
+        is sounding, and it should not commit to anything either: this
+        is the one gesture in the app that only looks. */
+    let selected = (gobj.priv.selected === t_.uid);
+
+    let children = [
         left,
         ["button", {
                 class: "MUS_ROWMAIN",
                 type: "button",
-                "aria-label": t("preview"),
-                "data-i18n-aria-label": "preview",
-                title: t("preview"),
-                "data-i18n-title": "preview"
+                "aria-expanded": selected ? "true" : "false"
             }, [
             ["span", {class: "MUS_T1"}, t_.title],
             ["span", {class: "MUS_T2"}, subtitle]
-        ], {click: () => preview_track(t_)}],
-        verb_buttons(() => [t_])
+        ], {click: () => {
+            gobj.priv.selected = selected ? 0 : t_.uid;
+            render(gobj);
+        }}],
+        track_buttons(t_)
+    ];
+
+    return ["div", {
+        class: "MUS_ROWWRAP" + (selected ? " is-selected" : "")
+    }, [
+        ["div", {class: "MUS_ROW", "data-tid": String(t_.uid)}, children],
+        selected ? track_details(t_) : ["span", {}]
     ]];
 }
 
 
-function render_list($content, list)
+function render_list(gobj, $content, list)
 {
     if(!list.length) {
         $content.appendChild(createElement2(
@@ -467,7 +529,7 @@ function render_list($content, list)
         return;
     }
     $content.appendChild(createElement2(
-        ["div", {class: "MUS_ROWS"}, list.map((x) => track_row(x, list, false))]));
+        ["div", {class: "MUS_ROWS"}, list.map((x) => track_row(gobj, x, list, false))]));
 }
 
 
@@ -585,7 +647,7 @@ function render_detail(gobj, $content)
     if(d.kind === "albums" || d.kind === "folders") {
         $content.appendChild(createElement2(
             ["div", {class: "MUS_ROWS"},
-                ordered.map((x) => track_row(x, ordered, true))]));
+                ordered.map((x) => track_row(gobj, x, ordered, true))]));
         return;
     }
 
@@ -602,7 +664,7 @@ function render_detail(gobj, $content)
         $wrap.appendChild(createElement2(
             ["div", {class: "MUS_SECTION_H"}, display_name(album)]));
         for(const x of tracks) {
-            $wrap.appendChild(createElement2(track_row(x, ordered, true)));
+            $wrap.appendChild(createElement2(track_row(gobj, x, ordered, true)));
         }
     }
     $content.appendChild($wrap);

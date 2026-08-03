@@ -72,6 +72,12 @@ const pt = {
         "edited":               "alterada",
         "add music in sources": "Adiciona música em Fontes",
         "play this":            "Reproduzir esta",
+        "album":                  "Álbum",
+        "genre":                "Género",
+        "year":                 "Ano",
+        "track number":         "Faixa",
+        "path":                 "Ficheiro",
+        "source":               "Fonte",
 
         "authorised sources":   "Pastas autorizadas",
         "add a folder":         "Adicionar uma pasta",
