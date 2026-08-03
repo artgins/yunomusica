@@ -1,5 +1,5 @@
 {
-    "_comment": "yunomúsica shell. Four destinations, in the order they matter: Player (the deck: transport first, then the queue you curate), Library (five ways to look at the same tracks, switched by chips inside the view rather than by five routes), Sources (the authorised folders, which is where the app explains what it does with your disk), and Lists (the queues you saved). The default route is the player, so the first thing on screen is play/pause/next and what is sounding. Rendered as a LEFT vertical rail on desktop and a BOTTOM icon-bar on mobile. The toolbar carries the brand, the two ways to load music, the language menu, the theme toggle and the help/credits dialog, all as events the host acts on. No backend: a pure gobj tree with hash routing.",
+    "_comment": "yunomúsica shell. Four destinations, in the order they matter: Player (the deck: transport first, then the queue you curate), Library (five ways to look at the same tracks, switched by chips inside the view rather than by five routes), Sources (the authorised folders, which is where the app explains what it does with your disk), and Lists (the queues you saved). The default route is the player, so the first thing on screen is play/pause/next and what is sounding. Rendered as a LEFT vertical rail on desktop and a BOTTOM icon-bar on mobile. The toolbar carries the brand, the language menu, the theme toggle and the help/credits dialog, all as events the host acts on. It does NOT carry the pickers: adding music is Sources' job, and one door is better than three. No backend: a pure gobj tree with hash routing.",
     "shell": {
         "remember_section_position": true,
         "breakpoints": "bulma",
@@ -41,28 +41,6 @@
                 "action": {
                     "type": "navigate",
                     "route": "/player"
-                }
-            },
-            {
-                "id": "pick-dir",
-                "icon": "mi-folder",
-                "align": "end",
-                "aria_label": "add folder",
-                "tooltip": "add folder",
-                "action": {
-                    "type": "event",
-                    "event": "EV_PICK_DIR"
-                }
-            },
-            {
-                "id": "pick-files",
-                "icon": "yi-upload",
-                "align": "end",
-                "aria_label": "add files",
-                "tooltip": "add files",
-                "action": {
-                    "type": "event",
-                    "event": "EV_PICK_FILES"
                 }
             },
             {

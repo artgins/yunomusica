@@ -48,7 +48,7 @@ import {
 } from "./music_store.js";
 
 import {
-    load_sources, add_dir, add_files,
+    load_sources,
     subscribe_sources, scanning_source, is_preparing,
     stop_scan, is_stopping,
 } from "./sources_store.js";
@@ -143,8 +143,6 @@ function mt_create(gobj)
 
     /*  Toolbar-published events we act on. */
     gobj_subscribe_event(shell, "EV_TOGGLE_THEME", {}, gobj);
-    gobj_subscribe_event(shell, "EV_PICK_DIR",     {}, gobj);
-    gobj_subscribe_event(shell, "EV_PICK_FILES",   {}, gobj);
     gobj_subscribe_event(shell, "EV_SET_LOCALE",   {}, gobj);
     gobj_subscribe_event(shell, "EV_OPEN_ABOUT",   {}, gobj);
     gobj_subscribe_event(shell, "EV_ROUTE_CHANGED",{}, gobj);
@@ -798,18 +796,6 @@ function ac_toggle_theme(gobj, event, kw, src)
     return 0;
 }
 
-function ac_pick_dir(gobj, event, kw, src)
-{
-    add_dir();
-    return 0;
-}
-
-function ac_pick_files(gobj, event, kw, src)
-{
-    add_files();
-    return 0;
-}
-
 /*  The language menu items carry their code in the action kw. */
 function ac_set_locale(gobj, event, kw, src)
 {
@@ -864,8 +850,6 @@ function create_gclass(gclass_name)
     const states = [
         ["ST_IDLE", [
             ["EV_TOGGLE_THEME",  ac_toggle_theme,  null],
-            ["EV_PICK_DIR",      ac_pick_dir,      null],
-            ["EV_PICK_FILES",    ac_pick_files,    null],
             ["EV_SET_LOCALE",    ac_set_locale,    null],
             ["EV_OPEN_ABOUT",    ac_open_about,    null],
             ["EV_ROUTE_CHANGED", ac_route_changed, null]
@@ -874,8 +858,6 @@ function create_gclass(gclass_name)
 
     const event_types = [
         ["EV_TOGGLE_THEME",  0],
-        ["EV_PICK_DIR",      0],
-        ["EV_PICK_FILES",    0],
         ["EV_SET_LOCALE",    0],
         ["EV_OPEN_ABOUT",    0],
         ["EV_ROUTE_CHANGED", 0]
