@@ -1,201 +1,201 @@
 # yunomúsica
 
-Una SPA pequeña y offline para escuchar la música que tienes en el móvil (o en
-el ordenador). Autorizas una carpeta, se lee **aquí, en el dispositivo** —nada
-se copia y nada se sube—, y montas con ella la cola que quieras.
+A small, offline SPA for listening to the music already on your phone (or your
+computer). You authorise a folder, it is read **here, on the device** — nothing
+is copied and nothing is uploaded — and you build whatever queue you want out of
+it.
 
-Construida con **Vite + Yuneta (`@yuneta/gobj-ui`)**: la cáscara declarativa
-`C_YUI_SHELL` + `C_YUI_NAV` pone la barra superior y el menú (barra lateral en
-escritorio, barra de iconos abajo en móvil); el resto son cinco gclasses de la
-app y tres stores de dominio.
+Built with **Vite + Yuneta (`@yuneta/gobj-ui`)**: the declarative shell
+`C_YUI_SHELL` + `C_YUI_NAV` provides the top bar and the menu (a side rail on
+desktop, an icon bar at the bottom on mobile); the rest is five app gclasses and
+three domain stores.
 
-## Las cuatro pantallas
+## The four screens
 
-**Reproductor** (inicio) — lo primero que ves son los mandos: play/pausa,
-anterior, siguiente, aleatorio, repetir, la carátula, el título de lo que suena
-y la barra de posición. Debajo, **la cola**: lo que has cargado, en el orden que
-quieras. Se reordena y se quitan pistas sin parar la música. Es el plato, y dice
-si lo que suena es una **lista guardada** (por su nombre, y si la has tocado
-desde entonces) o una cola montada a mano.
+**Player** (home) — the first thing you see is the transport: play/pause,
+previous, next, shuffle, repeat, the cover, the title of what is sounding and
+the seek bar. Below it, **the queue**: what you loaded, in the order you want
+it. Reorder it and take tracks out without stopping the music. It is the deck,
+and it says whether what is playing is a **saved list** (by name, and whether
+you have changed it since) or a queue put together by hand.
 
-**Biblioteca** — cinco maneras de mirar las mismas pistas (artistas, álbumes,
-géneros, carpetas y la lista plana), con buscador.
+**Library** — five ways of looking at the same tracks (artists, albums, genres,
+folders and the flat list), with a search box.
 
-**Fuentes** — las carpetas autorizadas, y el único sitio desde el que se añade
-música. Aquí es donde la app dice en voz alta qué hace con tu disco: no copia
-nada, coge la carpeta **entera** (esa y todas las de debajo), y te avisa de qué
-puede y qué no puede recordar tu navegador.
+**Sources** — the authorised folders, and the only place music is added from.
+This is where the app says out loud what it does with your disk: it copies
+nothing, it takes a folder **whole** (that one and every folder below it), and
+it tells you what your browser can and cannot remember.
 
-**Listas** — las colas que has guardado con nombre.
+**Lists** — the queues you saved with a name.
 
-## El play es explícito
+## Play is explicit
 
-Navegar no cambia nunca lo que suena. Es la regla de la que salen todas las
-demás:
+Browsing never changes what is sounding. Every other rule follows from that one:
 
-- **Pinchar una fila** la selecciona y despliega el resto de datos de la pista
-  (álbum, género, año, número, fuente y ruta). Es el único gesto que solo mira.
-- **▶ en una fila** es una **escucha previa**: suena en su propio elemento de
-  audio, pausa la cola, no la toca, y ofrece la única decisión que importa —
-  añadirla o dejarlo.
-- **+ en una fila** la añade a la cola.
-- **"Reproducir todo"** de un álbum o un artista sí sustituye la cola, y por eso
-  **pregunta antes** si hay algo que perder. El diálogo ofrece tres respuestas,
-  no dos: añadir, sustituir, o cancelar. Con el plato vacío no pregunta nada.
+- **Tapping a row** selects it and unfolds the rest of what is known about the
+  track (album, genre, year, number, source and path). It is the one gesture
+  that only looks.
+- **▶ on a row** is a **preview**: it plays on its own audio element, pauses the
+  queue, touches nothing, and offers the only decision worth offering — add it
+  or drop it.
+- **+ on a row** adds it to the queue.
+- **"Play all"** on an album or an artist does replace the queue, which is why
+  it **asks first** when there is something to lose. The dialog has three
+  answers, not two: add, replace, or cancel. With an empty deck it asks nothing.
 
-La cola sobrevive a un F5: qué pistas, de qué lista venían, cuál sonaba y por
-qué segundo iba. Se restaura **en pausa**: una página que empieza a hacer ruido
-sola es peor que una que no restaura nada.
+The queue survives a reload: which tracks, which list they came from, which one
+was playing and how many seconds in. It is restored **paused** — a page that
+starts making noise on its own is worse than one that restores nothing.
 
-## Qué se guarda, y qué no
+## What is stored, and what is not
 
-Los ficheros **nunca se copian ni se suben**. Lo que se guarda en IndexedDB es
-una *referencia*:
+Files are **never copied and never uploaded**. What goes into IndexedDB is a
+*reference*:
 
-- **Carpeta** (`FileSystemDirectoryHandle`, File System Access API): sobrevive a
-  la recarga, así que la carpeta sigue en la lista y basta un clic para volver a
-  autorizarla — sin navegar el árbol otra vez. Al releerla aparecen los ficheros
-  nuevos. **Solo Chromium** (Chrome, Edge, Chrome en Android).
-- **Ficheros** (los propios objetos `File`, que también son clonables): es lo que
-  reciben los demás navegadores y el selector de ficheros sueltos. La lista se
-  recuerda, pero es una **foto fija**: lo que añadas después a la carpeta no
-  aparece. Van en trozos de 250 por registro, porque un solo registro con miles
-  de `File` supera el límite de clonado estructurado y la escritura se rechaza.
+- **Folder** (`FileSystemDirectoryHandle`, File System Access API): it survives
+  a reload, so the folder is still listed and one click re-authorises it — no
+  walking the tree again. A rescan picks up new files. **Chromium only** (Chrome,
+  Edge, Chrome on Android).
+- **Files** (the `File` objects themselves, also structured-cloneable): what
+  every other engine and the loose-files picker get. The list is remembered, but
+  it is a **snapshot**: files added to the folder afterwards do not appear. They
+  go in chunks of 250 per record, because a single record holding thousands of
+  `File`s exceeds the structured-clone limit and the write is refused.
 
-Una lista guardada son pares `(fuente, ruta)`, no audio. Si su fuente no está
-autorizada en esta sesión, la vista dice cuántas entradas faltan en vez de
-reproducir una lista más corta a la callada.
+A saved list is a set of `(source, path)` pairs, not audio. If its source is not
+authorised in this session, the view says how many entries are missing instead
+of quietly playing a shorter list.
 
-### Solo se escanea cuando hace falta
+### Scanning happens only when it has to
 
-Una carpeta se recorre **al añadirla y al pulsar Releer**, no al arrancar. Las
-etiquetas ya leídas se guardan por ruta, así que abrir la app **restaura** la
-biblioteca sin abrir un solo fichero: medido, 0 recorridos y 0 lecturas frente a
-los 2 y 6 del alta. Una pista restaurada lleva ruta pero no fichero; el fichero
-se resuelve **al reproducir**, bajando por el handle de la carpeta, que es
-además el único momento en que el permiso hace falta de verdad.
+A folder is walked **when it is added and when you press Rescan**, not at start
+up. The tags already parsed are kept by path, so opening the app **restores** the
+library without opening a single file: measured, 0 walks and 0 reads against the
+2 and 6 the first add costs. A restored track carries a path but no file; the
+file is resolved **at play time**, walking down the folder's handle, which is
+also the only moment the permission genuinely has to be there.
 
-El precio, que conviene saber: **lo que añadas a la carpeta desde fuera no
-aparece solo**. Hay que pulsar Releer.
+The price, worth knowing: **files you add to the folder from outside will not
+appear on their own**. You have to press Rescan.
 
-De las etiquetas se lee **solo la etiqueta**. La cabecera ID3v2 son 10 bytes y
-declara su tamaño exacto, así que se lee eso y nada más: en 300 ficheros, 0,04
-MiB en vez de los 150 MiB que costaba leer un bloque fijo de 512 KB por fichero.
+Of a tag, only **the tag** is read. The ID3v2 header is 10 bytes and states its
+exact length, so that is all that gets read: across 300 files, 0.04 MiB instead
+of the 150 MiB a fixed 512 KB slab per file used to cost.
 
-## Idiomas y colores
+## Languages and colours
 
-Diez idiomas, todos empaquetados (no hay backend del que bajarlos): español,
-inglés, chino, hindi, árabe, portugués, ruso, japonés, alemán y francés. Las
-claves son inglés en minúscula y el respaldo es `en`, así que una clave sin
-traducir sale en inglés, no en crudo.
+Ten languages, all bundled (there is no backend to fetch them from): Spanish,
+English, Chinese, Hindi, Arabic, Portuguese, Russian, Japanese, German and
+French. Keys are lower-case English and the fallback is `en`, so a key nobody
+has translated yet shows English rather than the bare key.
 
-El árabe arrastra `dir="rtl"` a `<html>`. La hoja de estilos está escrita con
-**propiedades lógicas** (`inline-start`/`inline-end`, `text-align: start`), así
-que la interfaz se refleja sola: no hay una segunda hoja de estilos ni reglas
-`[dir]` que mantener en sincronía.
+Arabic drives `dir="rtl"` onto `<html>`. The stylesheet is written with
+**logical properties** (`inline-start`/`inline-end`, `text-align: start`), so the
+interface mirrors itself: there is no second stylesheet and no `[dir]` rules to
+keep in sync.
 
-Ningún texto interpola un número. Las cifras se pintan en su propio nodo junto a
-un sustantivo llano (`12` + `pistas`), que deja a todos los idiomas fuera del
-lío de las reglas de plural — el árabe solo ya tiene seis formas.
+No string interpolates a number. Figures are painted as their own node next to a
+plain noun (`12` + `tracks`), which keeps every language out of the plural-rule
+business — Arabic alone has six forms.
 
-Cinco **paletas**: oro, hielo, rosa, hoja y *según la carátula*, que es la que
-había antes de que hubiera paletas y sigue siendo la de por defecto — el acento
-se tiñe con el color dominante del disco que suena. Elegir una paleta apaga ese
-tinte; volver a «según la carátula» se lo devuelve.
+Five **palettes**: gold, ice, rose, leaf, and *from the cover*, which is what the
+app did before there were palettes and stays the default — the accent is tinted
+with the dominant colour of the record playing. Choosing a palette turns that
+tint off; going back to "from the cover" hands it back.
 
-Cada paleta está definida **dos veces**, porque un color que se lee bien sobre
-blanco casi nunca es el que se lee bien sobre casi-negro: el bloque de esquema
-oscuro cambia el color por su gemelo legible y la tinta que va encima. Los
-contrastes se miden en un test, no se juzgan a ojo: las diez combinaciones de
-paleta y esquema cumplen 3:1 para el acento sobre la página y 4,5:1 para la
-tinta sobre el acento.
+Each palette is defined **twice**, because a colour that reads well on white is
+rarely the one that reads well on near-black: the dark-scheme block swaps in the
+readable twin and the ink that goes on top of it. Contrast is measured by a test,
+not judged by eye: all ten palette-and-scheme combinations clear 3:1 for the
+accent against the page and 4.5:1 for ink on the accent.
 
-## Además
+## Also
 
-- **Etiquetas ID3** (v2.2/2.3/2.4 y v1) leídas sin dependencias, con carátula;
-  si un fichero no las tiene, se deduce del nombre y de la carpeta. El audio se
-  reconoce por extensión **y por tipo MIME**, porque Android entrega ficheros
-  cuyo nombre no lleva extensión usable.
-- **`MediaSession`**: controles del sistema y de los auriculares.
-- **Teclado**: espacio, ←, →.
-- **PWA instalable**: manifiesto con iconos 192/512 y uno *maskable*. Instalarla
-  no es cosmético: Chrome solo ofrece el permiso permanente de carpetas a apps
-  instaladas.
-- **Barra de escaneo** visible desde cualquier pantalla mientras se lee una
-  carpeta, con carpeta, contador, reloj y botón de **parar** — que conserva lo
-  ya leído.
-- **Aviso de versión nueva**: el build emite un `version.json` y la app compara
-  su propio sello al arrancar y al volver a la pestaña. Sin esto, una pestaña
-  abierta durante un despliegue sigue con el bundle viejo y el único síntoma es
-  que un arreglo «no funciona».
-- **Diagnóstico** en Fuentes: qué API tiene el navegador, si el almacenamiento
-  es duradero, si la última escritura aterrizó, y por fuente cuántos ficheros
-  entregó el recorrido, cuántos se tomaron como audio y si una referencia
-  guardada **todavía se puede leer**.
-- El **diálogo de bienvenida** (qué es esto, cómo se usa, créditos) sale una
-  vez, lleva «no volver a mostrar» y queda siempre a mano en la barra y en el
-  pie del reproductor. Lleva también la versión y la fecha de compilación.
+- **ID3 tags** (v2.2/2.3/2.4 and v1) read with no dependencies, cover art
+  included; a file without them is deduced from its name and its folder. Audio is
+  recognised by extension **and by MIME type**, because Android hands over files
+  whose display name carries no usable extension.
+- **`MediaSession`**: system and headset controls.
+- **Keyboard**: space, ←, →.
+- **Installable PWA**: a manifest with 192/512 icons and a maskable one.
+  Installing is not cosmetic: Chrome only offers persistent folder permissions to
+  installed apps.
+- **A scan bar** visible from every screen while a folder is being read, with the
+  folder, a counter, a clock and a **Stop** button — which keeps what was already
+  read.
+- **New-version notice**: the build emits a `version.json` and the app compares
+  its own stamp at start up and whenever the tab comes back to the front. Without
+  it, a tab left open across a deploy goes on running the old bundle and the only
+  symptom is that a fix "does not work".
+- **Diagnostics** in Sources: which APIs the browser has, whether storage is
+  durable, whether the last write landed, and per source how many files the walk
+  handed over, how many were taken as audio, and whether a stored reference
+  **can still be read**.
+- The **welcome dialog** (what this is, how it works, credits) shows once,
+  carries "do not show this again", and stays reachable from the toolbar and the
+  player footer. It also carries the version and the build stamp.
 
-## Desarrollo
+## Development
 
 ```bash
-npm install      # bulma, i18next y @yuneta/{gobj-js,gobj-ui} desde el registro npm
+npm install      # bulma, i18next and @yuneta/{gobj-js,gobj-ui} from the npm registry
 npm run dev      # http://localhost:5173
-npm run build    # bundle de producción en ./dist
-npm run preview  # sirve ./dist localmente
+npm run build    # production bundle in ./dist
+npm run preview  # serves ./dist locally
 ```
 
-Las librerías de Yuneta se consumen como dependencias versionadas del registro,
-no enlazadas a un checkout: `vite.config.js` no tiene alias.
+The Yuneta libraries are consumed as versioned registry dependencies, not linked
+to a checkout: `vite.config.js` has no aliases.
 
-**La versión se sube en cada cambio.** `vite.config.js` empotra `version` y la
-fecha de compilación como constantes y las emite además en `version.json`; las
-dos cosas se ven en el diálogo de ayuda y en el diagnóstico. Es lo que permite
-saber, sin adivinar, si lo que hay en pantalla es lo último desplegado.
+**The version is bumped on every change.** `vite.config.js` bakes `version` and
+the build stamp in as constants and also emits them as `version.json`; both are
+visible in the help dialog and in the diagnostics. That is what makes it possible
+to tell, rather than guess, whether what is on screen is the latest deploy.
 
-## Despliegue
+## Deployment
 
-`npm run build` deja el sitio estático en `./dist`. `deploy_yunomusica.sh` hace
-una copia de seguridad y un `rsync` de `./dist/` al host
-(`yunomusica.com:/yuneta/gui/yunomusica.com`). No hay backend: es un árbol de
-gobjs puro con enrutado por hash.
+`npm run build` leaves the static site in `./dist`. `deploy_yunomusica.sh` takes a
+backup and rsyncs `./dist/` to the host
+(`yunomusica.com:/yuneta/gui/yunomusica.com`). There is no backend: it is a pure
+gobj tree with hash routing.
 
 ```bash
 npm run build && ./deploy_yunomusica.sh
 ```
 
-El vhost sirve `.webmanifest` como `application/manifest+json` y revalida
-`index.html` en cada petición, para que un redespliegue se recoja al momento.
+The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
+`index.html` on every request, so a redeploy is picked up immediately.
 
-## Estructura
+## Layout
 
-| Fichero | Qué es |
+| File | What it is |
 |---|---|
-| `src/main.js` | arranque: registra gclasses, i18n, crea el yuno |
-| `src/app_config.json` | la cáscara declarativa: barra, menú y las cuatro rutas |
-| `src/c_musica.js` | servicio raíz: shell, mini-player, barra de escaneo, tema, paleta, idioma, arranque |
-| `src/c_mus_deck.js` | **Reproductor**: mandos arriba, cola debajo |
-| `src/c_mus_view.js` | **Biblioteca**: las cinco agrupaciones y su detalle |
-| `src/c_mus_sources.js` | **Fuentes**: carpetas autorizadas, permisos, relectura, diagnóstico |
-| `src/c_mus_lists.js` | **Listas**: las colas guardadas |
-| `src/about_dialog.js` | el diálogo de bienvenida / ayuda / créditos |
-| `src/confirm_replace.js` | «¿sustituir lo que hay en el plato?» — añadir, sustituir o cancelar |
-| `src/update_check.js` | ¿sigue esta pestaña con el bundle desplegado? |
-| `src/music_store.js` | dominio: ID3, biblioteca, cola, escucha previa y reproducción |
-| `src/sources_store.js` | las fuentes autorizadas, su lectura recursiva y su diagnóstico |
-| `src/playlists_store.js` | las listas guardadas y su resolución |
-| `src/idb.js` | el envoltorio mínimo sobre IndexedDB |
-| `src/locales/` | `locales.js` + los diez ficheros de traducción |
-| `src/musica.css` | estilos de la app, incluidas las paletas |
+| `src/main.js` | start up: registers gclasses and i18n, creates the yuno |
+| `src/app_config.json` | the declarative shell: toolbar, menu and the four routes |
+| `src/c_musica.js` | root service: shell, mini-player, scan bar, theme, palette, language, boot |
+| `src/c_mus_deck.js` | **Player**: transport on top, queue below |
+| `src/c_mus_view.js` | **Library**: the five groupings and their drill-down |
+| `src/c_mus_sources.js` | **Sources**: authorised folders, permissions, rescan, diagnostics |
+| `src/c_mus_lists.js` | **Lists**: the saved queues |
+| `src/about_dialog.js` | the welcome / help / credits dialog |
+| `src/confirm_replace.js` | "replace what is on the deck?" — add, replace or cancel |
+| `src/update_check.js` | is this tab still running the deployed bundle? |
+| `src/music_store.js` | domain: ID3, library, queue, preview and playback |
+| `src/sources_store.js` | the authorised sources, their recursive walk and their diagnostics |
+| `src/playlists_store.js` | the saved lists and how they resolve |
+| `src/idb.js` | the minimal wrapper over IndexedDB |
+| `src/locales/` | `locales.js` plus the ten translation files |
+| `src/musica.css` | the app's styling, palettes included |
 
-## Un par de cosas que cuesta descubrir dos veces
+## A few things that are expensive to work out twice
 
-- El shell coloca sus vistas como `.yui-zone-center > * { flex: 1 0 auto }`: son
-  **elementos flex con `shrink: 0`**, así que una vista sin `width: 100%` se
-  dimensiona por su contenido y ya no encoge. Una sola cadena larga sin cortes
-  (una ruta, una lista de nombres) se lleva la vista fuera de la pantalla del
-  móvil. Lo mismo con `min-width: auto` en los elementos de un grid.
-- Un `File` restaurado desde IndexedDB **no conserva `webkitRelativePath`**: hay
-  que guardar la ruta a su lado o el caché de etiquetas falla en todos.
-- `createElement2` recorta los nodos de texto: la separación entre una cifra y
-  su sustantivo la pone el CSS, no el marcado.
+- The shell lays its views out as `.yui-zone-center > * { flex: 1 0 auto }`: they
+  are **flex items with `shrink: 0`**, so a view without `width: 100%` is sized by
+  its own content and never comes back down. One long unbreakable string — a
+  path, a list of folder names — then carries the view off the side of a phone.
+  Same story with `min-width: auto` on grid items.
+- A `File` restored from IndexedDB **does not keep `webkitRelativePath`**. The
+  path has to be stored beside it, or the tag cache misses on every single file.
+- `createElement2` trims text nodes: the space between a figure and its noun
+  comes from the CSS, not from the markup.
