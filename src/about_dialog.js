@@ -121,6 +121,16 @@ function build_footer(first_run)
                 rel: "noopener noreferrer",
                 i18n: "made by artgins"
             }, t("made by artgins")],
+            /*  Both credits are links: who made it, and what it is made
+                with. The framework earns a way to its own landing page,
+                not just a mention in passing. */
+            ["a", {
+                class: "MUS_ABOUT_BRAND MUS_ABOUT_YUNETA",
+                href: "https://yuneta.io",
+                target: "_blank",
+                rel: "noopener noreferrer",
+                i18n: "made with yuneta"
+            }, t("made with yuneta")],
             ["span", {class: "MUS_ABOUT_TAGLINE", i18n: "about tagline"},
                 t("about tagline")],
             /*  Which build is this? Baked in at compile time, so it

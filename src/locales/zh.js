@@ -154,7 +154,8 @@ const zh = {
             "你的文件不会离开设备。没有服务器可以接收它们。",
         "do not show this again": "不再显示",
         "made by artgins":      "由 ArtGins 制作",
-        "about tagline":        "基于 Yuneta 构建 —— 一个面向分布式系统的事件驱动框架。",
+        "made with yuneta":     "使用 Yuneta 构建",
+        "about tagline":        "一个面向分布式系统的事件驱动框架。",
     },
 };
 

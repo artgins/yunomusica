@@ -154,7 +154,8 @@ const ja = {
             "ファイルが端末から出ることはありません。送る先のサーバーが存在しないからです。",
         "do not show this again": "今後表示しない",
         "made by artgins":      "ArtGins 制作",
-        "about tagline":        "Yuneta 上に構築 — 分散システムのためのイベント駆動フレームワーク。",
+        "made with yuneta":     "Yuneta で構築",
+        "about tagline":        "分散システムのためのイベント駆動フレームワーク。",
     },
 };
 

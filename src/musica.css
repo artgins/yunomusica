@@ -1133,6 +1133,8 @@ img.MUS_ART { object-fit: cover; }
     color: var(--mus-accent);
     text-decoration: none;
 }
+.MUS_ABOUT_BRAND:hover { text-decoration: underline; }
+.MUS_ABOUT_YUNETA { font-weight: 600; }
 .MUS_ABOUT_TAGLINE {
     font-size: 0.78rem;
     color: var(--bulma-text-weak, #8a8a8a);

@@ -154,7 +154,8 @@ const de = {
             "Deine Dateien verlassen das Gerät nicht. Es gibt keinen Server, an den sie gehen könnten.",
         "do not show this again": "Nicht mehr anzeigen",
         "made by artgins":      "Gemacht von ArtGins",
-        "about tagline":        "Gebaut auf Yuneta — einem ereignisgesteuerten Framework für verteilte Systeme.",
+        "made with yuneta":     "Gemacht mit Yuneta",
+        "about tagline":        "Ein ereignisgesteuertes Framework für verteilte Systeme.",
     },
 };
 

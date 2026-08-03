@@ -158,7 +158,8 @@ const ar = {
             "ملفاتك لا تغادر الجهاز. لا يوجد خادم تُرسل إليه.",
         "do not show this again": "لا تعرض هذا مرة أخرى",
         "made by artgins":      "من صنع ArtGins",
-        "about tagline":        "مبني على Yuneta — إطار عمل مدفوع بالأحداث للأنظمة الموزَّعة.",
+        "made with yuneta":     "مصنوع باستخدام Yuneta",
+        "about tagline":        "إطار عمل مدفوع بالأحداث للأنظمة الموزَّعة.",
     },
 };
 

@@ -154,7 +154,8 @@ const pt = {
             "Os teus ficheiros não saem do dispositivo. Não há servidor para onde os enviar.",
         "do not show this again": "Não voltar a mostrar",
         "made by artgins":      "Feito pela ArtGins",
-        "about tagline":        "Construído sobre o Yuneta — uma framework orientada a eventos para sistemas distribuídos.",
+        "made with yuneta":     "Feito com Yuneta",
+        "about tagline":        "Uma framework orientada a eventos para sistemas distribuídos.",
     },
 };
 

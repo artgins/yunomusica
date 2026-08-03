@@ -171,7 +171,8 @@ const en = {
             "Your files never leave the device. There is no server to send them to.",
         "do not show this again": "Do not show this again",
         "made by artgins":      "Made by ArtGins",
-        "about tagline":        "Built on Yuneta — an event-driven framework for distributed systems.",
+        "made with yuneta":     "Made with Yuneta",
+        "about tagline":        "An event-driven framework for distributed systems.",
     },
 };
 

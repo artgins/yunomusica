@@ -154,7 +154,8 @@ const fr = {
             "Vos fichiers ne quittent pas l'appareil. Il n'y a aucun serveur où les envoyer.",
         "do not show this again": "Ne plus afficher",
         "made by artgins":      "Réalisé par ArtGins",
-        "about tagline":        "Bâti sur Yuneta — un framework événementiel pour systèmes distribués.",
+        "made with yuneta":     "Réalisé avec Yuneta",
+        "about tagline":        "Un framework événementiel pour systèmes distribués.",
     },
 };
 

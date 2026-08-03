@@ -239,6 +239,13 @@ function build_ui(gobj)
                 rel: "noopener noreferrer",
                 i18n: "made by artgins"
             }, t("made by artgins")],
+            ["a", {
+                class: "MUS_CREDITS_BRAND",
+                href: "https://yuneta.io",
+                target: "_blank",
+                rel: "noopener noreferrer",
+                i18n: "made with yuneta"
+            }, t("made with yuneta")],
             ["button", {class: "MUS_CREDITS_HELP", type: "button", i18n: "help"},
                 t("help"), {click: () => open_help(gobj)}]
         ]]
