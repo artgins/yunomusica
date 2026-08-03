@@ -1,5 +1,7 @@
 # yunomúsica
 
+**Version 2.6.4** — live at [yunomusica.com](https://yunomusica.com)
+
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
 is copied and nothing is uploaded — and you build whatever queue you want out of
@@ -152,6 +154,15 @@ to a checkout: `vite.config.js` has no aliases.
 the build stamp in as constants and also emits them as `version.json`; both are
 visible in the help dialog and in the diagnostics. That is what makes it possible
 to tell, rather than guess, whether what is on screen is the latest deploy.
+
+`package.json` is the one that counts — it is what gets built, shipped and
+served at `/version.json`. The line at the top of this README is a copy for
+whoever is reading the repo rather than the app, and goes up with it:
+
+```bash
+grep '"version"' package.json          # what is actually shipping
+curl -s https://yunomusica.com/version.json    # what is actually deployed
+```
 
 ## Deployment
 
