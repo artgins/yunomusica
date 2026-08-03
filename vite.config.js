@@ -25,7 +25,23 @@ import { readFileSync } from "fs";
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
 const stamp = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
 
+/*  The same two constants, emitted as a tiny file the running app can
+    fetch to find out whether it is still the current build. Without it a
+    long-lived tab never learns that a deploy happened: this is a hash-
+    routed SPA, so moving between screens reloads nothing. */
+const version_file = {
+    name: "yunomusica-version-file",
+    generateBundle() {
+        this.emitFile({
+            type: "asset",
+            fileName: "version.json",
+            source: JSON.stringify({version: pkg.version, stamp: stamp}) + "\n",
+        });
+    },
+};
+
 export default defineConfig({
+    plugins: [version_file],
     define: {
         __APP_VERSION__: JSON.stringify(pkg.version),
         __BUILD_STAMP__: JSON.stringify(stamp),

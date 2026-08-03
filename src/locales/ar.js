@@ -115,6 +115,8 @@ const ar = {
         "remove this source":   "إزالة هذا المصدر",
         "diagnostics":         "تشخيص",
         "copy":                "نسخ",
+        "new version":         "تتوفر نسخة جديدة",
+        "reload":             "إعادة التحميل",
 
         "saved lists":          "القوائم المحفوظة",
         "no saved lists yet":   "لا توجد قوائم محفوظة بعد.",

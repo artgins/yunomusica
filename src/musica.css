@@ -1097,6 +1097,7 @@ img.MUS_ART { object-fit: cover; }
     background: var(--mus-accent-soft);
     border: 1px solid var(--mus-accent);
 }
+.MUS_UPDBAR { margin-bottom: 0.2rem; }
 .MUS_AUTHBAR_TXT { flex: 1; min-width: 14ch; display: flex; flex-direction: column; }
 .MUS_AUTHBAR_TXT > span:first-child { font-weight: 600; font-size: 0.9rem; }
 .MUS_AUTHBAR_WHICH {

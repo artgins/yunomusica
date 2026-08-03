@@ -116,6 +116,8 @@ const es = {
         "remove this source":   "Quitar esta fuente",
         "diagnostics":         "Diagnóstico",
         "copy":                "Copiar",
+        "new version":         "Hay una versión nueva",
+        "reload":             "Recargar",
 
         /* ---- las listas guardadas ---- */
         "saved lists":          "Listas guardadas",

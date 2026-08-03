@@ -111,6 +111,8 @@ const pt = {
         "remove this source":   "Remover esta fonte",
         "diagnostics":         "Diagnóstico",
         "copy":                "Copiar",
+        "new version":         "Há uma versão nova",
+        "reload":             "Recarregar",
 
         "saved lists":          "Listas guardadas",
         "no saved lists yet":   "Ainda não há listas guardadas.",

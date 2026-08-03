@@ -126,6 +126,8 @@ const en = {
         "remove this source":   "Remove this source",
         "diagnostics":         "Diagnostics",
         "copy":                "Copy",
+        "new version":         "A new version is available",
+        "reload":             "Reload",
 
         /* ---- the saved lists ---- */
         "saved lists":          "Saved lists",

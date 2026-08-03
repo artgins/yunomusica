@@ -111,6 +111,8 @@ const zh = {
         "remove this source":   "移除此来源",
         "diagnostics":         "诊断信息",
         "copy":                "复制",
+        "new version":         "有新版本可用",
+        "reload":             "重新加载",
 
         "saved lists":          "已保存的列表",
         "no saved lists yet":   "还没有保存的列表。",

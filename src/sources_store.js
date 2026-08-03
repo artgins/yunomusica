@@ -35,6 +35,9 @@ import {
     ingest, drop_source_tracks, cancel_ingest,
     tags_of_source, covers_snapshot, prime_covers, is_audio,
 } from "./music_store.js";
+import {
+    is_stale as update_stale, latest_version as update_latest,
+} from "./update_check.js";
 
 /*  Files are stored in batches. One record holding every File of a big
     folder exceeds the structured-clone limit and the write is refused,
@@ -305,6 +308,7 @@ async function persist(source)
         added:  source.added,
         count:  source.count || 0,
         seen:   source.seen || 0,
+        walk:   source.walk || null,
     });
 
     if(ok && source.kind === "files" && source.files) {
@@ -390,7 +394,8 @@ async function diagnose()
     let lines = [];
     const add = (k, v) => lines.push({k: k, v: String(v)});
 
-    add("version", __APP_VERSION__ + "  built " + __BUILD_STAMP__);
+    add("version", __APP_VERSION__ + "  built " + __BUILD_STAMP__ +
+        (update_stale() ? "   *** OUTDATED, deployed: " + update_latest() + " ***" : ""));
 
     let mode = "browser";
     if(typeof matchMedia === "function") {
@@ -426,6 +431,18 @@ async function diagnose()
             `kind=${s.kind} permission=${perm} walked=${s.seen || "?"} ` +
             `audio=${s.count || 0} stored=${n}` +
             (r.error ? ` error=${r.error}` : ""));
+
+        /*  For a folder walk: what the tree contained versus what came
+            back. A gap here means files the browser would not hand over,
+            not files we chose to ignore. */
+        if(s.walk) {
+            let w = s.walk;
+            let errs = Object.keys(w.errors || {})
+                .map((k) => k + "×" + w.errors[k]).join(" ");
+            add("   walk", `entries=${w.entries} subdirs=${w.dirs} ` +
+                `unreadable=${w.skipped} bad-dirs=${w.dir_errors}` +
+                (errs ? "  " + errs : ""));
+        }
 
         /*  Of the files that were NOT taken, what were they? A handful of
             extensions explains a count gap far better than the gap does. */
@@ -642,14 +659,50 @@ function label_for_files(files)
 /***************************************************************
  *      Scanning — always recursive
  ***************************************************************/
-async function walk_dir(handle, path, out)
+function note_error(stats, e)
 {
-    for await (const entry of handle.values()) {
+    let name = (e && e.name) || String(e);
+    stats.errors[name] = (stats.errors[name] || 0) + 1;
+}
+
+/*  `stats` records what the walk met and what it could not take. Files
+    that fail getFile() used to be dropped in silence, which is exactly
+    how a folder can hand back fewer files in one browser than in another
+    with nothing to show for it. Now the count and the reasons are kept
+    and reported in the diagnostics. */
+async function walk_dir(handle, path, out, stats)
+{
+    let it;
+    try {
+        it = handle.values();
+    } catch(e) {
+        stats.dir_errors++;
+        return;
+    }
+    for(;;) {
+        let step;
+        try {
+            step = await it.next();
+        } catch(e) {
+            /*  One unreadable directory must not cost us the rest of the
+                tree, which is what letting this throw used to do. */
+            stats.dir_errors++;
+            note_error(stats, e);
+            return;
+        }
+        if(step.done) {
+            return;
+        }
+        const entry = step.value;
+        stats.entries++;
+
         if(entry.kind === "file") {
             let f;
             try {
                 f = await entry.getFile();
             } catch(e) {
+                stats.skipped++;
+                note_error(stats, e);
                 continue;               // vanished between listing and reading
             }
             try {
@@ -662,7 +715,8 @@ async function walk_dir(handle, path, out)
         } else {
             /*  Recursive on purpose: choosing a folder means that folder
                 and everything below it. */
-            await walk_dir(entry, path + entry.name + "/", out);
+            stats.dirs++;
+            await walk_dir(entry, path + entry.name + "/", out, stats);
         }
     }
 }
@@ -679,9 +733,11 @@ async function scan(id, force)
     emit();
 
     let files = [];
+    let stats = {entries: 0, dirs: 0, skipped: 0, dir_errors: 0, errors: {}};
     try {
         if(source.kind === "dir") {
-            await walk_dir(source.handle, source.handle.name + "/", files);
+            await walk_dir(source.handle, source.handle.name + "/", files, stats);
+            source.walk = stats;
         } else {
             files = source.files || [];
         }

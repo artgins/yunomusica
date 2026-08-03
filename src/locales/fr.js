@@ -111,6 +111,8 @@ const fr = {
         "remove this source":   "Retirer cette source",
         "diagnostics":         "Diagnostic",
         "copy":                "Copier",
+        "new version":         "Une nouvelle version est disponible",
+        "reload":             "Recharger",
 
         "saved lists":          "Listes enregistrées",
         "no saved lists yet":   "Pas encore de liste enregistrée.",

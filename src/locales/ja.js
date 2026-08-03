@@ -111,6 +111,8 @@ const ja = {
         "remove this source":   "このソースを取り除く",
         "diagnostics":         "診断情報",
         "copy":                "コピー",
+        "new version":         "新しいバージョンがあります",
+        "reload":             "再読み込み",
 
         "saved lists":          "保存したリスト",
         "no saved lists yet":   "保存したリストはまだありません。",

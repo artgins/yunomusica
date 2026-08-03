@@ -54,6 +54,7 @@ import {load_playlists} from "./playlists_store.js";
 
 import {switch_locale, current_locale} from "./locales/locales.js";
 import {open_about, welcome_dismissed, about_bind_shell} from "./about_dialog.js";
+import {start_update_watch} from "./update_check.js";
 
 import {t} from "i18next";
 
@@ -245,6 +246,8 @@ function mt_destroy(gobj)
 async function boot(gobj)
 {
     let priv = gobj.priv;
+
+    start_update_watch();
 
     await load_playlists();
     await load_sources();

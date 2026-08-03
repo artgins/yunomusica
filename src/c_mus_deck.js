@@ -47,6 +47,7 @@ import {
     subscribe_sources, pending_authorisation, authorize_all,
 } from "./sources_store.js";
 import {save_queue_as} from "./playlists_store.js";
+import {subscribe_update, is_stale, latest_version} from "./update_check.js";
 import {open_about} from "./about_dialog.js";
 
 import {t} from "i18next";
@@ -107,6 +108,7 @@ SDATA_END()
 let PRIVATE_DATA = {
     unsub:      null,
     unsub_src:  null,   // sources channel, for the authorisation banner
+    unsub_upd:  null,   // a newer build was deployed
     $now:       null,   // the transport card
     $queue:     null,   // the queue box
     naming:     false,  // the "save as list" row is open
@@ -161,6 +163,7 @@ function mt_start(gobj)
     /*  The authorisation banner lives on this screen, so it has to
         follow the sources too. */
     priv.unsub_src = subscribe_sources(() => paint_now(gobj));
+    priv.unsub_upd = subscribe_update(() => paint_now(gobj));
 
     /*  A language switch re-renders everything this view composed with
         t() at build time — see the gobj-ui i18n contract. */
@@ -186,6 +189,10 @@ function mt_stop(gobj)
     if(priv.unsub_src) {
         priv.unsub_src();
         priv.unsub_src = null;
+    }
+    if(priv.unsub_upd) {
+        priv.unsub_upd();
+        priv.unsub_upd = null;
     }
 }
 
@@ -337,6 +344,23 @@ function paint_now(gobj)
 
     $now.appendChild(createElement2(
         ["div", {class: "MUS_DECKCARD"}, [$head, $seek, $times, $transport]]));
+
+    /*  A tab opened before a deploy goes on running the old bundle, and
+        the only symptom is that a fix appears not to have worked. Say
+        it, and let the user choose when to reload — they may be in the
+        middle of listening to something. */
+    if(is_stale()) {
+        $now.appendChild(createElement2(
+            ["div", {class: "MUS_AUTHBAR MUS_UPDBAR", role: "status"}, [
+                ["div", {class: "MUS_AUTHBAR_TXT"}, [
+                    ["span", {i18n: "new version"}, t("new version")],
+                    ["span", {class: "MUS_AUTHBAR_WHICH"}, latest_version()]
+                ]],
+                ["button", {class: "MUS_QBTN button is-primary", type: "button",
+                            i18n: "reload"},
+                    t("reload"), {click: () => location.reload()}]
+            ]]));
+    }
 
     /*  Chrome hands back the folder but not the permission on it, every
         launch, and nothing the app can call changes that. What it CAN do

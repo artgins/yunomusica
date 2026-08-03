@@ -111,6 +111,8 @@ const ru = {
         "remove this source":   "Убрать этот источник",
         "diagnostics":         "Диагностика",
         "copy":                "Копировать",
+        "new version":         "Доступна новая версия",
+        "reload":             "Перезагрузить",
 
         "saved lists":          "Сохранённые списки",
         "no saved lists yet":   "Сохранённых списков пока нет.",

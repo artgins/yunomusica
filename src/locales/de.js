@@ -111,6 +111,8 @@ const de = {
         "remove this source":   "Diese Quelle entfernen",
         "diagnostics":         "Diagnose",
         "copy":                "Kopieren",
+        "new version":         "Eine neue Version ist verfügbar",
+        "reload":             "Neu laden",
 
         "saved lists":          "Gespeicherte Listen",
         "no saved lists yet":   "Noch keine gespeicherten Listen.",

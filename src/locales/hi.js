@@ -111,6 +111,8 @@ const hi = {
         "remove this source":   "यह स्रोत हटाएँ",
         "diagnostics":         "निदान",
         "copy":                "कॉपी करें",
+        "new version":         "नया संस्करण उपलब्ध है",
+        "reload":             "फिर से लोड करें",
 
         "saved lists":          "सहेजी गई सूचियाँ",
         "no saved lists yet":   "अभी कोई सहेजी गई सूची नहीं है।",
