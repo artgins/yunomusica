@@ -994,6 +994,42 @@ img.MUS_ART { object-fit: cover; }
 .MUS_PLAYER.is-preview .MUS_PARTIST { color: var(--mus-accent); font-weight: 600; }
 .MUS_PLAYER.is-preview .MUS_PCTL { gap: 0.4rem; }
 
+/*  The two preview verbs are TEXT buttons, not transport glyphs. Left to
+    themselves they took the 40px circle `.MUS_PCTL button` sets below —
+    a label in an icon's width, spilling over its neighbour and over the
+    title, which is why the strip read as one run-on line. */
+.MUS_PLAYER.is-preview .MUS_PCTL button {
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+/*  And the ghost one is a button here, not a link in a paragraph. */
+.MUS_PLAYER.is-preview .MUS_PCTL .is-ghost {
+    color: inherit;
+    text-decoration: none;
+    border: 1px solid color-mix(in srgb, var(--mus-accent) 55%, transparent);
+}
+
+/*  On a phone the cover and the two labels leave the title a few pixels
+    to ellipsize into. Give the verbs their own line rather than have
+    them race the title for the same one. */
+@media (max-width: 560px) {
+    .MUS_PLAYER.is-preview .MUS_PBAR {
+        flex-wrap: wrap;
+        height: auto;
+        row-gap: 0.5rem;
+        padding-block: 0.6rem;
+    }
+    .MUS_PLAYER.is-preview .MUS_PCTL {
+        flex-basis: 100%;
+        justify-content: flex-end;
+    }
+}
+
 .MUS_QORIGIN { flex-basis: 100%; font-size: 0.8rem; }
 .MUS_QORIGIN_KIND { color: var(--bulma-text-weak, #8a8a8a); }
 .MUS_QORIGIN_NAME { font-weight: 600; margin-inline-start: 0.35rem; }

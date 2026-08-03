@@ -866,6 +866,9 @@ function get_preview_audio()
 {
     if(!S.preview_audio) {
         S.preview_audio = new Audio();
+        /*  Same channel as the queue's clock: whoever is painting a
+            position repaints, and each asks for the one it owns. */
+        S.preview_audio.addEventListener("timeupdate", () => emit("time"));
         S.preview_audio.addEventListener("ended", () => stop_preview());
         S.preview_audio.addEventListener("error", () => {
             let err = S.preview_audio.error;
@@ -1211,6 +1214,35 @@ function progress()
     };
 }
 
+/*  A preview sounds on its own element, so it has its own clock — and
+    the strip that shows it must read THAT one. Asking `progress()` gave
+    the position of the queue track, which is paused underneath: the bar
+    sat frozen wherever the queue was left, and a click on it seeked
+    music nobody was listening to.
+
+    The deck keeps reading `progress()` on purpose. Down there the
+    transport still belongs to the queue, and it should go on showing
+    where the queue is waiting. */
+function preview_progress()
+{
+    const audio = S.preview_audio;
+    const dur = (audio && audio.duration) || 0;
+    return {
+        current: (audio && audio.currentTime) || 0,
+        duration: dur,
+        fraction: dur ? (audio.currentTime / dur) : 0,
+    };
+}
+
+function seek_preview_fraction(fraction)
+{
+    const audio = S.preview_audio;
+    if(!audio || !audio.duration) {
+        return;
+    }
+    audio.currentTime = Math.max(0, Math.min(1, fraction)) * audio.duration;
+}
+
 function queue_position()
 {
     return {index: S.qi, length: S.queue.length};
@@ -1310,6 +1342,8 @@ export {
     preview_track,
     stop_preview,
     previewing,
+    preview_progress,
+    seek_preview_fraction,
     /*  the deck across a reload */
     queue_snapshot,
     restore_queue,

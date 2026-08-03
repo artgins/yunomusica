@@ -41,6 +41,7 @@ const TESTS = [
     {name: "select",    what: "navegar no cambia lo que suena"},
     {name: "confirm",   what: "aviso antes de sustituir la cola"},
     {name: "fitmobile", what: "nada se sale del ancho del móvil"},
+    {name: "preview",   what: "la tira de escucha se lee y su reloj avanza"},
     {name: "e2e",       what: "recorrido completo + recarga"}
 ];
 

@@ -45,6 +45,7 @@ import {
     cancel_ingest, fmt_time,
     queue_snapshot, restore_queue,
     previewing, stop_preview, queue_add,
+    preview_progress, seek_preview_fraction,
 } from "./music_store.js";
 
 import {
@@ -497,7 +498,14 @@ function seek_at(ev, node)
     let f = getComputedStyle(node).direction === "rtl"
         ? 1 - (x / r.width)
         : (x / r.width);
-    seek_fraction(r.width ? f : 0);
+    f = r.width ? f : 0;
+    /*  Seek what is sounding. During a preview that is the preview, not
+        the queue track paused behind it. */
+    if(previewing()) {
+        seek_preview_fraction(f);
+    } else {
+        seek_fraction(f);
+    }
 }
 
 
@@ -740,7 +748,8 @@ function paint_time(gobj)
     }
     let $fill = priv.$player.querySelector(".MUS_SEEK_FILL");
     if($fill) {
-        $fill.style.width = (progress().fraction * 100) + "%";
+        let p = previewing() ? preview_progress() : progress();
+        $fill.style.width = (p.fraction * 100) + "%";
     }
 }
 
