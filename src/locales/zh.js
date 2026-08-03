@@ -19,6 +19,12 @@ const zh = {
         "add folder":           "添加文件夹",
         "add files":            "添加文件",
         "theme":                "浅色 / 深色主题",
+        "colours":              "颜色",
+        "palette auto":         "跟随封面",
+        "palette gold":         "金色",
+        "palette ice":          "冰蓝",
+        "palette rose":         "玫瑰",
+        "palette leaf":         "叶绿",
         "language":             "语言",
         "help":                 "帮助与致谢",
 

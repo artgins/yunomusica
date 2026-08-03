@@ -76,6 +76,28 @@
                 }
             },
             {
+                "id": "palette",
+                "icon": "mi-palette",
+                "align": "end",
+                "aria_label": "colours",
+                "tooltip": "colours",
+                "action": {
+                    "type": "dropdown",
+                    "items": [
+                        {"id": "pal-auto", "name": "palette auto",
+                         "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "auto"}}},
+                        {"id": "pal-gold", "name": "palette gold",
+                         "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "gold"}}},
+                        {"id": "pal-ice", "name": "palette ice",
+                         "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "ice"}}},
+                        {"id": "pal-rose", "name": "palette rose",
+                         "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "rose"}}},
+                        {"id": "pal-leaf", "name": "palette leaf",
+                         "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "leaf"}}}
+                    ]
+                }
+            },
+            {
                 "id": "theme",
                 "icon": "yi-moon",
                 "align": "end",

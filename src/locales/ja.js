@@ -19,6 +19,12 @@ const ja = {
         "add folder":           "フォルダーを追加",
         "add files":            "ファイルを追加",
         "theme":                "ライト / ダークテーマ",
+        "colours":              "色",
+        "palette auto":         "ジャケットに合わせる",
+        "palette gold":         "ゴールド",
+        "palette ice":          "アイス",
+        "palette rose":         "ローズ",
+        "palette leaf":         "リーフ",
         "language":             "言語",
         "help":                 "ヘルプとクレジット",
 

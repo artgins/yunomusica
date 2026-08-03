@@ -19,6 +19,12 @@ const fr = {
         "add folder":           "Ajouter un dossier",
         "add files":            "Ajouter des fichiers",
         "theme":                "Thème clair / sombre",
+        "colours":              "Couleur",
+        "palette auto":         "D'après la pochette",
+        "palette gold":         "Or",
+        "palette ice":          "Glace",
+        "palette rose":         "Rose",
+        "palette leaf":         "Feuille",
         "language":             "Langue",
         "help":                 "Aide et crédits",
 

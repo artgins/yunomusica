@@ -19,6 +19,12 @@ const ru = {
         "add folder":           "Добавить папку",
         "add files":            "Добавить файлы",
         "theme":                "Светлая / тёмная тема",
+        "colours":              "Цвет",
+        "palette auto":         "По обложке",
+        "palette gold":         "Золото",
+        "palette ice":          "Лёд",
+        "palette rose":         "Роза",
+        "palette leaf":         "Лист",
         "language":             "Язык",
         "help":                 "Справка и авторы",
 

@@ -19,6 +19,12 @@ const hi = {
         "add folder":           "फ़ोल्डर जोड़ें",
         "add files":            "फ़ाइलें जोड़ें",
         "theme":                "हल्की / गहरी थीम",
+        "colours":              "रंग",
+        "palette auto":         "कवर के अनुसार",
+        "palette gold":         "सुनहरा",
+        "palette ice":          "बर्फ़ीला",
+        "palette rose":         "गुलाबी",
+        "palette leaf":         "पत्ती",
         "language":             "भाषा",
         "help":                 "मदद और श्रेय",
 

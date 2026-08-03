@@ -30,6 +30,12 @@ const en = {
         "add folder":           "Add folder",
         "add files":            "Add files",
         "theme":                "Light / dark theme",
+        "colours":              "Colour",
+        "palette auto":         "From the cover",
+        "palette gold":         "Gold",
+        "palette ice":          "Ice",
+        "palette rose":         "Rose",
+        "palette leaf":         "Leaf",
         "language":             "Language",
         "help":                 "Help and credits",
 

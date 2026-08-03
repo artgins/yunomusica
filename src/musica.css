@@ -23,20 +23,76 @@
  *          All Rights Reserved.
  ***********************************************************************/
 
+/*======================================================================
+ *      Colour palettes
+ *
+ *      One accent drives everything: primary buttons, the playing row,
+ *      the chips, the scan bar, and — through Bulma's own HSL knobs —
+ *      the nav highlight, without the app ever naming a shell class.
+ *
+ *      Each palette is defined TWICE, because a colour that reads well
+ *      on white is rarely the one that reads well on near-black. A pale
+ *      ice blue is lovely on a dark background and illegible as text on
+ *      a light one; the dark-scheme block swaps in the readable twin and
+ *      the ink that goes on top of it.
+ *
+ *      --mus-accent-soft is derived, never written: the run-time cover
+ *      tint sets only --mus-accent and the soft variant follows.
+ *====================================================================*/
 :root {
     --mus-accent: #C9A227;
-    --mus-accent-soft: rgba(201, 162, 39, 0.16);
     --mus-accent-ink: #191308;
+    --bulma-primary-h: 46deg;  --bulma-primary-s: 68%;  --bulma-primary-l: 47%;
+    --bulma-link-h: 46deg;     --bulma-link-s: 68%;     --bulma-link-l: 47%;
+}
 
-    /*  Recolour Bulma's primary + link to the gold, through its own HSL
-        knobs, so nav-active and is-primary match the app without the app
-        ever naming a shell class. */
-    --bulma-primary-h: 46deg;
-    --bulma-primary-s: 68%;
-    --bulma-primary-l: 47%;
-    --bulma-link-h: 46deg;
-    --bulma-link-s: 68%;
-    --bulma-link-l: 47%;
+/*  Derived from whatever the accent currently is. */
+:root {
+    --mus-accent-soft: color-mix(in srgb, var(--mus-accent) 16%, transparent);
+}
+
+/*  The light twins are much darker than their dark counterparts, and
+    have to be: a gold or an ice blue bright enough to glow on near-black
+    is unreadable as text on white. Contrast is measured, not judged —
+    every pair below clears 4.5:1 for ink on accent. */
+[data-palette="gold"] {
+    --mus-accent: #8A6A10;  --mus-accent-ink: #FFF7E0;
+    --bulma-primary-h: 44deg;  --bulma-primary-s: 79%;  --bulma-primary-l: 30%;
+    --bulma-link-h: 44deg;     --bulma-link-s: 79%;     --bulma-link-l: 30%;
+}
+[data-theme="dark"][data-palette="gold"] {
+    --mus-accent: #D5AC29;  --mus-accent-ink: #191308;
+    --bulma-primary-l: 50%;  --bulma-link-l: 50%;
+}
+
+[data-palette="ice"] {
+    --mus-accent: #0E7387;  --mus-accent-ink: #F2FDFF;
+    --bulma-primary-h: 190deg;  --bulma-primary-s: 81%;  --bulma-primary-l: 29%;
+    --bulma-link-h: 190deg;     --bulma-link-s: 81%;     --bulma-link-l: 29%;
+}
+[data-theme="dark"][data-palette="ice"] {
+    --mus-accent: #9BE6F5;  --mus-accent-ink: #05222B;
+    --bulma-primary-l: 78%;  --bulma-link-l: 78%;
+}
+
+[data-palette="rose"] {
+    --mus-accent: #B32C68;  --mus-accent-ink: #FFF3F8;
+    --bulma-primary-h: 331deg;  --bulma-primary-s: 61%;  --bulma-primary-l: 44%;
+    --bulma-link-h: 331deg;     --bulma-link-s: 61%;     --bulma-link-l: 44%;
+}
+[data-theme="dark"][data-palette="rose"] {
+    --mus-accent: #F58BB8;  --mus-accent-ink: #2B0716;
+    --bulma-primary-l: 75%;  --bulma-link-l: 75%;
+}
+
+[data-palette="leaf"] {
+    --mus-accent: #3B7A2E;  --mus-accent-ink: #F3FFEF;
+    --bulma-primary-h: 110deg;  --bulma-primary-s: 45%;  --bulma-primary-l: 33%;
+    --bulma-link-h: 110deg;     --bulma-link-s: 45%;     --bulma-link-l: 33%;
+}
+[data-theme="dark"][data-palette="leaf"] {
+    --mus-accent: #9BE58B;  --mus-accent-ink: #0B2207;
+    --bulma-primary-l: 72%;  --bulma-link-l: 72%;
 }
 
 
@@ -81,6 +137,12 @@
 .mi-globe::before {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M256 8a248 248 0 1 0 0 496 248 248 0 0 0 0-496zm0 48c30 0 61 51 71 128h-142c10-77 41-128 71-128zM64 256c0-16 2-31 5-46h115a582 582 0 0 0 0 92H69c-3-15-5-30-5-46zm18 78h106c10 60 30 106 53 128-70-17-127-66-159-128zm106-156H82c32-62 89-111 159-128-23 22-43 68-53 128zm68 250c-30 0-61-51-71-128h142c-10 77-41 128-71 128zm77-172H179a542 542 0 0 1 0-92h154a542 542 0 0 1 0 92zm9 206c23-22 43-68 53-128h106c-32 62-89 111-159 128zm62-172a582 582 0 0 0 0-92h115a196 196 0 0 1 0 92H404zm-9-112c-10-60-30-106-53-128 70 17 127 66 159 128H395z'/%3E%3C/svg%3E");
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M256 8a248 248 0 1 0 0 496 248 248 0 0 0 0-496zm0 48c30 0 61 51 71 128h-142c10-77 41-128 71-128zM64 256c0-16 2-31 5-46h115a582 582 0 0 0 0 92H69c-3-15-5-30-5-46zm18 78h106c10 60 30 106 53 128-70-17-127-66-159-128zm106-156H82c32-62 89-111 159-128-23 22-43 68-53 128zm68 250c-30 0-61-51-71-128h142c-10 77-41 128-71 128zm77-172H179a542 542 0 0 1 0-92h154a542 542 0 0 1 0 92zm9 206c23-22 43-68 53-128h106c-32 62-89 111-159 128zm62-172a582 582 0 0 0 0-92h115a196 196 0 0 1 0 92H404zm-9-112c-10-60-30-106-53-128 70 17 127 66 159 128H395z'/%3E%3C/svg%3E");
+}
+
+/*  Colour — a painter's palette. */
+.mi-palette::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M204 32C93 45 8 137 8 250c0 122 99 221 221 221 21 0 37-17 37-37 0-10-4-19-10-25-6-7-10-15-10-25 0-20 17-37 37-37h44c73 0 132-59 132-132C459 90 341 16 204 32zM96 279a32 32 0 1 1 0-64 32 32 0 0 1 0 64zm64-86a32 32 0 1 1 0-64 32 32 0 0 1 0 64zm107-32a32 32 0 1 1 0-64 32 32 0 0 1 0 64zm107 64a32 32 0 1 1 0-64 32 32 0 0 1 0 64z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M204 32C93 45 8 137 8 250c0 122 99 221 221 221 21 0 37-17 37-37 0-10-4-19-10-25-6-7-10-15-10-25 0-20 17-37 37-37h44c73 0 132-59 132-132C459 90 341 16 204 32zM96 279a32 32 0 1 1 0-64 32 32 0 0 1 0 64zm64-86a32 32 0 1 1 0-64 32 32 0 0 1 0 64zm107-32a32 32 0 1 1 0-64 32 32 0 0 1 0 64zm107 64a32 32 0 1 1 0-64 32 32 0 0 1 0 64z'/%3E%3C/svg%3E");
 }
 
 /*  Help — an info circle. */

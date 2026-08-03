@@ -143,6 +143,7 @@ function mt_create(gobj)
 
     /*  Toolbar-published events we act on. */
     gobj_subscribe_event(shell, "EV_TOGGLE_THEME", {}, gobj);
+    gobj_subscribe_event(shell, "EV_SET_PALETTE",  {}, gobj);
     gobj_subscribe_event(shell, "EV_SET_LOCALE",   {}, gobj);
     gobj_subscribe_event(shell, "EV_OPEN_ABOUT",   {}, gobj);
     gobj_subscribe_event(shell, "EV_ROUTE_CHANGED",{}, gobj);
@@ -159,6 +160,7 @@ function mt_start(gobj)
     let priv = gobj.priv;
 
     apply_theme(current_theme());
+    apply_palette(current_palette());
     gobj_start_tree(priv.shell);
 
     /*  The shell and the nav emit their labels as i18n KEYS and are only
@@ -299,6 +301,39 @@ function save_queue_soon(gobj)
 
 
 
+
+const PALETTES = {auto: 1, gold: 1, ice: 1, rose: 1, leaf: 1};
+
+/*  "auto" means the accent follows the cover art, which is what the app
+    did before there were palettes — so it stays the default. */
+function current_palette()
+{
+    let p = "";
+    try {
+        p = localStorage.getItem("yunomusica:palette") || "";
+    } catch(e) {
+        p = "";
+    }
+    return PALETTES[p] ? p : "auto";
+}
+
+function apply_palette(name)
+{
+    let v = PALETTES[name] ? name : "auto";
+    document.documentElement.setAttribute("data-palette", v);
+    try {
+        localStorage.setItem("yunomusica:palette", v);
+    } catch(e) {
+        /*  Private mode: the choice still holds for this page load. */
+    }
+    /*  A fixed palette is a CSS variable; the inline one the tint may
+        have written would win over it, so clear it. */
+    if(v !== "auto") {
+        document.documentElement.style.removeProperty("--mus-accent");
+        document.documentElement.style.removeProperty("--mus-accent-soft");
+    }
+    return v;
+}
 
 function current_theme()
 {
@@ -497,7 +532,7 @@ function paint_player(gobj)
 
     if(!track) {
         priv.tint_key = null;
-        set_accent("#C9A227");
+        clear_accent();
         return;
     }
 
@@ -726,13 +761,18 @@ function set_text($root, sel, text)
 function tint_from(gobj, key, url)
 {
     let priv = gobj.priv;
+    /*  A chosen palette is a choice; the cover does not get to overrule
+        it. Only "from the cover" lets the artwork drive the accent. */
+    if(current_palette() !== "auto") {
+        return;
+    }
     if(priv.tint_key === key) {
         return;                 // same album: nothing to recompute
     }
     priv.tint_key = key;
 
     if(!url) {
-        set_accent("#C9A227");
+        clear_accent();
         return;
     }
     let img = new Image();
@@ -756,10 +796,10 @@ function tint_from(gobj, key, url)
                 set_accent(lift(best));
             }
         } catch(e) {
-            set_accent("#C9A227");
+            clear_accent();
         }
     };
-    img.onerror = function() { set_accent("#C9A227"); };
+    img.onerror = function() { clear_accent(); };
     img.src = url;
 }
 
@@ -773,11 +813,16 @@ function lift([r,g,b])
 
 function set_accent(c)
 {
+    /*  Only the accent: --mus-accent-soft is derived from it in CSS, so
+        there is one thing to set and no way for the two to disagree. */
     document.documentElement.style.setProperty("--mus-accent", c);
-    let soft = c.startsWith("rgb")
-        ? c.replace("rgb(","rgba(").replace(")",",.16)")
-        : "rgba(201,162,39,.16)";
-    document.documentElement.style.setProperty("--mus-accent-soft", soft);
+}
+
+/*  Back to whatever the stylesheet says for the current palette. */
+function clear_accent()
+{
+    document.documentElement.style.removeProperty("--mus-accent");
+    document.documentElement.style.removeProperty("--mus-accent-soft");
 }
 
 
@@ -797,6 +842,17 @@ function ac_toggle_theme(gobj, event, kw, src)
 }
 
 /*  The language menu items carry their code in the action kw. */
+function ac_set_palette(gobj, event, kw, src)
+{
+    apply_palette((kw && kw.palette) || "auto");
+    /*  Leaving "from the cover" means the tint has to stop overriding
+        the choice; entering it means the current cover should take
+        over again straight away. */
+    gobj.priv.tint_key = null;
+    paint_player(gobj);
+    return 0;
+}
+
 function ac_set_locale(gobj, event, kw, src)
 {
     let code = (kw && kw.locale) || "";
@@ -850,6 +906,7 @@ function create_gclass(gclass_name)
     const states = [
         ["ST_IDLE", [
             ["EV_TOGGLE_THEME",  ac_toggle_theme,  null],
+            ["EV_SET_PALETTE",   ac_set_palette,   null],
             ["EV_SET_LOCALE",    ac_set_locale,    null],
             ["EV_OPEN_ABOUT",    ac_open_about,    null],
             ["EV_ROUTE_CHANGED", ac_route_changed, null]
@@ -858,6 +915,7 @@ function create_gclass(gclass_name)
 
     const event_types = [
         ["EV_TOGGLE_THEME",  0],
+        ["EV_SET_PALETTE",   0],
         ["EV_SET_LOCALE",    0],
         ["EV_OPEN_ABOUT",    0],
         ["EV_ROUTE_CHANGED", 0]

@@ -19,6 +19,12 @@ const de = {
         "add folder":           "Ordner hinzufügen",
         "add files":            "Dateien hinzufügen",
         "theme":                "Helles / dunkles Design",
+        "colours":              "Farbe",
+        "palette auto":         "Nach dem Cover",
+        "palette gold":         "Gold",
+        "palette ice":          "Eis",
+        "palette rose":         "Rose",
+        "palette leaf":         "Blatt",
         "language":             "Sprache",
         "help":                 "Hilfe und Credits",
 

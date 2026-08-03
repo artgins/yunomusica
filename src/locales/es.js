@@ -20,6 +20,12 @@ const es = {
         "add folder":           "Añadir carpeta",
         "add files":            "Añadir ficheros",
         "theme":                "Tema claro / oscuro",
+        "colours":              "Color",
+        "palette auto":         "Según la carátula",
+        "palette gold":         "Oro",
+        "palette ice":          "Hielo",
+        "palette rose":         "Rosa",
+        "palette leaf":         "Hoja",
         "language":             "Idioma",
         "help":                 "Ayuda y créditos",
 
