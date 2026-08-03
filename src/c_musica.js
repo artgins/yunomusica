@@ -60,6 +60,8 @@ import {pref_get, pref_set} from "./idb.js";
 import {switch_locale, current_locale} from "./locales/locales.js";
 import {open_about, welcome_dismissed, about_bind_shell} from "./about_dialog.js";
 import {start_update_watch} from "./update_check.js";
+import {start_install_watch} from "./install_prompt.js";
+import {offer_install_when_due} from "./install_dialog.js";
 
 import {t} from "i18next";
 
@@ -265,6 +267,7 @@ async function boot(gobj)
     let priv = gobj.priv;
 
     start_update_watch();
+    start_install_watch();
 
     await load_playlists();
     /*  Before the queue is restored, so the counters are in memory by
@@ -279,9 +282,14 @@ async function boot(gobj)
         restore_queue(snap);
     }
 
+    /*  The welcome first, the install question after it — never both at
+        once, and never the install question in front of an app the user
+        has not seen yet. */
     let dismissed = await welcome_dismissed();
     if(!dismissed) {
-        open_about(priv.shell, true);
+        open_about(priv.shell, true, () => offer_install_when_due(priv.shell));
+    } else {
+        offer_install_when_due(priv.shell);
     }
 }
 

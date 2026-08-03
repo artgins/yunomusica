@@ -142,6 +142,14 @@ const zh = {
         "new version":         "有新版本可用",
         "reload":             "重新加载",
 
+        /* ---- installing ---- */
+        "install this app":     "安装此应用",
+        "install why":
+            "安装后，yunomúsica 会像设备上的其他应用一样打开；更重要的是，浏览器可以保留对音乐文件夹的授权，而不必每次启动都重新询问。",
+        "install so folders stay": "这样文件夹的授权才会保留",
+        "install":             "安装",
+        "not now":             "以后再说",
+
         "saved lists":          "已保存的列表",
         "no saved lists yet":   "还没有保存的列表。",
         "how to save a list":   "在播放器里编好队列，然后取名保存。",

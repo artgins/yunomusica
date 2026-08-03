@@ -40,6 +40,7 @@ const TESTS = [
     {name: "minink",    what: "tinta del botón del mini-reproductor"},
     {name: "select",    what: "navegar no cambia lo que suena"},
     {name: "confirm",   what: "aviso antes de sustituir la cola"},
+    {name: "install",   what: "la app pregunta ella misma si instalarse"},
     {name: "fitmobile", what: "nada se sale del ancho del móvil"},
     {name: "preview",   what: "la tira de escucha se lee y su reloj avanza"},
     {name: "follow",    what: "el banner no scrollea y la cola sigue a la música"},

@@ -1392,6 +1392,43 @@ img.MUS_ART { object-fit: cover; }
 
 
 /*======================================================================
+ *      The install question
+ *
+ *      Small on purpose. It is a yes/no, it is asked once, and it
+ *      arrives unrequested — so it says its piece in four lines and
+ *      leaves. It reuses the confirm dialog's backdrop and buttons.
+ *====================================================================*/
+.MUS_INSTALL_CARD {
+    width: min(420px, 100%);
+    border-radius: 18px;
+    padding: 1.4rem;
+    text-align: center;
+    background: var(--bulma-scheme-main, #fff);
+    color: var(--bulma-text, #1b1b1b);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+.MUS_INSTALL_MARK { width: 56px; height: 56px; margin: 0 auto 0.6rem; display: block; }
+.MUS_INSTALL_TITLE {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem;
+}
+.MUS_INSTALL_BODY {
+    margin: 0 0 1.3rem;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--bulma-text-weak, #8a8a8a);
+}
+.MUS_INSTALL_ACTIONS {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+
+/*======================================================================
  *      The welcome / help / credits dialog
  *====================================================================*/
 .MUS_ABOUT_BACKDROP {
@@ -1515,6 +1552,7 @@ img.MUS_ART { object-fit: cover; }
     border: 1px solid var(--mus-accent);
 }
 .MUS_UPDBAR { margin-bottom: 0.2rem; }
+.MUS_INSTBAR { margin-bottom: 0.2rem; }
 .MUS_AUTHBAR_TXT {
     flex: 1;
     min-width: 0;               /* or the names widen the whole view */

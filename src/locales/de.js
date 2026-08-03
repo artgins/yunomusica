@@ -142,6 +142,14 @@ const de = {
         "new version":         "Eine neue Version ist verfügbar",
         "reload":             "Neu laden",
 
+        /* ---- installing ---- */
+        "install this app":     "App installieren",
+        "install why":
+            "Installiert öffnet sich yunomúsica wie jede andere App auf dem Gerät — und, wichtiger noch, der Browser darf die Berechtigung für deine Musikordner behalten, statt bei jedem Start erneut zu fragen.",
+        "install so folders stay": "Damit deine Ordner freigegeben bleiben",
+        "install":             "Installieren",
+        "not now":             "Jetzt nicht",
+
         "saved lists":          "Gespeicherte Listen",
         "no saved lists yet":   "Noch keine gespeicherten Listen.",
         "how to save a list":   "Stelle im Player eine Warteschlange zusammen und speichere sie unter einem Namen.",

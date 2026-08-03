@@ -49,6 +49,10 @@ import {
 } from "./sources_store.js";
 import {save_queue_as} from "./playlists_store.js";
 import {subscribe_update, is_stale, latest_version} from "./update_check.js";
+import {
+    subscribe_install, install_bar_due, dismiss_install_bar,
+} from "./install_prompt.js";
+import {open_install} from "./install_dialog.js";
 import {open_about} from "./about_dialog.js";
 
 import {t} from "i18next";
@@ -140,6 +144,7 @@ let PRIVATE_DATA = {
     unsub:      null,
     unsub_src:  null,   // sources channel, for the authorisation banner
     unsub_upd:  null,   // a newer build was deployed
+    unsub_ins:  null,   // the browser will let us offer an install
     $now:       null,   // the transport card and the bars under it
     $queue:     null,   // the queue box
     naming:     false,  // the "save as list" row is open
@@ -228,6 +233,7 @@ function mt_start(gobj)
         follow the sources too. */
     priv.unsub_src = subscribe_sources(() => paint_now(gobj));
     priv.unsub_upd = subscribe_update(() => paint_now(gobj));
+    priv.unsub_ins = subscribe_install(() => paint_now(gobj));
 
     /*  A language switch re-renders everything this view composed with
         t() at build time — see the gobj-ui i18n contract. */
@@ -257,6 +263,10 @@ function mt_stop(gobj)
     if(priv.unsub_upd) {
         priv.unsub_upd();
         priv.unsub_upd = null;
+    }
+    if(priv.unsub_ins) {
+        priv.unsub_ins();
+        priv.unsub_ins = null;
     }
     stop_facts(gobj);
     stop_follow(gobj);
@@ -764,6 +774,30 @@ function paint_bars(gobj)
                 ["button", {class: "MUS_QBTN button is-primary", type: "button",
                             i18n: "authorise"},
                     t("authorise"), {click: () => authorize_all()}]
+            ]]));
+    }
+
+    /*  The way out of the bar above: an installed app is the only kind
+        Chrome will keep folder permissions for. It is offered here, and
+        not left to the browser, because Chrome's own banner stops
+        appearing for months once it has been dismissed or the app has
+        been installed and removed — a reinstall then finds nothing to
+        press. This bar does not care what Chrome remembers. */
+    if(install_bar_due()) {
+        $now.appendChild(createElement2(
+            ["div", {class: "MUS_AUTHBAR MUS_INSTBAR", role: "status"}, [
+                ["div", {class: "MUS_AUTHBAR_TXT"}, [
+                    ["span", {i18n: "install this app"}, t("install this app")],
+                    ["span", {class: "MUS_AUTHBAR_WHICH", i18n: "install so folders stay"},
+                        t("install so folders stay")]
+                ]],
+                ["button", {class: "MUS_QBTN button is-primary", type: "button",
+                            i18n: "install"},
+                    t("install"), {click: () => open_install(yui_shell_of(gobj))}],
+                ["button", {class: "MUS_NOTICE_X", type: "button",
+                            "aria-label": t("close"),
+                            "data-i18n-aria-label": "close"},
+                    svg(P.cross, 14), {click: () => dismiss_install_bar()}]
             ]]));
     }
 

@@ -32,6 +32,7 @@ const PREF_SEEN = "welcome_dismissed";
 
 let $dialog = null;         // the open dialog, if any
 let overlay = null;         // its shell overlay handle
+let on_closed = null;       // what the caller wants doing afterwards
 
 
 /***************************************************************
@@ -47,12 +48,17 @@ function welcome_dismissed()
  *  Open. `first_run` shows the "do not show this again" line;
  *  opened from the toolbar it would be a strange thing to offer,
  *  since the user just asked for it on purpose.
+ *
+ *  `on_close` is run once the dialog is gone, whichever way it
+ *  went. Two dialogs must never be stacked on a first run, and
+ *  this is how the second one waits its turn.
  ***************************************************************/
-function open_about(shell_gobj, first_run)
+function open_about(shell_gobj, first_run, on_close)
 {
     if($dialog) {
         return;
     }
+    on_closed = on_close || null;
 
     let $card = createElement2(
         ["div", {class: "MUS_ABOUT_CARD", role: "dialog", "aria-modal": "true"}, [
@@ -184,6 +190,12 @@ function close_about(shell_gobj, from_history)
         yui_shell_overlay_dismissed(shell_gobj, overlay);
     }
     overlay = null;
+
+    let after = on_closed;
+    on_closed = null;
+    if(after) {
+        after();
+    }
 }
 
 

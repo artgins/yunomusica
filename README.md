@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.8.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.9.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -164,6 +164,12 @@ accent against the page and 4.5:1 for ink on the accent.
 - **Installable PWA**: a manifest with 192/512 icons and a maskable one.
   Installing is not cosmetic: Chrome only offers persistent folder permissions to
   installed apps.
+- **The app asks about installing, not the browser.** Chrome's own install
+  banner is refused (`beforeinstallprompt` is caught in `index.html`, before the
+  bundle loads) and the event is kept, so the question is asked once by the app
+  itself and `prompt()` opens the real system dialog on the user's tap. Answered
+  either way it is never asked again; a small bar on the player screen is what
+  remains. See "The install question" below for why this is not a nicety.
 - **A scan bar** visible from every screen while a folder is being read, with the
   folder, a counter, a clock and a **Stop** button — which keeps what was already
   read.
@@ -309,3 +315,48 @@ The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
   do not care", but an installed PWA reads *any* value as the app claiming
   orientation control, and it overrides the device's rotation lock. Only the
   absence of the member defers to the user.
+- **`beforeinstallprompt` has to be caught in the HTML head, not in the
+  bundle.** It can fire while the module graph is still loading, and an event
+  nobody caught cannot be asked for again.
+
+## The install question
+
+Leaving the offer to Chrome does not work, and the way it fails is quiet.
+
+Chrome shows its install banner by a heuristic, and that heuristic **goes silent
+on an origin for around ninety days** once the banner has been dismissed — or
+once the app has been installed and then removed. The app is still perfectly
+installable; it is only unadvertised. So the first install is offered and the
+*re*install, days later, finds no banner at all and only `⋮ → Install app`,
+which is not where anyone looks. Nothing in the app changed, and yet it looks
+like it stopped being installable.
+
+That matters more here than in most apps, because installing is what makes
+Chrome keep folder permissions. An uninstalled yunomúsica re-asks for every
+music folder at every launch.
+
+So the app takes the question off Chrome:
+
+- `index.html` calls `preventDefault()` on `beforeinstallprompt` and stashes the
+  event before the bundle loads.
+- `install_prompt.js` owns that event: whether there is a live offer, whether we
+  are already running installed (`display-mode: standalone` or `appinstalled`),
+  and calling `prompt()` on it.
+- `install_dialog.js` asks — once, after the welcome dialog rather than on top
+  of it, and never again whichever way it was answered (`install_asked` in
+  prefs).
+- Afterwards a small bar on the player screen is the whole of the offer. It
+  closes for the session with an ✕ and comes back at the next launch.
+
+`prompt()` must be reached from the click with nothing awaited in between, or
+the browser stops counting it as a user gesture and refuses to open the system
+dialog. That is why the dialog tears itself down synchronously and calls
+`do_install()` after.
+
+The deferred event is **single use**: once prompted it is dropped. If the user
+dismisses the system dialog the offer is gone until Chrome fires the event
+again, which it does on a later visit.
+
+Browsers that do not implement this (Firefox, Safari) never fire the event, so
+`can_install()` is false and nothing is ever offered — no dialog promising an
+install that cannot happen.

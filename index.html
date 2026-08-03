@@ -17,6 +17,32 @@
     -->
     <link rel="manifest" href="./manifest.webmanifest">
     <!--
+        Who gets to ask about installing.
+
+        Chrome's own install banner is offered by a heuristic, and that
+        heuristic goes silent on an origin for about three months after
+        the banner is dismissed — or after the app is installed and then
+        removed. A reinstall therefore tends to find no banner at all and
+        only the browser menu, which is not where anyone looks.
+
+        So the browser's banner is refused here and the event is kept.
+        This must run before the bundle: the event can fire while the
+        module graph is still loading, and an event nobody caught cannot
+        be asked for back. The app does the asking itself, from
+        install_prompt.js.
+    -->
+    <script>
+    (function () {
+        "use strict";
+        window.__yunomusica_install = null;
+        window.addEventListener("beforeinstallprompt", function (ev) {
+            ev.preventDefault();
+            window.__yunomusica_install = ev;
+            window.dispatchEvent(new CustomEvent("yunomusica:installable"));
+        });
+    })();
+    </script>
+    <!--
         Theme, resolved before the first paint so there is no flash.
         A music app reads better dark, so that is the default when the OS
         expresses no preference. Stored under the same "myst:theme" key the

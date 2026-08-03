@@ -142,6 +142,14 @@ const pt = {
         "new version":         "Há uma versão nova",
         "reload":             "Recarregar",
 
+        /* ---- installing ---- */
+        "install this app":     "Instalar a aplicação",
+        "install why":
+            "Instalada, a yunomúsica abre como qualquer outra aplicação do dispositivo — e, o que mais importa, o navegador passa a poder guardar a permissão sobre as suas pastas de música em vez de a pedir de novo a cada arranque.",
+        "install so folders stay": "Assim as suas pastas continuam autorizadas",
+        "install":             "Instalar",
+        "not now":             "Agora não",
+
         "saved lists":          "Listas guardadas",
         "no saved lists yet":   "Ainda não há listas guardadas.",
         "how to save a list":   "Monta uma fila no reprodutor e guarda-a com um nome.",

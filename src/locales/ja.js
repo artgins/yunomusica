@@ -142,6 +142,14 @@ const ja = {
         "new version":         "新しいバージョンがあります",
         "reload":             "再読み込み",
 
+        /* ---- installing ---- */
+        "install this app":     "アプリをインストール",
+        "install why":
+            "インストールすると yunomúsica は端末の他のアプリと同じように開きます。さらに大事なのは、ブラウザが音楽フォルダーの許可を保持できるようになり、起動のたびに聞き直さなくなることです。",
+        "install so folders stay": "フォルダーの許可を保つために",
+        "install":             "インストール",
+        "not now":             "今はしない",
+
         "saved lists":          "保存したリスト",
         "no saved lists yet":   "保存したリストはまだありません。",
         "how to save a list":   "プレーヤーでキューを組み立て、名前を付けて保存します。",
