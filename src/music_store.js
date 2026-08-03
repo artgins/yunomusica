@@ -518,6 +518,71 @@ function covers_snapshot()
     return [...S.cover_blobs.entries()];
 }
 
+
+/***************************************************************
+ *  Put a source's tracks back WITHOUT touching the disk.
+ *
+ *  The library is metadata, and metadata is stored. Rebuilding
+ *  it needs no folder walk and no file read: a track carries the
+ *  path it came from, and the actual File is fetched only when
+ *  something is about to be played (see resolve_file below).
+ *
+ *  `file_of(path)` supplies a File when the source already holds
+ *  one — a snapshot source does — and may be omitted, in which
+ *  case every track resolves lazily.
+ ***************************************************************/
+function restore_tracks(source_id, entries, file_of)
+{
+    for(const [path, meta] of (entries || [])) {
+        S.tracks.push({
+            uid: S.uid_seq++,
+            source_id: source_id || "",
+            path: path,
+            file: file_of ? (file_of(path) || null) : null,
+            title: meta.title,
+            artist: meta.artist,
+            albumArtist: meta.albumArtist,
+            album: meta.album,
+            genre: meta.genre,
+            track: meta.track,
+            year: meta.year,
+            folder: meta.folder,
+            key: meta.key
+        });
+    }
+    emit("library");
+    return (entries || []).length;
+}
+
+
+/***************************************************************
+ *  How a track without a File in hand gets one. The sources
+ *  module registers this, because only it knows how to walk a
+ *  directory handle or where a snapshot keeps its files.
+ ***************************************************************/
+let file_resolver = null;
+
+function set_file_resolver(fn)
+{
+    file_resolver = fn;
+}
+
+async function resolve_file(t)
+{
+    if(t.file) {
+        return t.file;
+    }
+    if(!file_resolver) {
+        return null;
+    }
+    try {
+        t.file = await file_resolver(t);
+    } catch(e) {
+        t.file = null;
+    }
+    return t.file;
+}
+
 /*  Cover art comes back from store as blobs; turn them into the object
     URLs the views paint from. Without this a cached scan would show
     every album with the fallback glyph. */
@@ -785,17 +850,36 @@ function stop_playback()
     emit("playing");
 }
 
-function load_current(autoplay)
+/*  A restored track carries a path, not a File: the library is rebuilt
+    from stored metadata and the disk is only touched when something is
+    actually going to be played. Resolving can fail — the folder may be
+    un-authorised since, or the file moved — and that is reported rather
+    than left as a player that does nothing. */
+async function load_current(autoplay)
 {
     const t = S.queue[S.qi];
     if(!t) {
         return;
     }
+
+    const file = await resolve_file(t);
+    if(!file) {
+        S.notice = "that file could not be read";
+        emit("library");
+        emit("playing");
+        return;
+    }
+
+    /*  The queue can have moved on while that was resolving. */
+    if(S.queue[S.qi] !== t) {
+        return;
+    }
+
     const audio = get_audio();
     if(S.url) {
         URL.revokeObjectURL(S.url);
     }
-    S.url = URL.createObjectURL(t.file);
+    S.url = URL.createObjectURL(file);
     audio.src = S.url;
     if(autoplay) {
         audio.play().catch(() => {});
@@ -969,6 +1053,8 @@ export {
     tags_of_source,
     covers_snapshot,
     prime_covers,
+    restore_tracks,
+    set_file_resolver,
     drop_source_tracks,
     clear_notice,
     groups_for,

@@ -34,6 +34,7 @@ import {
 import {
     ingest, drop_source_tracks, cancel_ingest,
     tags_of_source, covers_snapshot, prime_covers, is_audio,
+    restore_tracks, set_file_resolver,
 } from "./music_store.js";
 import {
     is_stale as update_stale, latest_version as update_latest,
@@ -243,11 +244,12 @@ async function authorize(id)
     }
     rt(id).permission = state;
     emit();
-    if(state === "granted") {
-        await scan(id);
-        return true;
-    }
-    return false;
+    /*  No rescan here. The library was restored from store at start up;
+        granting the permission only makes the files reachable again, and
+        walking eight thousand entries to learn what we already know is
+        exactly the wait this design removes. Rescan stays available for
+        when the folder itself has changed. */
+    return state === "granted";
 }
 
 
@@ -279,16 +281,79 @@ async function load_sources()
     S.loaded = true;
     emit();
 
-    /*  Read straight away everything that needs no further consent: a
-        File snapshot always, a folder whose permission is still granted.
-        The rest waits for the user to press "Authorise". */
+    /*  RESTORE, do not scan.
+     *
+     *  The library is metadata and the metadata is stored, so starting up
+     *  costs a read of what we already knew — no folder walk, no file
+     *  reads, no progress bar. A folder is walked only when it is ADDED
+     *  or when Rescan is pressed; that is the only time the tree can have
+     *  changed in a way we care about.
+     *
+     *  A track therefore starts life without a File. It gets one at play
+     *  time, resolved from the source (below), which is also the only
+     *  moment the permission actually has to be there. */
     for(const s of S.sources) {
-        if(rt(s.id).permission === "granted") {
+        let row = await idb_get(STORE_TAGS, s.id);
+        if(row && row.tags && row.tags.length) {
+            let by_path = null;
+            if(s.kind === "files" && s.files) {
+                by_path = new Map(s.files.map((f) => [f.webkitRelativePath || f.name, f]));
+            }
+            restore_tracks(s.id, row.tags, by_path ? ((p) => by_path.get(p)) : null);
+        } else if(rt(s.id).permission === "granted") {
+            /*  Nothing stored for it — added before this was kept, or a
+                scan that never finished. Read it once, now. */
             await scan(s.id);
         }
     }
+    emit();
     return S.sources.length;
 }
+
+
+/***************************************************************
+ *      Getting the actual File for a track, on demand
+ *
+ *  A snapshot source is holding its files already. A folder
+ *  source walks its handle down the stored path — a handful of
+ *  lookups, done once per track and only when it is played.
+ ***************************************************************/
+async function resolve_track_file(track)
+{
+    let source = find(track.source_id);
+    if(!source) {
+        return null;
+    }
+
+    if(source.kind === "files") {
+        if(!source.by_path && source.files) {
+            source.by_path = new Map(
+                source.files.map((f) => [f.webkitRelativePath || f.name, f]));
+        }
+        return (source.by_path && source.by_path.get(track.path)) || null;
+    }
+
+    if(!source.handle) {
+        return null;
+    }
+    /*  The stored path starts with the chosen folder's own name, which
+        IS the handle, so it is not walked. */
+    let segs = String(track.path || "").split("/").filter(Boolean);
+    if(segs.length && segs[0] === source.handle.name) {
+        segs = segs.slice(1);
+    }
+    if(!segs.length) {
+        return null;
+    }
+    let dir = source.handle;
+    for(let i = 0; i < segs.length - 1; i++) {
+        dir = await dir.getDirectoryHandle(segs[i]);
+    }
+    let fh = await dir.getFileHandle(segs[segs.length - 1]);
+    return await fh.getFile();
+}
+
+set_file_resolver(resolve_track_file);
 
 
 /***************************************************************
@@ -758,6 +823,7 @@ async function scan(id, force)
         either a different WALK or a different idea of what counts as
         audio, and only this number tells them apart. */
     source.seen = files.length;
+    source.by_path = null;      // rebuilt on demand from the new file list
 
     /*  A rescan replaces this source's tracks; it never doubles them. */
     drop_source_tracks(id);
