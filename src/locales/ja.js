@@ -65,6 +65,13 @@ const ja = {
         "unknown album":        "不明なアルバム",
         "unknown genre":        "不明なジャンル",
         "play all":             "すべて再生",
+        "preview":              "試聴",
+        "previewing":           "試聴中",
+        "temporary queue":      "手作業で組んだキュー",
+        "playing list":         "リスト",
+        "edited":               "変更あり",
+        "add music in sources": "「ソース」で音楽を追加",
+        "play this":            "これを再生",
 
         "authorised sources":   "許可したフォルダー",
         "add a folder":         "フォルダーを追加",

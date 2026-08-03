@@ -26,7 +26,7 @@ import {
     subscribe_playlists, all_playlists, resolve, remove_playlist,
 } from "./playlists_store.js";
 
-import {subscribe, queue_add} from "./music_store.js";
+import {subscribe, queue_add, set_queue_origin} from "./music_store.js";
 
 import {t} from "i18next";
 
@@ -218,6 +218,9 @@ function build_list_row(gobj, p)
             [ico(P.play, 15), ["span", {i18n: "play"}, t("play")]],
             {click: () => {
                 queue_add(r.tracks, "replace");
+                /*  Order matters: "replace" detaches the queue from
+                    whatever it was, so the list is stamped on after. */
+                set_queue_origin(p.id, p.name);
                 let shell = yui_shell_of(gobj);
                 if(shell) {
                     yui_shell_navigate(shell, "/player");

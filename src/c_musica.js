@@ -43,6 +43,8 @@ import {
     current_track, is_playing, toggle, step, prev,
     seek_fraction, progress, cover_url, setup_media_session,
     cancel_ingest, fmt_time,
+    queue_snapshot, restore_queue,
+    previewing, stop_preview, queue_add,
 } from "./music_store.js";
 
 import {
@@ -51,6 +53,7 @@ import {
     stop_scan, is_stopping,
 } from "./sources_store.js";
 import {load_playlists} from "./playlists_store.js";
+import {pref_get, pref_set} from "./idb.js";
 
 import {switch_locale, current_locale} from "./locales/locales.js";
 import {open_about, welcome_dismissed, about_bind_shell} from "./about_dialog.js";
@@ -93,6 +96,7 @@ let PRIVATE_DATA = {
     $scan:    null,     // the "reading your music" bar
     scan_timer: 0,      // ticks the elapsed clock on that bar
     scan_t0:  0,        // when the wait started, from the user's side
+    save_timer: 0,      // coalesces storing the deck
     strips:   null,     // ResizeObserver keeping the bottom strips honest
     unsub:    null,
     unsub_src: null,
@@ -177,6 +181,11 @@ function mt_start(gobj)
             paint_time(gobj);
         } else if(channel === "loading") {
             paint_scan(gobj);
+        } else if(channel === "preview") {
+            paint_player(gobj);
+        }
+        if(channel === "queue" || channel === "playing") {
+            save_queue_soon(gobj);
         }
     });
     /*  A scan starts before the first file is read (walking a big tree
@@ -252,6 +261,12 @@ async function boot(gobj)
     await load_playlists();
     await load_sources();
 
+    /*  The deck as it was left: which list, which track, how far in. */
+    let snap = await pref_get("queue", null);
+    if(snap) {
+        restore_queue(snap);
+    }
+
     let dismissed = await welcome_dismissed();
     if(!dismissed) {
         open_about(priv.shell, true);
@@ -259,6 +274,25 @@ async function boot(gobj)
 }
 
 
+
+
+/***************************************************************
+ *  Store the deck, coalesced. Playback emits on every play and
+ *  pause, and the position matters too, so this is written on a
+ *  timer rather than on every event — and once more on the way
+ *  out, which is the moment that actually has to be right.
+ ***************************************************************/
+function save_queue_soon(gobj)
+{
+    let priv = gobj.priv;
+    if(priv.save_timer) {
+        return;
+    }
+    priv.save_timer = setTimeout(function() {
+        priv.save_timer = 0;
+        pref_set("queue", queue_snapshot());
+    }, 1500);
+}
 
 
                     /***************************
@@ -392,6 +426,17 @@ function build_player(gobj)
         priv.strips.observe(priv.$player);
     }
 
+    /*  The position moves without any event worth storing on, and the
+        tab can go away at any moment. */
+    window.addEventListener("pagehide", function() {
+        pref_set("queue", queue_snapshot());
+    });
+    document.addEventListener("visibilitychange", function() {
+        if(document.visibilityState === "hidden") {
+            pref_set("queue", queue_snapshot());
+        }
+    });
+
     /*  Keyboard transport, ignored while typing. */
     document.addEventListener("keydown", (e) => {
         let tag = e.target && e.target.tagName;
@@ -432,6 +477,18 @@ function paint_player(gobj)
     if(!priv.$player) {
         return;
     }
+    /*  A preview takes over this strip. It is a different thing from the
+        queue — it changed nothing and committed to nothing — so it says
+        so, and offers the one decision worth offering: keep it or drop
+        it. It shows on every route, including the deck, because it is
+        the only sign that the sound you hear is not the queue. */
+    let prev_track = previewing();
+    if(prev_track) {
+        paint_preview(gobj, prev_track);
+        return;
+    }
+    priv.$player.classList.remove("is-preview");
+
     let track = current_track();
 
     /*  Show the strip only when there is something to play AND we are
@@ -450,6 +507,12 @@ function paint_player(gobj)
     set_text(priv.$player, ".MUS_PTITLE", track.title);
     set_text(priv.$player, ".MUS_PARTIST", track.artist);
     paint_art(priv.$player.querySelector(".MUS_PART"), url);
+
+    /*  Coming back from a preview: the controls were replaced, so put
+        the transport back before painting it. */
+    if(!priv.$player.querySelector(".MUS_PPLAY")) {
+        rebuild_transport(gobj);
+    }
 
     let playing = is_playing();
     let $play = priv.$player.querySelector(".MUS_PPLAY");
@@ -566,6 +629,41 @@ function paint_scan_clock(gobj)
         fmt_time((Date.now() - priv.scan_t0) / 1000));
 }
 
+/***************************************************************
+ *  The strip in preview mode: what is being auditioned, and the
+ *  two things you can do about it.
+ ***************************************************************/
+function paint_preview(gobj, track)
+{
+    let priv = gobj.priv;
+
+    priv.$root.classList.add("has-player");
+    priv.$player.classList.add("is-on", "is-preview");
+
+    set_text(priv.$player, ".MUS_PTITLE", track.title);
+    set_text(priv.$player, ".MUS_PARTIST", t("previewing") + " · " + track.artist);
+    paint_art(priv.$player.querySelector(".MUS_PART"), cover_url(track.key));
+
+    let $ctl = priv.$player.querySelector(".MUS_PCTL");
+    if(!$ctl) {
+        return;
+    }
+    $ctl.innerHTML = "";
+    $ctl.appendChild(createElement2(
+        ["button", {class: "MUS_QBTN button is-primary", type: "button",
+                    i18n: "add to queue"},
+            t("add to queue"), {click: () => {
+                queue_add([track], "append");
+                stop_preview();
+            }}]));
+    $ctl.appendChild(createElement2(
+        ["button", {class: "MUS_QBTN button is-ghost", type: "button",
+                    i18n: "stop"},
+            t("stop"), {click: () => stop_preview()}]));
+    refresh_language(priv.$player, t);
+    paint_time(gobj);
+}
+
 function paint_art($node, url)
 {
     if(!$node) {
@@ -582,6 +680,23 @@ function paint_art($node, url)
         $node.textContent = "♪";
         $node.classList.remove("has-art");
     }
+}
+
+function rebuild_transport(gobj)
+{
+    let priv = gobj.priv;
+    let $ctl = priv.$player.querySelector(".MUS_PCTL");
+    if(!$ctl) {
+        return;
+    }
+    $ctl.innerHTML = "";
+    const btn = (cls, path, key, on_click) => createElement2(
+        ["button", {class: cls, type: "button",
+                    "aria-label": t(key), "data-i18n-aria-label": key},
+            svg(path, 20), {click: on_click}]);
+    $ctl.appendChild(btn("MUS_PPREV", P.prev, "previous", () => prev()));
+    $ctl.appendChild(btn("MUS_PPLAY is-primary", P.play, "play", () => toggle()));
+    $ctl.appendChild(btn("MUS_PNEXT", P.next, "next", () => step(1)));
 }
 
 function paint_time(gobj)

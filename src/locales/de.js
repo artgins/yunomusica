@@ -65,6 +65,13 @@ const de = {
         "unknown album":        "Unbekanntes Album",
         "unknown genre":        "Unbekanntes Genre",
         "play all":             "Alles abspielen",
+        "preview":              "Anhören",
+        "previewing":           "Wird angehört",
+        "temporary queue":      "Von Hand zusammengestellte Warteschlange",
+        "playing list":         "Liste",
+        "edited":               "geändert",
+        "add music in sources": "Musik unter Quellen hinzufügen",
+        "play this":            "Diesen abspielen",
 
         "authorised sources":   "Freigegebene Ordner",
         "add a folder":         "Einen Ordner hinzufügen",

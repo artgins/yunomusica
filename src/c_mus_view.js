@@ -31,7 +31,7 @@ import {
     subscribe,
     has_library, store_state,
     groups_for, albums, all_tracks_sorted, search, cover_url,
-    queue_add, current_track,
+    queue_add, current_track, preview_track,
 } from "./music_store.js";
 
 import {add_dir, add_files} from "./sources_store.js";
@@ -437,17 +437,23 @@ function track_row(t_, list, showNum)
 
     let subtitle = t_.artist + (t_.album && !showNum ? " · " + t_.album : "");
 
+    /*  Tapping the row does NOT play. Navigating a library must never
+        take over what is sounding — play is the button, and only the
+        button. The row offers a listen instead: hear it, then decide
+        whether it goes in the queue. */
     return ["div", {class: "MUS_ROW", "data-tid": String(t_.uid)}, [
         left,
         ["button", {
                 class: "MUS_ROWMAIN",
                 type: "button",
-                "aria-label": t("play"),
-                "data-i18n-aria-label": "play"
+                "aria-label": t("preview"),
+                "data-i18n-aria-label": "preview",
+                title: t("preview"),
+                "data-i18n-title": "preview"
             }, [
             ["span", {class: "MUS_T1"}, t_.title],
             ["span", {class: "MUS_T2"}, subtitle]
-        ], {click: () => queue_add(list.slice(list.indexOf(t_)), "replace")}],
+        ], {click: () => preview_track(t_)}],
         verb_buttons(() => [t_])
     ]];
 }

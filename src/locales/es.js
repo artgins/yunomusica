@@ -69,6 +69,13 @@ const es = {
         "unknown album":        "Sin álbum",
         "unknown genre":        "Sin género",
         "play all":             "Reproducir todo",
+        "preview":              "Escuchar",
+        "previewing":           "Escuchando",
+        "temporary queue":      "Cola montada a mano",
+        "playing list":         "Lista",
+        "edited":               "modificada",
+        "add music in sources": "Añade música en Fuentes",
+        "play this":            "Reproducir esta",
 
         /* ---- las fuentes ---- */
         "authorised sources":   "Carpetas autorizadas",

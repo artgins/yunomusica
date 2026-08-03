@@ -846,6 +846,23 @@ img.MUS_ART { object-fit: cover; }
     text-overflow: ellipsis;
 }
 .MUS_PCTL { display: flex; align-items: center; gap: 0.15rem; flex: none; }
+
+/*  Preview mode: the same strip, unmistakably not the queue. */
+.MUS_PLAYER.is-preview {
+    background: var(--mus-accent-soft);
+    border-top-color: var(--mus-accent);
+}
+.MUS_PLAYER.is-preview .MUS_PARTIST { color: var(--mus-accent); font-weight: 600; }
+.MUS_PLAYER.is-preview .MUS_PCTL { gap: 0.4rem; }
+
+.MUS_QORIGIN { flex-basis: 100%; font-size: 0.8rem; }
+.MUS_QORIGIN_KIND { color: var(--bulma-text-weak, #8a8a8a); }
+.MUS_QORIGIN_NAME { font-weight: 600; margin-inline-start: 0.35rem; }
+.MUS_QORIGIN_EDIT {
+    margin-inline-start: 0.35rem;
+    color: var(--mus-accent);
+    font-style: italic;
+}
 .MUS_PCTL button {
     width: 40px;
     height: 40px;

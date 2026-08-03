@@ -65,6 +65,13 @@ const zh = {
         "unknown album":        "未知专辑",
         "unknown genre":        "未知流派",
         "play all":             "全部播放",
+        "preview":              "试听",
+        "previewing":           "试听中",
+        "temporary queue":      "手动编排的队列",
+        "playing list":         "列表",
+        "edited":               "已修改",
+        "add music in sources": "在「来源」中添加音乐",
+        "play this":            "播放这首",
 
         "authorised sources":   "已授权的文件夹",
         "add a folder":         "添加一个文件夹",

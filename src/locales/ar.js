@@ -69,6 +69,13 @@ const ar = {
         "unknown album":        "ألبوم غير معروف",
         "unknown genre":        "نوع غير معروف",
         "play all":             "تشغيل الكل",
+        "preview":              "استماع",
+        "previewing":           "جارٍ الاستماع",
+        "temporary queue":      "قائمة أُعدّت يدويًا",
+        "playing list":         "قائمة",
+        "edited":               "معدَّلة",
+        "add music in sources": "أضف موسيقى من المصادر",
+        "play this":            "تشغيل هذه",
 
         "authorised sources":   "المجلدات المصرَّح بها",
         "add a folder":         "إضافة مجلد",

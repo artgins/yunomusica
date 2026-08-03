@@ -299,6 +299,8 @@ const S = {
     loading: false,
     loaded:  0,
     total:   0,
+    retry_for: 0,       // uid whose stale File we already re-fetched once
+    autoplay_intent: false,
     seen:    0,         // files the walk handed over, audio or not
     load_name: "",
     load_started: 0,    // Date.now() when the read began
@@ -309,6 +311,15 @@ const S = {
     audio:   null,
     queue:   [],
     qi:      -1,
+    /*  Where the queue came from: a saved list, or built by hand. Shown
+        on the deck, because "am I listening to my list or to something I
+        threw together?" is not a question the user should have to guess. */
+    origin:  null,      // {list_id, name} while it is a saved list
+    edited:  false,     // …and whether it has been changed since
+    /*  A separate element for previews. Clicking a row must never take
+        over the queue, so a preview cannot share the queue's player. */
+    preview_audio: null,
+    preview:  null,     // the track being previewed
     shuffle: false,
     repeat:  false,
     url:     null,
@@ -684,9 +695,15 @@ function cover_url(key)
     return S.covers.get(key) || null;
 }
 
+/*  Ordered the way a folder reads: by folder, then track number, then
+    title. The browser hands entries over in whatever order it likes —
+    reverse, as it turns out — and queueing a whole source backwards is
+    not what anyone means by "add this folder". */
 function tracks_of_source(source_id)
 {
-    return S.tracks.filter((t) => t.source_id === source_id);
+    return S.tracks
+        .filter((t) => t.source_id === source_id)
+        .sort((a, b) => collator.compare(a.folder, b.folder) || byTrackNo(a, b));
 }
 
 /*  Resolve a saved playlist entry back to a live track. */
@@ -702,6 +719,30 @@ function find_track(source_id, path)
 function queue_tracks()
 {
     return S.queue;
+}
+
+/*  What the deck is: a saved list, or a queue built by hand. */
+function queue_origin()
+{
+    return S.origin ? {list_id: S.origin.list_id, name: S.origin.name,
+                       edited: S.edited} : null;
+}
+
+function set_queue_origin(list_id, name)
+{
+    S.origin = (list_id && name) ? {list_id: list_id, name: name} : null;
+    S.edited = false;
+    emit("queue");
+}
+
+/*  Any hand edit detaches the queue from the list it came from — not by
+    forgetting it, but by saying so. Silently letting "my list" mean
+    something the user has since changed is worse than either. */
+function mark_edited()
+{
+    if(S.origin && !S.edited) {
+        S.edited = true;
+    }
 }
 
 function queue_index()
@@ -723,10 +764,13 @@ function queue_add(list, mode)
     if(mode === "replace") {
         S.queue = [...list];
         S.qi = -1;
+        S.origin = null;
+        S.edited = false;
         emit("queue");
         queue_play_at(0);
         return list.length;
     }
+    mark_edited();
     let at;
     if(mode === "next" && S.qi >= 0) {
         at = S.qi + 1;
@@ -749,6 +793,7 @@ function queue_add(list, mode)
 
 function queue_remove_at(i)
 {
+    mark_edited();
     if(i < 0 || i >= S.queue.length) {
         return;
     }
@@ -772,6 +817,7 @@ function queue_remove_at(i)
 
 function queue_move(from, to)
 {
+    mark_edited();
     if(from === to) {
         return;
     }
@@ -791,6 +837,8 @@ function queue_clear()
 {
     S.queue = [];
     S.qi = -1;
+    S.origin = null;
+    S.edited = false;
     stop_playback();
     emit("queue");
 }
@@ -806,6 +854,142 @@ function queue_play_at(i)
 
 
 /***************************************************************
+ *      Preview — listening without committing
+ *
+ *  Clicking a row must not hijack what is playing. A preview
+ *  runs on its own element, pauses the queue while it sounds,
+ *  and leaves the queue exactly where it was. From it the track
+ *  can be added to the queue, which is the whole point: hear it
+ *  first, decide after.
+ ***************************************************************/
+function get_preview_audio()
+{
+    if(!S.preview_audio) {
+        S.preview_audio = new Audio();
+        S.preview_audio.addEventListener("ended", () => stop_preview());
+        S.preview_audio.addEventListener("error", () => {
+            let err = S.preview_audio.error;
+            if(!S.preview_audio.src || (err && err.code === 1)) {
+                return;                             // an abort, not a failure
+            }
+            S.notice = "that file could not be read";
+            stop_preview();
+            emit("library");
+        });
+    }
+    return S.preview_audio;
+}
+
+async function preview_track(t)
+{
+    if(!t) {
+        return;
+    }
+    /*  Two things sounding at once helps nobody. */
+    if(S.audio && !S.audio.paused) {
+        S.audio.pause();
+    }
+    const file = await resolve_file(t);
+    if(!file) {
+        S.notice = "that file could not be read";
+        emit("library");
+        return;
+    }
+    const a = get_preview_audio();
+    const stale_preview = S.preview_url;
+    S.preview_url = URL.createObjectURL(file);
+    S.preview = t;
+    a.src = S.preview_url;
+    if(stale_preview) {
+        setTimeout(() => URL.revokeObjectURL(stale_preview), 1000);
+    }
+    a.play().catch(() => {});
+    emit("preview");
+}
+
+function stop_preview()
+{
+    if(S.preview_audio) {
+        S.preview_audio.pause();
+        S.preview_audio.removeAttribute("src");
+        S.preview_audio.load();
+    }
+    if(S.preview_url) {
+        URL.revokeObjectURL(S.preview_url);
+        S.preview_url = null;
+    }
+    S.preview = null;
+    emit("preview");
+}
+
+function previewing()
+{
+    return S.preview;
+}
+
+
+/***************************************************************
+ *      The deck, across a reload
+ *
+ *  Stored as references, like everything else here: which list
+ *  it came from (or none), the (source, path) of each track,
+ *  which one it was on and how far into it. Closing a tab in the
+ *  middle of a record and coming back to the top of the queue is
+ *  the kind of small betrayal that makes an app feel careless.
+ ***************************************************************/
+function queue_snapshot()
+{
+    return {
+        origin: S.origin,
+        edited: S.edited,
+        index:  S.qi,
+        time:   (S.audio && isFinite(S.audio.currentTime)) ? S.audio.currentTime : 0,
+        items:  S.queue.map((t) => ({source_id: t.source_id, path: t.path})),
+    };
+}
+
+/*  Restored PAUSED and cued at the stored position: coming back to a
+    page that starts making noise on its own is worse than not restoring
+    at all — and browsers block it anyway without a gesture. */
+function restore_queue(snap)
+{
+    if(!snap || !snap.items || !snap.items.length) {
+        return 0;
+    }
+    let tracks = [];
+    for(const it of snap.items) {
+        let t = find_track(it.source_id, it.path);
+        if(t) {
+            tracks.push(t);
+        }
+    }
+    if(!tracks.length) {
+        return 0;
+    }
+    S.queue = tracks;
+    S.origin = snap.origin || null;
+    S.edited = !!snap.edited;
+    /*  The index refers to the queue as it was; entries whose source is
+        gone are dropped, so clamp rather than trust it. */
+    S.qi = Math.max(0, Math.min(snap.index || 0, tracks.length - 1));
+    S.resume_at = snap.time || 0;
+    emit("queue");
+    load_current(false).then(function() {
+        if(S.audio && S.resume_at > 0) {
+            try {
+                S.audio.currentTime = S.resume_at;
+            } catch(e) {
+                /*  Not seekable yet; the position is simply lost. */
+            }
+        }
+        S.resume_at = 0;
+        emit("playing");
+    });
+    return tracks.length;
+}
+
+
+/***************************************************************
  *      6. Playback
  ***************************************************************/
 function get_audio()
@@ -816,9 +1000,29 @@ function get_audio()
         S.audio.addEventListener("ended", () => step(1));
         S.audio.addEventListener("play",  () => emit("playing"));
         S.audio.addEventListener("pause", () => emit("playing"));
+        S.audio.addEventListener("canplay", () => { S.retry_for = 0; });
         S.audio.addEventListener("error", () => {
-            /*  A file that moved or was deleted since it was read. Say so
-                and move on rather than stalling on a dead entry. */
+            /*  Swapping the source aborts whatever was loading, and an
+                abort is not a broken file. Reporting it would put "that
+                file could not be read" on screen every time the user
+                changed track. */
+            let err = S.audio.error;
+            if(!S.audio.src || (err && err.code === 1)) {   // MEDIA_ERR_ABORTED
+                return;
+            }
+            /*  A File is a snapshot of what was on disk when it was
+                handed over. Re-tag a track, re-encode it, replace it —
+                and the reference we are holding no longer matches, which
+                the browser reports as a load failure. We know how to get
+                a fresh one, so get one before declaring the file
+                unreadable. */
+            const t = S.queue[S.qi];
+            if(t && S.retry_for !== t.uid) {
+                S.retry_for = t.uid;
+                t.file = null;
+                load_current(S.autoplay_intent);
+                return;
+            }
             S.notice = "that file could not be read";
             emit("library");
         });
@@ -861,6 +1065,9 @@ async function load_current(autoplay)
     if(!t) {
         return;
     }
+    if(S.preview) {
+        stop_preview();
+    }
 
     const file = await resolve_file(t);
     if(!file) {
@@ -876,11 +1083,17 @@ async function load_current(autoplay)
     }
 
     const audio = get_audio();
-    if(S.url) {
-        URL.revokeObjectURL(S.url);
-    }
+    /*  Revoke the PREVIOUS url only once the new one is in place. Doing
+        it first pulls the ground out from under a load still in flight,
+        which surfaces as a network error and, worse, as a false "that
+        file could not be read". */
+    S.autoplay_intent = !!autoplay;
+    const stale = S.url;
     S.url = URL.createObjectURL(file);
     audio.src = S.url;
+    if(stale) {
+        setTimeout(() => URL.revokeObjectURL(stale), 1000);
+    }
     if(autoplay) {
         audio.play().catch(() => {});
     }
@@ -1068,6 +1281,8 @@ export {
     S as store_state,
     /*  queue */
     queue_tracks,
+    queue_origin,
+    set_queue_origin,
     queue_index,
     queue_length,
     queue_add,
@@ -1091,4 +1306,11 @@ export {
     queue_position,
     setup_media_session,
     fmt_time,
+    /*  preview */
+    preview_track,
+    stop_preview,
+    previewing,
+    /*  the deck across a reload */
+    queue_snapshot,
+    restore_queue,
 };

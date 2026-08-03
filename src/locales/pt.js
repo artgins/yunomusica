@@ -65,6 +65,13 @@ const pt = {
         "unknown album":        "Álbum desconhecido",
         "unknown genre":        "Género desconhecido",
         "play all":             "Reproduzir tudo",
+        "preview":              "Ouvir",
+        "previewing":           "A ouvir",
+        "temporary queue":      "Fila montada à mão",
+        "playing list":         "Lista",
+        "edited":               "alterada",
+        "add music in sources": "Adiciona música em Fontes",
+        "play this":            "Reproduzir esta",
 
         "authorised sources":   "Pastas autorizadas",
         "add a folder":         "Adicionar uma pasta",

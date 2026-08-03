@@ -65,6 +65,13 @@ const hi = {
         "unknown album":        "अज्ञात ऐल्बम",
         "unknown genre":        "अज्ञात शैली",
         "play all":             "सभी चलाएँ",
+        "preview":              "सुनें",
+        "previewing":           "सुना जा रहा है",
+        "temporary queue":      "हाथ से बनाई कतार",
+        "playing list":         "सूची",
+        "edited":               "बदली गई",
+        "add music in sources": "स्रोत में संगीत जोड़ें",
+        "play this":            "यह चलाएँ",
 
         "authorised sources":   "अधिकृत फ़ोल्डर",
         "add a folder":         "एक फ़ोल्डर जोड़ें",

@@ -65,6 +65,13 @@ const ru = {
         "unknown album":        "Неизвестный альбом",
         "unknown genre":        "Неизвестный жанр",
         "play all":             "Воспроизвести всё",
+        "preview":              "Послушать",
+        "previewing":           "Прослушивание",
+        "temporary queue":      "Очередь, собранная вручную",
+        "playing list":         "Список",
+        "edited":               "изменён",
+        "add music in sources": "Добавьте музыку в «Источниках»",
+        "play this":            "Включить эту",
 
         "authorised sources":   "Разрешённые папки",
         "add a folder":         "Добавить папку",

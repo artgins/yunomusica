@@ -29,14 +29,15 @@ import {
     createElement2, refresh_language,
 } from "@yuneta/gobj-js";
 
-import {yui_shell_of} from "@yuneta/gobj-ui/src/c_yui_shell.js";
+import {yui_shell_of, yui_shell_navigate} from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {
     subscribe,
     store_state, clear_notice,
     cover_url,
     queue_tracks, queue_index, queue_remove_at, queue_move, queue_clear,
-    queue_play_at, queue_add, tracks_of_source,
+    queue_play_at, queue_add, tracks_of_source, queue_origin,
+    preview_track, stop_preview, previewing,
     current_track, is_playing, toggle, step, prev,
     seek_fraction, set_shuffle, get_shuffle, set_repeat, get_repeat,
     progress, fmt_time,
@@ -256,6 +257,14 @@ function clear($node)
     }
 }
 
+function go_to(gobj, route)
+{
+    let shell = yui_shell_of(gobj);
+    if(shell) {
+        yui_shell_navigate(shell, route);
+    }
+}
+
 function open_help(gobj)
 {
     let shell = yui_shell_of(gobj);
@@ -472,6 +481,7 @@ function paint_queue(gobj)
     clear($box);
 
     let queue = queue_tracks();
+    let origin = queue_origin();
 
     let $head = createElement2(
         ["header", {class: "MUS_QHEAD"}, [
@@ -479,13 +489,25 @@ function paint_queue(gobj)
                 ["span", {i18n: "queue"}, t("queue")],
                 ["span", {class: "MUS_QCOUNT"}, String(queue.length)]
             ]],
+            /*  Whether this is a saved list or something put together by
+                hand, and whether it still matches the list it came from.
+                Playing "my list" when it is no longer that list is the
+                kind of quiet lie an app should not tell. */
+            queue.length
+                ? (origin
+                    ? ["div", {class: "MUS_QORIGIN"}, [
+                        ["span", {class: "MUS_QORIGIN_KIND", i18n: "playing list"},
+                            t("playing list")],
+                        ["span", {class: "MUS_QORIGIN_NAME"}, origin.name],
+                        origin.edited
+                            ? ["span", {class: "MUS_QORIGIN_EDIT", i18n: "edited"},
+                                t("edited")]
+                            : ["span", {}]
+                      ]]
+                    : ["div", {class: "MUS_QORIGIN MUS_DIM", i18n: "temporary queue"},
+                        t("temporary queue")])
+                : ["span", {}],
             ["div", {class: "MUS_QACTIONS"}, [
-                ["button", {class: "MUS_QBTN button", type: "button"},
-                    [ico(P.folder, 16), ["span", {i18n: "add folder"}, t("add folder")]],
-                    {click: () => load_onto_deck(add_dir)}],
-                ["button", {class: "MUS_QBTN button", type: "button"},
-                    [ico(P.file, 16), ["span", {i18n: "add files"}, t("add files")]],
-                    {click: () => load_onto_deck(add_files)}],
                 ["button", {class: "MUS_QBTN button", type: "button",
                             ...disabled_if(!queue.length)},
                     [ico(P.save, 16), ["span", {i18n: "save as list"}, t("save as list")]],
@@ -508,7 +530,14 @@ function paint_queue(gobj)
             ["div", {class: "MUS_EMPTY_NOTE"}, [
                 ["p", {i18n: "the queue is empty"}, t("the queue is empty")],
                 ["p", {class: "MUS_DIM", i18n: "load something to start"},
-                    t("load something to start")]
+                    t("load something to start")],
+                ["div", {class: "MUS_QACTIONS"}, [
+                    ["button", {class: "MUS_QBTN button", type: "button"},
+                        [ico(P.folder, 16),
+                         ["span", {i18n: "add music in sources"},
+                            t("add music in sources")]],
+                        {click: () => go_to(gobj, "/sources")}]
+                ]]
             ]]));
         refresh_language($box, t);
         return;
@@ -530,19 +559,18 @@ function queue_row(gobj, track, i, cur, total)
             "data-qi": String(i),
             draggable: "true"
         }, [
-            ["button", {
-                    class: "MUS_QPLAY",
-                    type: "button",
-                    "aria-label": t("play"),
-                    "data-i18n-aria-label": "play"
-                }, [
+            /*  Not a button any more: browsing the queue must not change
+                what is playing. Starting this track is the ▶ below. */
+            ["div", {class: "MUS_QPLAY"}, [
                 ["span", {class: "MUS_QNUM"}, String(i + 1)],
                 ["span", {class: "MUS_QMETA"}, [
                     ["span", {class: "MUS_T1"}, track.title],
                     ["span", {class: "MUS_T2"}, track.artist]
                 ]]
-            ], {click: () => queue_play_at(i)}],
+            ]],
             ["div", {class: "MUS_QCTL"}, [
+                icon_button(P.play, 16, "play this", true,
+                    () => queue_play_at(i)),
                 icon_button(P.up, 16, "move up", i > 0,
                     () => queue_move(i, i - 1)),
                 icon_button(P.down, 16, "move down", i < total - 1,

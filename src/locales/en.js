@@ -79,6 +79,13 @@ const en = {
         "unknown album":        "Unknown album",
         "unknown genre":        "Unknown genre",
         "play all":             "Play all",
+        "preview":              "Preview",
+        "previewing":           "Previewing",
+        "temporary queue":      "Queue put together by hand",
+        "playing list":         "List",
+        "edited":               "edited",
+        "add music in sources": "Add music in Sources",
+        "play this":            "Play this one",
 
         /* ---- the sources ---- */
         "authorised sources":   "Authorised sources",

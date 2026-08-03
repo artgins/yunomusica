@@ -65,6 +65,13 @@ const fr = {
         "unknown album":        "Album inconnu",
         "unknown genre":        "Genre inconnu",
         "play all":             "Tout lire",
+        "preview":              "Écouter",
+        "previewing":           "Écoute",
+        "temporary queue":      "File composée à la main",
+        "playing list":         "Liste",
+        "edited":               "modifiée",
+        "add music in sources": "Ajoutez de la musique dans Sources",
+        "play this":            "Lire celui-ci",
 
         "authorised sources":   "Dossiers autorisés",
         "add a folder":         "Ajouter un dossier",
