@@ -115,12 +115,33 @@
 
 /*======================================================================
  *      Shared view scaffolding
+ *
+ *      min-width:0 on the view roots is load-bearing. The shell lays its
+ *      centre zone out as `.yui-zone-center > * { flex: 1 0 auto }`, so
+ *      every view is a FLEX ITEM — and a flex item defaults to
+ *      min-width:auto, refusing to shrink below its content. One long
+ *      nowrap string (a list of folder names, a file path) then widened
+ *      the whole view past the phone and pushed its buttons off screen.
  *====================================================================*/
-.MUS_VIEW {
+.MUS_VIEW,
+.MUS_DECK {
+    /*  width:100% is what pins the view to the ZONE instead of letting
+        it be sized by its own content: the zone's children are
+        `flex: 1 0 auto`, and shrink:0 means a box sized by content never
+        comes back down. min-width:0 then lets the pieces inside shrink
+        rather than pushing the box out. */
     width: 100%;
+    min-width: 0;
+}
+.MUS_VIEW {
     color: var(--bulma-text, #1b1b1b);
 }
 
+.MUS_CONTENT,
+.MUS_NOWCARD,
+.MUS_QUEUEBOX {
+    min-width: 0;
+}
 .MUS_CONTENT {
     max-width: 900px;
     margin: 0 auto;
@@ -184,7 +205,11 @@
     color: var(--bulma-text-strong, #1f1f1f);
     font-size: 0.9rem;
 }
-.MUS_NOTICE span { flex: 1; }
+.MUS_NOTICE span {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;    /* a path has no spaces to break at */
+}
 .MUS_NOTICE_X {
     border: none;
     background: none;
@@ -234,6 +259,7 @@
     max-width: 900px;
     margin: 0 auto;
     padding: 0.75rem 0.75rem 1.5rem;
+    box-sizing: border-box;     /* the padding must not add to the 100% */
 }
 
 .MUS_DECKCARD {
@@ -1176,7 +1202,12 @@ img.MUS_ART { object-fit: cover; }
     border: 1px solid var(--mus-accent);
 }
 .MUS_UPDBAR { margin-bottom: 0.2rem; }
-.MUS_AUTHBAR_TXT { flex: 1; min-width: 14ch; display: flex; flex-direction: column; }
+.MUS_AUTHBAR_TXT {
+    flex: 1;
+    min-width: 0;               /* or the names widen the whole view */
+    display: flex;
+    flex-direction: column;
+}
 .MUS_AUTHBAR_TXT > span:first-child { font-weight: 600; font-size: 0.9rem; }
 .MUS_AUTHBAR_WHICH {
     font-size: 0.78rem;
