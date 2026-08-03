@@ -35,7 +35,13 @@ import {de} from "./de.js";
 import {ja} from "./ja.js";
 
 const STORAGE_KEY = "yunomusica:locale";
-const DEFAULT_LOCALE = "es";
+
+/*  Where a browser lands when it asks for a language this app does not
+    speak. English, the same as `fallbackLng` below, so a visitor never
+    meets two different answers to "what if we don't have it?".
+    A Spanish browser still gets Spanish: the request is honoured first
+    (see browser_locale), and this only decides the rest. */
+const DEFAULT_LOCALE = "en";
 
 /*  Insertion order is menu order: the two the app was written in first,
     then the rest by number of speakers. */
