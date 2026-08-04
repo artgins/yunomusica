@@ -108,7 +108,7 @@ await page.waitForTimeout(700);
 console.log("dir:", await page.evaluate(() => document.documentElement.getAttribute("dir")));
 await route(page, "#/player", 600);
 await step("10-arabic-deck");
-console.log("deck title (ar):", await page.locator(".MUS_QTITLE").textContent());
+console.log("deck queue line (ar):", await page.locator(".MUS_QORIGIN").textContent());
 console.log("nav (ar):", (await page.locator(".yui-nav-item").allTextContents()).join(" | "));
 
 /*  reload: what comes back? */

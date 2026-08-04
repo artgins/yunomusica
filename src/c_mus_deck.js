@@ -892,14 +892,20 @@ function paint_queue(gobj)
 
     let $head = createElement2(
         ["header", {class: "MUS_QHEAD"}, [
-            ["h3", {class: "MUS_QTITLE"}, [
-                ["span", {i18n: "queue"}, t("queue")],
-                ["span", {class: "MUS_QCOUNT"}, String(queue.length)]
-            ]],
-            /*  Whether this is a saved list or something put together by
-                hand, and whether it still matches the list it came from.
-                Playing "my list" when it is no longer that list is the
-                kind of quiet lie an app should not tell. */
+            /*  No heading. A list of tracks under the transport does not
+                need to be labelled "queue" — it is the only thing it
+                could be — and on a phone that heading cost a whole line
+                of a screen where the rows are the point.
+
+                What it did carry that was worth keeping is the count,
+                which now rides on the line below: the same figure, on a
+                line that had to be there anyway.
+
+                That line says whether this is a saved list or something
+                put together by hand, and whether it still matches the
+                list it came from. Playing "my list" when it is no longer
+                that list is the kind of quiet lie an app should not
+                tell. */
             queue.length
                 ? (origin
                     ? ["div", {class: "MUS_QORIGIN"}, [
@@ -909,10 +915,13 @@ function paint_queue(gobj)
                         origin.edited
                             ? ["span", {class: "MUS_QORIGIN_EDIT", i18n: "edited"},
                                 t("edited")]
-                            : ["span", {}]
+                            : ["span", {}],
+                        ["span", {class: "MUS_QCOUNT"}, String(queue.length)]
                       ]]
-                    : ["div", {class: "MUS_QORIGIN MUS_DIM", i18n: "temporary queue"},
-                        t("temporary queue")])
+                    : ["div", {class: "MUS_QORIGIN MUS_DIM"}, [
+                        ["span", {i18n: "temporary queue"}, t("temporary queue")],
+                        ["span", {class: "MUS_QCOUNT"}, String(queue.length)]
+                      ]])
                 : ["span", {}],
             ["div", {class: "MUS_QACTIONS"}, [
                 ["button", {class: "MUS_QBTN button", type: "button",
