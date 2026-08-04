@@ -44,7 +44,6 @@ const TESTS = [
     {name: "fitmobile", what: "nada se sale del ancho del móvil"},
     {name: "preview",   what: "la tira de escucha se lee y su reloj avanza"},
     {name: "follow",    what: "el banner no scrollea y la cola sigue a la música"},
-    {name: "history",   what: "lo escuchado se apunta, se lee y se borra"},
     {name: "e2e",       what: "recorrido completo + recarga"}
 ];
 

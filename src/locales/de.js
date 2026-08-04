@@ -171,20 +171,6 @@ const de = {
         "made by artgins":      "Gemacht von ArtGins",
         "made with yuneta":     "Gemacht mit Yuneta",
         "about tagline":        "Ein ereignisgesteuertes Framework für verteilte Systeme.",
-
-        "history":              "Verlauf",
-        "recent":               "Zuletzt",
-        "favourite lists":      "Listen",
-        "favourite tracks":     "Titel",
-        "favourite albums":     "Alben",
-        "favourite artists":    "Interpreten",
-        "no history yet":       "Bisher wurde nichts gehört.",
-        "how history works":    "Was du spielst, wird hier auf dem Gerät notiert: welche Listen und Warteschlangen und wie lange jede wirklich lief. Es wird nirgendwohin gesendet, und du kannst alles löschen.",
-        "clear history":        "Verlauf löschen",
-        "delete the history?":  "Den ganzen Verlauf löschen?",
-        "times":                "mal",
-        "plays":                "Wiedergaben",
-        "listened":             "gehört",
     },
 };
 

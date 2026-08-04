@@ -178,20 +178,6 @@ const es = {
         "made by artgins":      "Hecho por ArtGins",
         "made with yuneta":     "Hecho con Yuneta",
         "about tagline":        "Un framework dirigido por eventos para sistemas distribuidos.",
-
-        "history":              "Historia",
-        "recent":               "Reciente",
-        "favourite lists":      "Listas",
-        "favourite tracks":     "Canciones",
-        "favourite albums":     "Álbumes",
-        "favourite artists":    "Artistas",
-        "no history yet":       "Todavía no has escuchado nada.",
-        "how history works":    "Lo que suena se apunta aquí, en el dispositivo: qué listas y qué colas, y cuánto sonó cada una de verdad. No se envía a ningún sitio, y puedes borrarlo entero.",
-        "clear history":        "Borrar la historia",
-        "delete the history?":  "¿Borrar toda la historia?",
-        "times":                "veces",
-        "plays":                "escuchas",
-        "listened":             "escuchado",
     },
 };
 
