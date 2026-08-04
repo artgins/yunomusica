@@ -29,7 +29,8 @@
 import {
     STORE_SOURCES, STORE_FILES, STORE_TAGS, STORE_COVERS,
     idb_all, idb_get, idb_put, idb_del, idb_del_prefix, idb_get_prefix,
-    idb_available, request_persistence, storage_persisted,
+    idb_available, idb_blocked, on_storage_change,
+    request_persistence, storage_persisted,
 } from "./idb.js";
 import {
     ingest, drop_source_tracks, cancel_ingest,
@@ -84,6 +85,7 @@ const S = {
     runtime: new Map(),     // id -> {permission, scanning, error}
     loaded:  false,
     persistent: false,      // IndexedDB actually works here
+    blocked:    false,      // ...or it is only another tab holding it open
     preparing: false,       // the browser is still handing over a folder
     stopping: false,        // Stop pressed, waiting for the loop to break
     write_failed: new Set(),  // ids of sources whose store attempt did not land
@@ -260,6 +262,16 @@ async function authorize(id)
 async function load_sources()
 {
     S.persistent = await idb_available();
+    S.blocked = idb_blocked();
+    /*  Storage the app could not reach can come back on its own — the
+        other tab is closed and the upgrade goes through. Say so on the
+        screen instead of leaving a warning up about a problem that is
+        over. */
+    on_storage_change(async function() {
+        S.persistent = await idb_available();
+        S.blocked = idb_blocked();
+        emit();
+    });
     S.durable = await storage_persisted();
     let rows = await idb_all(STORE_SOURCES);
     S.sources = (rows || []).sort((a, b) => (a.added || 0) - (b.added || 0));
@@ -412,6 +424,12 @@ async function persist(source)
         S.write_failed.delete(source.id);
     } else {
         S.write_failed.add(source.id);
+        /*  Ask again WHY it failed. A blocked upgrade is not a browser
+            that stores nothing, and the other tab may have been closed
+            since — in which case the database is working again and the
+            screen should stop saying otherwise. */
+        S.persistent = await idb_available();
+        S.blocked = idb_blocked();
         console.error("yunomúsica: could not store the source", source.name);
     }
     return ok;
@@ -422,17 +440,44 @@ function write_failed()
     return S.write_failed.size > 0;
 }
 
+/*  Storage is unreachable only because another tab is holding the
+    database at an older schema. Worth telling apart: the user can fix
+    this one in two seconds. */
+function is_blocked()
+{
+    return S.blocked;
+}
+
 /*  Adding a source is the moment to ask the browser to keep what we
-    store. Chromium decides silently; Firefox asks the user. Either way
-    it is asked once, when it obviously matters, not on page load. */
-async function make_durable()
+    store. Chromium decides silently; Firefox asks the USER — and there
+    is the trap: navigator.storage.persist() in Firefox returns a promise
+    that does not settle until somebody answers the doorhanger, and a
+    doorhanger nobody notices is never answered. Awaiting it outright
+    meant the folder was never read at all: no walk, no tags, no tracks,
+    a scan bar up for ever. On Chromium the same await costs a
+    millisecond, which is why it went unseen.
+
+    So the request is still made — durable storage is worth having, it is
+    what stops the browser evicting the folders when it wants room — but
+    it is only waited on for as long as an engine that answers by itself
+    would take. Nobody's music waits on a prompt they have not seen. The
+    real answer, whenever it arrives, updates the state on its own. */
+const DURABLE_WAIT = 2000;
+
+function make_durable()
 {
     if(S.durable) {
-        return true;
+        return Promise.resolve(true);
     }
-    S.durable = await request_persistence();
-    emit();
-    return S.durable;
+    let asked = request_persistence().then(function(ok) {
+        S.durable = ok;
+        emit();
+        return ok;
+    });
+    return Promise.race([
+        asked,
+        new Promise((resolve) => setTimeout(() => resolve(S.durable), DURABLE_WAIT)),
+    ]);
 }
 
 function is_durable()
@@ -474,7 +519,7 @@ async function diagnose()
     }
     add("display-mode", mode);
     add("showDirectoryPicker", fsa_supported() ? "yes" : "NO");
-    add("indexedDB", S.persistent ? "yes" : "NO");
+    add("indexedDB", S.persistent ? "yes" : (S.blocked ? "NO (blocked by another tab)" : "NO"));
     add("storage.persisted", S.durable === null ? "unknown" : S.durable);
     add("last write", S.write_failed.size
         ? ("FAILED for " + S.write_failed.size + " source(s)") : "ok");
@@ -948,6 +993,7 @@ export {
     is_persistent,
     is_durable,
     write_failed,
+    is_blocked,
     diagnose,
     is_preparing,
     stop_scan,

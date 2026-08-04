@@ -40,6 +40,33 @@ const STORE_TAGS      = "source_tags";
 const STORE_COVERS    = "covers";
 
 let db_promise = null;
+/*  The last open was blocked by another tab, rather than failing. The
+    difference matters to the user: one is "this browser stores
+    nothing", the other is "close your other Yunomúsica tab". */
+let blocked = false;
+
+/*  Told when storage that was unavailable becomes available again, so a
+    screen showing the bad news can stop showing it. */
+const watchers = new Set();
+
+function on_storage_change(fn)
+{
+    watchers.add(fn);
+    return function unwatch() {
+        watchers.delete(fn);
+    };
+}
+
+function announce()
+{
+    for(const fn of watchers) {
+        try {
+            fn();
+        } catch(e) {
+            console.error("idb watcher failed", e);
+        }
+    }
+}
 
 
 /***************************************************************
@@ -93,13 +120,53 @@ function open_db()
                 }
             }
         };
+        /*  Answered once. A blocked open is answered EARLY, with a
+            null, and then answered again for real when the block
+            clears — see below. */
+        let answered = false;
+
         req.onsuccess = function() {
-            resolve(req.result);
+            let db = req.result;
+            /*  Another tab wants to upgrade the schema. Step aside.
+                Holding this connection open blocks THAT tab out of
+                storage entirely — which is what a version bump costs
+                anyone with two tabs open, and it is not a price the
+                older tab gets to charge. */
+            db.onversionchange = function() {
+                db.close();
+                db_promise = null;
+            };
+            blocked = false;
+            if(answered) {
+                /*  We already told the app "no database", because
+                    another tab was holding the old schema. That tab has
+                    gone and the open finished on its own: adopt it, and
+                    tell whoever is showing the bad news that it is over.
+                    Without this the app stays storage-less until a
+                    reload, for a problem that fixed itself. */
+                db_promise = Promise.resolve(db);
+                announce();
+                return;
+            }
+            answered = true;
+            resolve(db);
         };
         req.onerror = function() {
+            answered = true;
             resolve(null);
         };
         req.onblocked = function() {
+            /*  A tab running an OLDER bundle is sitting on the previous
+                version, so our upgrade cannot start. This is not the
+                browser refusing to store anything — it is one tab too
+                many, and it is fixed by closing the other one.
+
+                Answer null NOW so that nothing waits on it: this request
+                stays queued until the other tab closes, and a caller
+                that awaited it would hang for as long as that took. The
+                request itself is kept — it is what repairs us. */
+            blocked = true;
+            answered = true;
             resolve(null);
         };
     });
@@ -212,6 +279,12 @@ function idb_available()
     return open_db().then((db) => !!db);
 }
 
+/*  Was the last failure a schema upgrade held up by another tab? */
+function idb_blocked()
+{
+    return blocked;
+}
+
 
 /***************************************************************
  *  Ask the browser NOT to evict what we store.
@@ -265,6 +338,8 @@ export {
     pref_get,
     pref_set,
     idb_available,
+    idb_blocked,
+    on_storage_change,
     request_persistence,
     storage_persisted,
 };

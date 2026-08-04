@@ -111,6 +111,8 @@ const pt = {
             "O teu navegador não concedeu armazenamento duradouro, por isso pode descartar as tuas pastas quando precisar de espaço — ou se estiver configurado para limpar os dados do site ao sair. Se as tuas pastas desaparecem, é por isto.",
         "could not be saved":
             "Não foi possível guardar as tuas pastas: este navegador não deixa a aplicação armazenar nada. Perder-se-ão quando o fechares.",
+        "another tab is holding it":
+            "Outro separador desta aplicação está aberto com uma versão anterior e está a reter a base de dados. Feche-o e recarregue esta página.",
         "sources do not persist":
             "Este navegador não consegue guardar a permissão sobre uma pasta, por isso os ficheiros que escolheres ficam como uma lista fixa. As faixas acrescentadas depois à pasta não aparecerão.",
         "upload warning explained":

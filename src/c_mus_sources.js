@@ -32,7 +32,7 @@ import {yui_shell_of} from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {
     subscribe_sources, all_sources, fsa_supported, is_persistent,
-    is_durable, write_failed, diagnose,
+    is_durable, write_failed, is_blocked, diagnose,
     add_dir, add_files, authorize, scan, remove_source,
 } from "./sources_store.js";
 
@@ -345,7 +345,15 @@ function build_explainer()
         folders on restart with no explanation is the worst outcome
         here, and the browser tells us in advance which of the two
         situations we are in. */
-    if(!is_persistent() || write_failed()) {
+    if(is_blocked()) {
+        /*  Not the browser's doing: another tab of this app is holding
+            the database at an older schema, so the upgrade cannot start.
+            Saying "this browser stores nothing" here sent people into
+            their privacy settings looking for a switch that was never
+            the problem. */
+        children.push(["p", {class: "is-warn", i18n: "another tab is holding it"},
+            t("another tab is holding it")]);
+    } else if(!is_persistent() || write_failed()) {
         children.push(["p", {class: "is-warn", i18n: "could not be saved"},
             t("could not be saved")]);
     } else if(is_durable() === false) {

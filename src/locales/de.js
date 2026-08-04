@@ -111,6 +111,8 @@ const de = {
             "Dein Browser hat keinen dauerhaften Speicher gewährt, kann deine Ordner also verwerfen, wenn er Platz braucht — oder wenn er Website-Daten beim Beenden löscht. Wenn deine Ordner immer wieder verschwinden, liegt es daran.",
         "could not be saved":
             "Deine Ordner konnten nicht gespeichert werden: Dieser Browser lässt die App nichts speichern. Sie sind beim Schließen weg.",
+        "another tab is holding it":
+            "Ein anderer Tab dieser App läuft noch mit einer älteren Version und hält die Datenbank fest. Schließe ihn und lade diese Seite neu.",
         "sources do not persist":
             "Dieser Browser kann die Freigabe eines Ordners nicht speichern; die ausgewählten Dateien werden deshalb als feste Liste gemerkt. Später hinzugefügte Titel erscheinen nicht.",
         "upload warning explained":

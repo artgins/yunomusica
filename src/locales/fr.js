@@ -111,6 +111,8 @@ const fr = {
             "Votre navigateur n’a pas accordé de stockage durable : il peut donc supprimer vos dossiers quand il manque de place — ou s’il est réglé pour effacer les données des sites à la fermeture. Si vos dossiers disparaissent, c’est pour cela.",
         "could not be saved":
             "Vos dossiers n’ont pas pu être enregistrés : ce navigateur n’autorise l’application à rien stocker. Ils seront perdus à la fermeture.",
+        "another tab is holding it":
+            "Un autre onglet de cette application est ouvert avec une version plus ancienne et retient la base de données. Fermez-le et rechargez cette page.",
         "sources do not persist":
             "Ce navigateur ne peut pas conserver l'autorisation d'un dossier ; les fichiers choisis sont donc retenus comme une liste figée. Les morceaux ajoutés ensuite au dossier n'apparaîtront pas.",
         "upload warning explained":

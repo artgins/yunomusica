@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.10.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.10.1** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -203,7 +203,9 @@ npm run fixtures        # build the MP3 trees on their own (--force to rebuild)
 
 Playwright driving a **real Chrome** (`CHROME_PATH`, default
 `/usr/bin/google-chrome`) against the **built bundle**, not the dev server:
-half of what is under test is what the build produces. `npm test` builds `dist/`
+half of what is under test is what the build produces. One test —
+`firefox` — drives a real **Firefox** instead, and it earns its keep: see
+"The prompt that never answers" below. `npm test` builds `dist/`
 if it is missing, generates the fixtures if they are missing, starts
 `vite preview` if nothing is listening, and shuts it down afterwards.
 
@@ -215,6 +217,8 @@ if it is missing, generates the fixtures if they are missing, starts
 | `select` | browsing changes what is sounding |
 | `confirm` | "Play all" eats a queue without asking |
 | `install` | the app stops asking about installing itself |
+| `storage` | a second tab costs the first one its storage |
+| `firefox` | Firefox reads no music at all |
 | `fitmobile` | something runs off the side of a phone |
 | `follow` | the banner scrolls away, or the queue stops following the music |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
@@ -300,6 +304,51 @@ The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
 - **`beforeinstallprompt` has to be caught in the HTML head, not in the
   bundle.** It can fire while the module graph is still loading, and an event
   nobody caught cannot be asked for again.
+- **A blocked IndexedDB open never fails and never succeeds.** It sits queued
+  until the other connection goes away. Answer the caller `null` at `blocked`
+  and keep the request: a retry issued alongside it queues behind it and hangs
+  for ever, and throwing it away loses the repair.
+
+## The prompt that never answers
+
+`navigator.storage.persist()` is not the same call on every engine. Chromium
+decides by itself and answers in a millisecond. **Firefox asks the user**, and
+the promise it returns does not settle until the doorhanger is answered — which,
+for a doorhanger nobody notices, is never.
+
+The app awaited it before reading a folder, on the reasonable-sounding grounds
+that you should ask for durable storage before writing anything. On Firefox that
+meant the read never began: no walk, no tags, no tracks, a scan bar up for ever
+over an empty library, and no error anywhere to say why. It shipped because the
+whole suite was Chrome.
+
+Durable storage is worth asking for, so the request is still made — but it is
+waited on for no longer than an engine that answers by itself would take
+(`DURABLE_WAIT`, 2 s), and the real answer updates the state whenever it lands.
+Nobody's music waits on a prompt they have not seen.
+
+The lesson generalises past this one call: **anything that can put a permission
+prompt on screen is not a background operation**, and a feature that is merely
+nice to have must never be able to block one the app cannot work without.
+
+## A version bump is not free
+
+Raising `DB_VERSION` costs storage to anyone with a second tab open. IndexedDB
+will not upgrade a schema while another connection holds the old one: it fires
+`blocked`, and until that tab goes away the new one can store nothing at all.
+
+Two things make that survivable, and both are in `idb.js`:
+
+- every connection sets `onversionchange` and **closes itself** when a newer tab
+  needs to upgrade, so the next bump costs nobody anything;
+- a blocked open answers `null` immediately but **keeps its request**, and adopts
+  the database when it finally opens — so closing the other tab repairs the app
+  where it stands, with no reload.
+
+And the screen says which of the two it is. "This browser is not letting the app
+store anything" is a true sentence that sends people into their privacy settings;
+"another tab of this app is open with an older version" is the one that gets it
+fixed.
 
 ## The install question
 

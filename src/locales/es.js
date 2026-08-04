@@ -116,6 +116,8 @@ const es = {
             "Tu navegador no ha concedido almacenamiento duradero, así que puede descartar tus carpetas cuando necesite espacio — o si está configurado para borrar los datos del sitio al salir. Si tus carpetas desaparecen, es por esto.",
         "could not be saved":
             "No se han podido guardar tus carpetas: este navegador no deja a la app almacenar nada. Se perderán al cerrarlo.",
+        "another tab is holding it":
+            "Otra pestaña de esta app está abierta con una versión anterior y tiene la base de datos retenida. Ciérrala y recarga esta página.",
         "sources do not persist":
             "Este navegador no puede guardar el permiso sobre una carpeta, así que los ficheros que elijas se recuerdan como una lista fija. Lo que añadas después a la carpeta no aparecerá.",
         "upload warning explained":

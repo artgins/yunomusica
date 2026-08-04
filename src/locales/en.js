@@ -126,6 +126,8 @@ const en = {
             "Your browser has not granted durable storage, so it may discard your folders when it needs room — or when it is set to clear site data on exit. If your folders keep disappearing, that is why.",
         "could not be saved":
             "Your folders could not be saved: this browser is not letting the app store anything. They will be lost when you close it.",
+        "another tab is holding it":
+            "Another tab of this app is open with an older version, and it is holding the database. Close it and reload this page.",
         "sources do not persist":
             "This browser cannot keep folder permissions, so the files you pick are remembered as a fixed list. Tracks added to the folder later will not appear.",
         "upload warning explained":
