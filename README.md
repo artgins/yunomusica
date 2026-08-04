@@ -220,6 +220,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `storage` | a second tab costs the first one its storage |
 | `firefox` | Firefox reads no music at all |
 | `fitmobile` | something runs off the side of a phone |
+| `preview` | the listening strip is unreadable, or its clock is the queue's |
 | `follow` | the banner scrolls away, or the queue stops following the music |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
 
