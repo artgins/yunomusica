@@ -45,6 +45,7 @@ const TESTS = [
     {name: "firefox",   what: "Firefox lee la música sin contestar al permiso"},
     {name: "fitmobile", what: "nada se sale del ancho del móvil"},
     {name: "preview",   what: "la tira de escucha se lee y su reloj avanza"},
+    {name: "resume",    what: "al volver, la canción trae su duración y suena"},
     {name: "follow",    what: "el banner no scrollea y la cola sigue a la música"},
     {name: "e2e",       what: "recorrido completo + recarga"}
 ];

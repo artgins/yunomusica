@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.10.2** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.10.3** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -221,6 +221,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `firefox` | Firefox reads no music at all |
 | `fitmobile` | something runs off the side of a phone |
 | `preview` | the listening strip is unreadable, or its clock is the queue's |
+| `resume` | the track you come back to has no duration and does not sound |
 | `follow` | the banner scrolls away, or the queue stops following the music |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
 

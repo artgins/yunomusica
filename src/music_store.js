@@ -311,6 +311,13 @@ const S = {
     audio:   null,
     queue:   [],
     qi:      -1,
+    loaded_uid: 0,      // uid of the track whose file is ON the element
+    /*  Where a restored deck has to be cued, and which track that
+        position belongs to. The seek waits for the metadata: an element
+        that does not know its duration yet cannot be seeked. */
+    resume_at:  0,
+    resume_uid: 0,
+    resolve_denied: false,  // the last resolve failed on permission, not on the file
     /*  Where the queue came from: a saved list, or built by hand. Shown
         on the deck, because "am I listening to my list or to something I
         threw together?" is not a question the user should have to guess. */
@@ -583,12 +590,16 @@ async function resolve_file(t)
     if(t.file) {
         return t.file;
     }
+    S.resolve_denied = false;
     if(!file_resolver) {
         return null;
     }
     try {
         t.file = await file_resolver(t);
     } catch(e) {
+        /*  A folder still waiting to be authorised is not a broken file,
+            and must not be reported as one. */
+        S.resolve_denied = !!e && e.name === "NotAllowedError";
         t.file = null;
     }
     return t.file;
@@ -975,20 +986,57 @@ function restore_queue(snap)
     /*  The index refers to the queue as it was; entries whose source is
         gone are dropped, so clamp rather than trust it. */
     S.qi = Math.max(0, Math.min(snap.index || 0, tracks.length - 1));
+    /*  The position is CUED, not applied here. Setting `currentTime` on
+        an element that has not read a byte yet does not seek: it only
+        moves the "default playback start position", so the transport
+        showed the old position over a track that was never loaded — and
+        on a phone that is the normal case, because the folders are not
+        authorised yet at start up. The seek happens on `loadedmetadata`,
+        which is the first moment the element knows where it can go. */
     S.resume_at = snap.time || 0;
+    S.resume_uid = tracks[S.qi].uid;
     emit("queue");
     load_current(false).then(function() {
-        if(S.audio && S.resume_at > 0) {
-            try {
-                S.audio.currentTime = S.resume_at;
-            } catch(e) {
-                /*  Not seekable yet; the position is simply lost. */
-            }
-        }
-        S.resume_at = 0;
         emit("playing");
     });
     return tracks.length;
+}
+
+/*  Cue the restored position, once and on the right track. */
+function apply_resume()
+{
+    const t = S.queue[S.qi];
+    if(!S.resume_at || !t || t.uid !== S.resume_uid || !S.audio) {
+        return;
+    }
+    const dur = S.audio.duration;
+    if(!isFinite(dur) || dur <= 0) {
+        return;
+    }
+    try {
+        S.audio.currentTime = Math.max(0, Math.min(S.resume_at, dur - 0.25));
+    } catch(e) {
+        /*  Not seekable; the position is simply lost. */
+    }
+    S.resume_at = 0;
+    S.resume_uid = 0;
+}
+
+/*  The folder was authorised AFTER the deck was restored.
+ *
+ *  On Android the permission on a folder never survives a launch, so at
+ *  start up the track resolves to nothing and the element is left empty:
+ *  a play button that does nothing and a total stuck at 0:00, until the
+ *  user changes track and comes back. Granting the permission is the
+ *  event that makes the file readable, so that is when the load is done
+ *  again — with the stored position still pending, so nothing is lost. */
+function reload_current()
+{
+    const t = S.queue[S.qi];
+    if(!t || (S.loaded_uid === t.uid && S.audio && S.audio.src)) {
+        return;
+    }
+    load_current(false);
 }
 
 
@@ -999,11 +1047,24 @@ function get_audio()
 {
     if(!S.audio) {
         S.audio = new Audio();
+        S.audio.preload = "metadata";
         S.audio.addEventListener("timeupdate", () => emit("time"));
         S.audio.addEventListener("ended", () => step(1));
         S.audio.addEventListener("play",  () => emit("playing"));
         S.audio.addEventListener("pause", () => emit("playing"));
         S.audio.addEventListener("canplay", () => { S.retry_for = 0; });
+        /*  Metadata is the moment the element learns how long the track
+            is, and it arrives well after the src was set — on a phone,
+            not until the file is really being read. Two things wait for
+            it: the total on the transport, which otherwise sits at 0:00
+            for a track nobody has played yet, and the seek of a restored
+            position. `timeupdate` alone did not cover it: it only fires
+            while something is playing, which a restored deck is not. */
+        S.audio.addEventListener("loadedmetadata", function() {
+            apply_resume();
+            emit("time");
+        });
+        S.audio.addEventListener("durationchange", () => emit("time"));
         S.audio.addEventListener("error", () => {
             /*  Swapping the source aborts whatever was loading, and an
                 abort is not a broken file. Reporting it would put "that
@@ -1050,6 +1111,7 @@ function stop_playback()
         S.audio.removeAttribute("src");
         S.audio.load();
     }
+    S.loaded_uid = 0;
     if(S.url) {
         URL.revokeObjectURL(S.url);
         S.url = null;
@@ -1068,14 +1130,26 @@ async function load_current(autoplay)
     if(!t) {
         return;
     }
+    /*  A position restored for one track means nothing on another. */
+    if(S.resume_uid && S.resume_uid !== t.uid) {
+        S.resume_at = 0;
+        S.resume_uid = 0;
+    }
     if(S.preview) {
         stop_preview();
     }
 
     const file = await resolve_file(t);
     if(!file) {
-        S.notice = "that file could not be read";
-        emit("library");
+        S.loaded_uid = 0;
+        /*  A folder waiting to be authorised is not an unreadable file.
+            The bar asking for the permission is already on screen, and a
+            message contradicting it only confuses; the load is armed
+            again the moment the permission arrives (reload_current). */
+        if(!S.resolve_denied) {
+            S.notice = "that file could not be read";
+            emit("library");
+        }
         emit("playing");
         return;
     }
@@ -1094,6 +1168,7 @@ async function load_current(autoplay)
     const stale = S.url;
     S.url = URL.createObjectURL(file);
     audio.src = S.url;
+    S.loaded_uid = t.uid;
     if(stale) {
         setTimeout(() => URL.revokeObjectURL(stale), 1000);
     }
@@ -1114,6 +1189,14 @@ function toggle()
         return;
     }
     const audio = get_audio();
+    /*  Play on a track that never got loaded — its folder was not
+        authorised when the deck came back — has to load it first.
+        Calling play() on an empty element is silence and nothing
+        else, which is exactly how it looked. */
+    if(!audio.src || S.loaded_uid !== S.queue[S.qi].uid) {
+        load_current(true);
+        return;
+    }
     if(audio.paused) {
         audio.play().catch(() => {});
     } else {
@@ -1347,4 +1430,5 @@ export {
     /*  the deck across a reload */
     queue_snapshot,
     restore_queue,
+    reload_current,
 };

@@ -36,7 +36,7 @@ import {
     ingest, drop_source_tracks, cancel_ingest,
     tags_of_source, covers_snapshot, prime_covers, is_audio,
     restore_tracks, set_file_resolver,
-    queue_length, queue_add, tracks_of_source,
+    queue_length, queue_add, tracks_of_source, reload_current,
 } from "./music_store.js";
 import {
     is_stale as update_stale, latest_version as update_latest,
@@ -247,6 +247,13 @@ async function authorize(id)
     }
     rt(id).permission = state;
     emit();
+    /*  The deck was restored before this permission existed, so the track
+        it is sitting on could not be read and the player was left empty.
+        Now it can be read: load it, and the position it was left at comes
+        back with it. */
+    if(state === "granted") {
+        reload_current();
+    }
     /*  No rescan here. The library was restored from store at start up;
         granting the permission only makes the files reachable again, and
         walking eight thousand entries to learn what we already know is
