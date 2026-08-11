@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.12.1** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.13.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -38,7 +38,7 @@ do. **Tapping it** moves to the next one, and the choice is remembered:
 
 | | |
 |---|---|
-| **Notes** | a ribbon running leftwards, one column per frame, one row per semitone from C3 up. Brightness is the energy in that semitone's band |
+| **Notes** | a ribbon running leftwards, one column per frame, one row per semitone from C3 up. It draws the **ridges**: a semitone only when the spectrum peaks on it |
 | **Spectrum** | the same 48 bands standing up, with a peak that holds and falls |
 | **Wave** | the waveform, triggered on a rising zero crossing so it stands still instead of skidding |
 | **Chroma** | the twelve pitch classes with the octaves folded together, around the **circle of fifths** — consonant intervals end up adjacent, so a chord is a compact shape and a key change is that shape rotating |
@@ -51,6 +51,23 @@ true statement about the sound and not a chord. It starts at C3 (130.8 Hz)
 because at 8192 bins the FFT resolves 5.4 Hz and a semitone down there is 7.6 Hz
 wide — one bin. Below C3 the answer would be shared out between neighbours, so
 it is not offered.
+
+**It draws ridges, not everything.** Drawing every band above a fixed threshold
+is what the first version did, and music lights every band to some degree —
+harmonics, broadband noise, the skirts of each note — so it came out as a fog
+with the notes buried in it, in thick fuzzy stripes. Three things fixed that:
+
+- a semitone is drawn only where the spectrum **peaks** on it, and only when
+  that peak **stands out** from its neighbours — a recording's noise floor is
+  bumpy and produces ridges too, shallow ones, while a real note falls away
+  sharply on both sides;
+- the scale is a ceiling that **rises instantly and falls slowly**, so the
+  picture is drawn against what is sounding now rather than against what the
+  format could hold. A fade-out still reads as one; a quiet passage does not
+  disappear;
+- every row is snapped to **whole pixels**. 48 rows over 118 device pixels is
+  2.46 each, so every band used to land on a fraction and get antialiased into
+  its neighbours. That was the blur.
 
 The same picture runs **behind the mini-player's strip** when you are not on the
 deck — a layer, not a box, because that strip is 68 px tall and its width is

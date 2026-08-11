@@ -61,10 +61,25 @@ const TAG_MS = 1600;
     what is sounding is still at the edge. */
 const ROLL_STEP = 2;
 
+/*  How fast the ribbon's ceiling falls back, per frame. It rises
+    instantly. At 60 fps this halves in about a second and a half —
+    long enough that a fade-out still reads as one, short enough that a
+    quiet passage after a loud one does not stay invisible. */
+const AGC_FALL = 0.9925;
+
+/*  Below this fraction of that ceiling, nothing is drawn: it is the
+    floor of the recording, and drawing the floor is what turned the
+    whole ribbon grey. */
+const NOTE_FLOOR = 0.34;
+
+/*  How far above its neighbours a semitone has to peak before it counts
+    as a note rather than as a bump in the noise. */
+const NOTE_PROMINENCE = 0.06;
+
 /*  Bars want a slow hand or they flicker; the ribbon wants none, or
     every column is a smear of the ten before it. */
 const SMOOTHING = {
-    notes:    0.45,
+    notes:    0.25,
     spectrum: 0.78,
     wave:     0.0,
     chroma:   0.72,
@@ -197,6 +212,7 @@ function create_visualizer(opts)
         roll_ctx: null,
         roll_debt: 0,       // sub-pixel travel carried between frames
         peaks:    new Float32Array(SEMITONES),
+        agc:      0,        // the ribbon's ceiling, chasing the music
         accent:   [201, 162, 39],
         accent_at: 0,       // frame count when the accent was last read
         frames:   0,
@@ -538,25 +554,87 @@ function draw_notes(V, f, c)
     const step = Math.floor(V.roll_debt);
     V.roll_debt -= step;
 
+    const rows = f.notes.length;
+    const rh = V.h / rows;
+
     if(step > 0) {
         rc.globalCompositeOperation = "copy";
         rc.drawImage(V.roll, -step, 0);
         rc.globalCompositeOperation = "source-over";
 
-        const rows = f.notes.length;
-        const rh = V.h / rows;
+        const n = f.notes;
         const x = V.w - step;
+
+        /*  A ceiling that follows the music instead of the format.
+         *
+         *  Painting against a fixed scale is what made this a pale
+         *  wash: quiet passages never reached the top of it and loud
+         *  ones pinned every row at once. This rises instantly and
+         *  falls slowly, so the picture is drawn against what is
+         *  sounding NOW — and a fade-out still reads as a fade-out,
+         *  because the ceiling takes a couple of seconds to follow it
+         *  down. */
+        let top = 0;
         for(let i = 0; i < rows; i++) {
-            const v = f.notes[i];
-            if(v <= 0.04) {
-                continue;               /* silence is the background */
+            if(n[i] > top) {
+                top = n[i];
             }
-            /*  Squared, so the loud stands out from the merely
-                present: a linear ramp painted the whole ribbon a
-                uniform half-tone. */
-            const a = Math.min(1, v * v * 1.35 + 0.05);
+        }
+        V.agc = Math.max(top, (V.agc || 0) * AGC_FALL);
+        const ceiling = Math.max(0.05, V.agc);
+
+        for(let i = 0; i < rows; i++) {
+            const v = n[i];
+
+            /*  RIDGES, not blobs.
+             *
+             *  A semitone is drawn only where the spectrum PEAKS on
+             *  it: louder than the semitone below and the one above.
+             *  Music lights every band to some degree — harmonics,
+             *  broadband noise, the skirts of every note — so drawing
+             *  all of them draws a fog with the notes buried in it.
+             *  The peaks are where the notes and their harmonics
+             *  actually are, and this is still a true statement about
+             *  the spectrum: it says "the energy has a maximum here",
+             *  which it does. */
+            const lo = i > 0 ? n[i - 1] : 0;
+            const hi = i < rows - 1 ? n[i + 1] : 0;
+            const near = lo > hi ? lo : hi;
+            if(v < lo || v < hi) {
+                continue;
+            }
+            /*  …and it has to STAND OUT, not merely tie. Broadband
+                noise is bumpy, so it produces ridges too — shallow
+                ones, a hair above their neighbours. A real note falls
+                away sharply on both sides. Asking for a little
+                prominence is what separates the two, and it is what
+                cleared the speckle along the bottom, where a recording's
+                floor lives. */
+            if(v - near < v * NOTE_PROMINENCE) {
+                continue;
+            }
+            /*  …and then only the part of the range worth seeing. Under
+                a third of the ceiling is the floor of the recording,
+                and drawing the floor is what made everything grey. */
+            const r = (v / ceiling - NOTE_FLOOR) / (1 - NOTE_FLOOR);
+            if(r <= 0) {
+                continue;
+            }
+            /*  A ridge that survived both tests is a note, so it is
+                drawn as one — clearly. The old ramp started at almost
+                nothing, which is why half of what was on screen was
+                barely there. */
+            const a = Math.min(1, r * r * 0.75 + 0.25);
+
+            /*  WHOLE PIXELS. 48 rows over 118 device pixels is 2.46
+                each, so every rect used to land on a fraction and get
+                antialiased into its neighbours — which is precisely
+                what "blurry" was. Rounding both edges makes each row
+                an exact band of pixels with a hard edge. */
+            const y0 = Math.round(V.h - (i + 1) * rh);
+            const y1 = Math.round(V.h - i * rh);
             rc.fillStyle = rgba(c, a);
-            rc.fillRect(x, V.h - (i + 1) * rh, step, rh + 0.5);
+            rc.fillRect(x, y0, step, Math.max(1, y1 - y0));
         }
     }
 
@@ -567,8 +645,6 @@ function draw_notes(V, f, c)
     /*  A hairline at every C, so a row can be read as a pitch rather
         than as a height. */
     g.fillStyle = rgba(c, 0.16);
-    const rows = f.notes.length;
-    const rh = V.h / rows;
     for(let i = 0; i < rows; i += 12) {
         g.fillRect(0, Math.round(V.h - i * rh) - 1, V.w, 1);
     }

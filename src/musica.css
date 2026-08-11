@@ -547,7 +547,11 @@
 @media (max-width: 699px) {
     .MUS_VIZ:not(.MUS_VIZ_MINI) {
         flex-basis: 100%;
-        height: 46px;
+        /*  62, not 46. The ribbon draws 48 semitones, so 46px was
+            under a pixel per row once the device ratio was taken out
+            and neighbouring notes merged into each other. This is the
+            same 2.5 device pixels per row the desktop box gets. */
+        height: 62px;
         min-height: 0;
     }
     .MUS_VIZ.is-off:not(.MUS_VIZ_MINI) { height: 1.5rem; }
@@ -1306,10 +1310,10 @@ img.MUS_ART { object-fit: cover; }
     border-radius: 0;
     background: none;
     min-height: 0;
-    opacity: 0.3;
+    opacity: 0.42;
     pointer-events: none;
 }
-[data-theme="dark"] .MUS_VIZ_MINI { opacity: 0.4; }
+[data-theme="dark"] .MUS_VIZ_MINI { opacity: 0.5; }
 /*  Turned off, it is nothing at all here: the strip has no room for an
     affordance and the deck's box is where the mode is chosen. */
 .MUS_VIZ_MINI.is-off { display: none; }
