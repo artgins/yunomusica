@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.17.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.18.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -191,6 +191,15 @@ it tells you what your browser can and cannot remember.
 
 **Lists** — the queues you saved with a name, and two more that nobody saved.
 
+**Tapping a list's name unfolds its songs**, in the order they were saved — a
+button of its own was the alternative, and that row already carries three, while
+tapping a name to see what is inside it is what the gesture already means
+everywhere else here. Entries whose source is not authorised right now still get
+a row, greyed, drawn from the title stored *with* the list: an unfolded list
+that is shorter than the list would be the same quiet lie the "3 missing" line
+exists to avoid. (This is what `entries_of()` was written for and had never been
+wired up to.)
+
 A saved list is a decision; the other two are a consequence: **Loved**, every
 track with at least one heart, most first, and **Most played**, everything that
 has been listened to, most first. Both carry the whole-list **Play** and **Add
@@ -223,6 +232,12 @@ Browsing never changes what is sounding. Every other rule follows from that one:
 The queue survives a reload: which tracks, which list they came from, which one
 was playing and how many seconds in. It is restored **paused** — a page that
 starts making noise on its own is worse than one that restores nothing.
+
+**"Save as list" goes off while the deck IS a saved list, untouched.** There is
+nothing to save that is not already saved, and the only thing the button could
+produce is a second copy under another name. It comes back the instant the queue
+is touched — the same instant the line above it starts saying "edited", because
+that is the same fact.
 
 ## Two numbers on a track, and the card that shows them
 

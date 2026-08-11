@@ -304,6 +304,39 @@
     border-radius: 12px;
 }
 .MUS_RANK:hover { background: var(--bulma-background, rgba(0, 0, 0, 0.04)); }
+/*  An entry whose source is not authorised right now: still a row,
+    because the list has one, but plainly not a playable one. */
+.MUS_RANK.is-missing { opacity: 0.55; }
+.MUS_RANK.is-missing .MUS_RANKMAIN { cursor: default; }
+
+/*  A saved list unfolded: the row and its songs are one block. */
+.MUS_LISTWRAP {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.MUS_LISTWRAP .MUS_RANKS { margin: 0 0 0.4rem 0.6rem; }
+/*  The name is the control that opens it. It keeps the look of the
+    line it replaced — this is a name, not a button that shouts. */
+.MUS_LISTNAME {
+    text-align: start;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.MUS_LISTCHEV {
+    display: inline-block;
+    margin-inline-end: 0.35rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    transition: transform 0.2s ease;
+}
+.MUS_LISTCHEV.is-open { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+    .MUS_LISTCHEV { transition: none; }
+}
 .MUS_RANKN {
     flex: none;
     min-width: 1.9ch;

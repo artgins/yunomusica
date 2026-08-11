@@ -60,6 +60,7 @@ const ar = {
         "clear queue":          "إفراغ القائمة",
         "follow playing":       "تتبّع ما يُشغَّل",
         "save as list":         "حفظ كقائمة",
+        "already saved":        "محفوظة بالفعل، ولم تتغيّر",
         "move up":              "تحريك لأعلى",
         "move down":            "تحريك لأسفل",
         "remove from queue":    "إخراج من القائمة",

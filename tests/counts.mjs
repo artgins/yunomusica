@@ -283,6 +283,70 @@ if(cleared.plays !== 0 || cleared.hearts !== 0) {
     bad.push(`the row still shows ${cleared.plays} plays / ${cleared.hearts} hearts`);
 }
 
+/*  7. "Save as list" is off while the deck IS a saved list, untouched.
+ *
+ *  Three states, and the middle one is the whole point: saving then
+ *  would only make a second copy of a list that already exists under a
+ *  name. It has to come back the instant the queue differs from the
+ *  list again, or the button is simply broken. */
+const saved_n = await page.locator(".MUS_QROW").count();
+await page.click(".MUS_QHEAD .MUS_QBTN:nth-child(1)");
+await page.fill(".MUS_NAME_INPUT", "Test list");
+await page.click(".MUS_NAMEROW .is-primary");
+await page.waitForTimeout(700);
+
+await route(page, "#/lists", 900);
+await page.locator(".MUS_SRCROW .MUS_QBTN.is-primary").first().click();
+await page.waitForTimeout(900);
+if(await page.locator(".MUS_CONFIRM_CARD").count()) {
+    await page.click(".MUS_CONFIRM_ACTIONS .is-danger");
+    await page.waitForTimeout(1200);
+}
+await route(page, "#/player", 900);
+
+const on_list = await page.evaluate(() => ({
+    off:    document.querySelector(".MUS_QHEAD .MUS_QBTN").disabled,
+    origin: (document.querySelector(".MUS_QORIGIN") || {}).textContent || ""
+}));
+if(!on_list.off) {
+    bad.push(`playing an untouched saved list leaves "save as list" enabled ` +
+             `(${on_list.origin})`);
+}
+
+/*  Take a track out — now the deck is not that list any more. */
+await page.locator(".MUS_QROW").nth(0).locator(".MUS_IBTN").nth(2).click();
+await page.waitForTimeout(700);
+const touched = await page.evaluate(
+    () => document.querySelector(".MUS_QHEAD .MUS_QBTN").disabled);
+if(touched) {
+    bad.push("editing the queue does not bring \"save as list\" back");
+}
+
+/*  8. A saved list unfolds its songs when its NAME is tapped, in the
+    order it was saved. */
+await route(page, "#/lists", 900);
+await page.click(".MUS_LISTNAME");
+await page.waitForTimeout(500);
+const unfolded = await page.evaluate(() => ({
+    rows:     document.querySelectorAll(".MUS_LISTWRAP .MUS_RANK").length,
+    expanded: document.querySelector(".MUS_LISTNAME").getAttribute("aria-expanded")
+}));
+if(unfolded.expanded !== "true") {
+    bad.push("tapping the name does not say the list is open");
+}
+/*  Every song that went into the list, and taking one off the DECK
+    afterwards must not have taken it out of the SAVED list. */
+if(unfolded.rows !== saved_n) {
+    bad.push(`the unfolded list shows ${unfolded.rows} songs, not the ${saved_n} saved`);
+}
+await page.click(".MUS_LISTNAME");
+await page.waitForTimeout(400);
+const folded = await page.evaluate(
+    () => document.querySelectorAll(".MUS_LISTWRAP .MUS_RANK").length);
+if(folded !== 0) {
+    bad.push("tapping the name again does not close it");
+}
+
 bad.forEach((b) => console.log("  ✗ " + b));
 const errs = report(page);
 await browser.close();

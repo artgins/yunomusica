@@ -59,6 +59,7 @@ const es = {
         "clear queue":          "Vaciar la cola",
         "follow playing":       "Seguir lo que suena",
         "save as list":         "Guardar como lista",
+        "already saved":        "Ya guardada, y sin cambios",
         "move up":              "Subir",
         "move down":            "Bajar",
         "remove from queue":    "Sacar de la cola",

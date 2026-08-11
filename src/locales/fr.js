@@ -56,6 +56,7 @@ const fr = {
         "clear queue":          "Vider la file",
         "follow playing":       "Suivre ce qui joue",
         "save as list":         "Enregistrer comme liste",
+        "already saved":        "Déjà enregistrée, et inchangée",
         "move up":              "Monter",
         "move down":            "Descendre",
         "remove from queue":    "Retirer de la file",

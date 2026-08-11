@@ -23,7 +23,8 @@ import {
 import {yui_shell_of, yui_shell_navigate} from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {
-    subscribe_playlists, all_playlists, resolve, remove_playlist,
+    subscribe_playlists, all_playlists, resolve, entries_of,
+    remove_playlist,
 } from "./playlists_store.js";
 
 import {
@@ -79,6 +80,7 @@ let PRIVATE_DATA = {
     unsub_stats: null,      // the two lists that build themselves
     $content:    null,
     confirming:  "",        // id of the list awaiting a delete confirmation
+    open_id:     "",        // id of the list whose songs are unfolded
 };
 
 let __gclass__ = null;
@@ -293,19 +295,49 @@ function build_ranked(gobj, $c, by, title_key, empty_key, hint_key)
                 : ["span", {}]
         ]]));
 
+    $c.appendChild(track_rows(gobj,
+        tracks.map((x, i) => ({track: x.track, n: i + 1}))));
+}
+
+
+/***************************************************************
+ *  The rows under a list, wherever the list came from.
+ *
+ *  One builder for both: the two ranked lists number their
+ *  rows, an unfolded saved list numbers them by position, and
+ *  an entry whose source is not authorised right now still gets
+ *  a row — greyed, from the title stored WITH the list, which
+ *  is what those stored titles are for. Leaving it out would
+ *  make an unfolded list quietly shorter than the list.
+ ***************************************************************/
+function track_rows(gobj, items)
+{
     const $rows = createElement2(["ol", {class: "MUS_RANKS"}, []]);
-    tracks.forEach(function(x, i) {
+    for(const item of items) {
+        const track = item.track;
+        if(!track) {
+            $rows.appendChild(createElement2(
+                ["li", {class: "MUS_RANK is-missing"}, [
+                    ["span", {class: "MUS_RANKN"}, String(item.n)],
+                    ["span", {class: "MUS_RANKMAIN"}, [
+                        ["span", {class: "MUS_T1"}, item.title || "?"],
+                        ["span", {class: "MUS_T2"}, item.artist || ""]
+                    ]],
+                    ["span", {class: "MUS_T2 is-warn", i18n: "missing"}, t("missing")]
+                ]]));
+            continue;
+        }
         $rows.appendChild(createElement2(
             ["li", {class: "MUS_RANK"}, [
-                ["span", {class: "MUS_RANKN"}, String(i + 1)],
+                ["span", {class: "MUS_RANKN"}, String(item.n)],
                 ["button", {
                         class: "MUS_RANKMAIN", type: "button",
                         "aria-haspopup": "dialog"
                     }, [
-                    ["span", {class: "MUS_T1"}, x.track.title],
-                    ["span", {class: "MUS_T2"}, x.track.artist]
-                ], {click: () => open_track(yui_shell_of(gobj), x.track)}],
-                track_counts(x.track),
+                    ["span", {class: "MUS_T1"}, track.title],
+                    ["span", {class: "MUS_T2"}, track.artist]
+                ], {click: () => open_track(yui_shell_of(gobj), track)}],
+                track_counts(track),
                 ["button", {
                         class: "MUS_IBTN", type: "button",
                         "aria-label": t("add to queue"),
@@ -313,10 +345,10 @@ function build_ranked(gobj, $c, by, title_key, empty_key, hint_key)
                         title: t("add to queue"),
                         "data-i18n-title": "add to queue"
                     }, svg(P.plus, 16),
-                    {click: () => queue_add([x.track], "append")}]
+                    {click: () => queue_add([track], "append")}]
             ]]));
-    });
-    $c.appendChild($rows);
+    }
+    return $rows;
 }
 
 
@@ -378,15 +410,55 @@ function build_list_row(gobj, p)
             {click: () => { gobj.priv.confirming = p.id; render(gobj); }}]);
     }
 
-    return createElement2(
+    /*  THE NAME OPENS THE LIST.
+     *
+     *  A button of its own was the alternative and this row already
+     *  carries three; and tapping a name to see what is inside it is
+     *  what the gesture already means everywhere else here — on a
+     *  track it opens its card, in the library it drills into a group.
+     *  The chevron is there so it does not have to be guessed at. */
+    let open = (gobj.priv.open_id === p.id);
+
+    let $row = createElement2(
         ["article", {class: "MUS_SRCROW"}, [
-            ["div", {class: "MUS_SRCMETA"}, [
-                ["div", {class: "MUS_T1"}, p.name],
+            ["button", {
+                    class: "MUS_SRCMETA MUS_LISTNAME", type: "button",
+                    "aria-expanded": open ? "true" : "false"
+                }, [
+                ["div", {class: "MUS_T1"}, [
+                    ["span", {class: "MUS_LISTCHEV" + (open ? " is-open" : ""),
+                              "aria-hidden": "true"}, "⌄"],
+                    ["span", {}, p.name]
+                ]],
                 ["div", {class: "MUS_T2"}, sub]
-            ]],
+            ], {click: () => {
+                gobj.priv.open_id = open ? "" : p.id;
+                render(gobj);
+            }}],
             ["div", {class: "MUS_SRCACTIONS"}, actions]
         ]]
     );
+
+    if(!open) {
+        return $row;
+    }
+
+    /*  Every entry, in the order it was saved — including the ones
+        that cannot be played right now, drawn from the title stored
+        WITH the list. An unfolded list that is shorter than the list
+        would be the same quiet lie the "3 missing" line exists to
+        avoid. */
+    let items = entries_of(p.id).map(function(item, i) {
+        return {
+            track:  find_track(item.source_id, item.path),
+            title:  item.title,
+            artist: item.artist,
+            n:      i + 1
+        };
+    });
+
+    return createElement2(
+        ["div", {class: "MUS_LISTWRAP"}, [$row, track_rows(gobj, items)]]);
 }
 
 

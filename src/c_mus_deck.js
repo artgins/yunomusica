@@ -1031,6 +1031,8 @@ function paint_queue(gobj)
 
     let queue = queue_tracks();
     let origin = queue_origin();
+    /*  What is on the deck IS a saved list, exactly as it was saved. */
+    let saved_intact = !!(origin && !origin.edited);
 
     let $head = createElement2(
         ["header", {class: "MUS_QHEAD"}, [
@@ -1066,8 +1068,21 @@ function paint_queue(gobj)
                       ]])
                 : ["span", {}],
             ["div", {class: "MUS_QACTIONS"}, [
-                ["button", {class: "MUS_QBTN button", type: "button",
-                            ...disabled_if(!queue.length)},
+                /*  Off while this IS a saved list and nothing has been
+                    done to it: there is nothing to save that is not
+                    already saved, and the only thing the button could
+                    produce is a second copy under another name. It
+                    comes back the moment the queue is touched, which
+                    is the moment it starts to differ from the list —
+                    the same instant the line above says "edited". */
+                ["button", {
+                        class: "MUS_QBTN button", type: "button",
+                        ...disabled_if(!queue.length || saved_intact),
+                        ...(saved_intact
+                            ? {title: t("already saved"),
+                               "data-i18n-title": "already saved"}
+                            : {})
+                    },
                     [ico(P.save, 16), ["span", {i18n: "save as list"}, t("save as list")]],
                     {click: () => open_naming(gobj)}],
                 ["button", {class: "MUS_QBTN button is-ghost", type: "button",

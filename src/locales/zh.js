@@ -56,6 +56,7 @@ const zh = {
         "clear queue":          "清空队列",
         "follow playing":       "跟随正在播放",
         "save as list":         "保存为列表",
+        "already saved":        "已保存，且未修改",
         "move up":              "上移",
         "move down":            "下移",
         "remove from queue":    "移出队列",

@@ -56,6 +56,7 @@ const ru = {
         "clear queue":          "Очистить очередь",
         "follow playing":       "Следовать за играющим",
         "save as list":         "Сохранить как список",
+        "already saved":        "Уже сохранена и не изменялась",
         "move up":              "Вверх",
         "move down":            "Вниз",
         "remove from queue":    "Убрать из очереди",

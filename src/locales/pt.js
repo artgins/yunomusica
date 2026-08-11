@@ -56,6 +56,7 @@ const pt = {
         "clear queue":          "Esvaziar a fila",
         "follow playing":       "Acompanhar o que toca",
         "save as list":         "Guardar como lista",
+        "already saved":        "Já guardada, e sem alterações",
         "move up":              "Subir",
         "move down":            "Descer",
         "remove from queue":    "Tirar da fila",

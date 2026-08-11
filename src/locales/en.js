@@ -69,6 +69,7 @@ const en = {
         "clear queue":          "Clear the queue",
         "follow playing":       "Follow what is playing",
         "save as list":         "Save as list",
+        "already saved":        "Already saved, and unchanged",
         "move up":              "Move up",
         "move down":            "Move down",
         "remove from queue":    "Take out of the queue",

@@ -56,6 +56,7 @@ const de = {
         "clear queue":          "Warteschlange leeren",
         "follow playing":       "Dem Laufenden folgen",
         "save as list":         "Als Liste speichern",
+        "already saved":        "Bereits gespeichert und unverändert",
         "move up":              "Nach oben",
         "move down":            "Nach unten",
         "remove from queue":    "Aus der Warteschlange nehmen",

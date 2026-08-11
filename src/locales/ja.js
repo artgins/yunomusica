@@ -56,6 +56,7 @@ const ja = {
         "clear queue":          "キューを空にする",
         "follow playing":       "再生中の曲を追う",
         "save as list":         "リストとして保存",
+        "already saved":        "保存済みで、変更もありません",
         "move up":              "上へ",
         "move down":            "下へ",
         "remove from queue":    "キューから外す",
