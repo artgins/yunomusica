@@ -55,6 +55,7 @@ import {
 } from "./sources_store.js";
 import {load_playlists} from "./playlists_store.js";
 import {load_stats} from "./stats_store.js";
+import {create_visualizer} from "./visualizer.js";
 import {pref_get, pref_set} from "./idb.js";
 
 import {switch_locale, current_locale} from "./locales/locales.js";
@@ -106,6 +107,7 @@ let PRIVATE_DATA = {
     unsub_src: null,
     tint_key: null,     // last cover a tint was computed from
     on_deck:  true,     // the deck route is showing
+    viz:      null,     // the picture behind the mini-player's strip
 };
 
 let __gclass__ = null;
@@ -416,6 +418,19 @@ function build_player(gobj)
             ]]
         ]]
     );
+    /*  The same picture as the deck's, behind the whole strip.
+     *
+     *  Behind it rather than beside it because there is nowhere to put
+     *  a box: the strip is 68 pixels tall and on a phone its width is
+     *  already spoken for by the cover, the name and three buttons. A
+     *  layer costs none of that, works at any width, and keeps the one
+     *  thing the strip is for — the tap that takes you to the deck.
+     *
+     *  It goes in FIRST, so everything built above sits over it, and
+     *  outside .MUS_PBAR, which paint_preview rebuilds. */
+    priv.viz = create_visualizer({tap: false, cls: "MUS_VIZ_MINI"});
+    $player.insertBefore(priv.viz.$el, $player.firstChild);
+
     priv.$player = $player;
     priv.$root.appendChild($player);
 
@@ -536,6 +551,7 @@ function paint_player(gobj)
     let prev_track = previewing();
     if(prev_track) {
         paint_preview(gobj, prev_track);
+        run_viz(gobj, true);
         return;
     }
     priv.$player.classList.remove("is-preview");
@@ -547,6 +563,7 @@ function paint_player(gobj)
     let show = !!track && !priv.on_deck;
     priv.$root.classList.toggle("has-player", show);
     priv.$player.classList.toggle("is-on", show);
+    run_viz(gobj, show);
 
     if(!track) {
         priv.tint_key = null;
@@ -684,6 +701,22 @@ function paint_scan_clock(gobj)
  *  The strip in preview mode: what is being auditioned, and the
  *  two things you can do about it.
  ***************************************************************/
+/*  The strip's layer runs only when the strip is up AND something is
+    sounding. Off-screen it is an animation frame a second spent on a
+    canvas nobody can see, which on a phone is a battery bill. */
+function run_viz(gobj, visible)
+{
+    let priv = gobj.priv;
+    if(!priv.viz) {
+        return;
+    }
+    if(visible && (is_playing() || previewing())) {
+        priv.viz.start();
+    } else {
+        priv.viz.stop();
+    }
+}
+
 function paint_preview(gobj, track)
 {
     let priv = gobj.priv;

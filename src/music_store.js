@@ -883,7 +883,10 @@ function get_preview_audio()
         /*  A preview is also something that is sounding, so the
             visualizer follows it too. */
         S.preview_audio.addEventListener("play", () => attach_analyser(S.preview_audio));
-        S.preview_audio.addEventListener("timeupdate", () => emit("time"));
+        S.preview_audio.addEventListener("timeupdate", () => {
+            attach_analyser(S.preview_audio);
+            emit("time");
+        });
         S.preview_audio.addEventListener("ended", () => stop_preview());
         S.preview_audio.addEventListener("error", () => {
             let err = S.preview_audio.error;
@@ -1052,7 +1055,19 @@ function get_audio()
     if(!S.audio) {
         S.audio = new Audio();
         S.audio.preload = "metadata";
-        S.audio.addEventListener("timeupdate", () => emit("time"));
+        /*  The tap is RETRIED here, not only taken on `play`.
+         *
+         *  Taking it needs the AudioContext to be running, and the
+         *  first play is not always the moment that happens: a context
+         *  can still be suspended when the handler runs, and if that
+         *  one attempt is all there is, the visualizer stays blank for
+         *  the rest of the session with no way back. This costs a Map
+         *  lookup four times a second and nothing at all once the tap
+         *  exists. */
+        S.audio.addEventListener("timeupdate", () => {
+            attach_analyser(S.audio);
+            emit("time");
+        });
         S.audio.addEventListener("ended", () => step(1));
         /*  The visualizer's tap is taken HERE and nowhere else: it can
             only be taken while the context is allowed to run, and a

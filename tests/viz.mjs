@@ -45,6 +45,10 @@ const LOW_MIDI = 48;
 const A4_ROW = 69 - LOW_MIDI;       // 21
 const C5_ROW = 72 - LOW_MIDI;       // 24
 
+/*  Kept in step with visualizer.js by hand: the test needs to know how
+    many taps go all the way round. */
+const MODES = ["notes", "spectrum", "wave", "chroma", "off"];
+
 const browser = await launch();
 const bad = [];
 
@@ -223,6 +227,69 @@ if(c5) {
         bad.push(`523 Hz is drawn at ${peak}, not at C5 (${C5_ROW})`);
     }
 }
+
+/*  6. Round the whole cycle WITH THE MUSIC PLAYING, and back.
+ *
+ *  This is the shape of a bug that shipped: turning it off stopped the
+ *  loop, and turning it back on only nudged a loop that was already
+ *  running — which by definition it was not. The box stayed blank for
+ *  the rest of the track, with the mode's name flashing over it, and
+ *  every test here passed because they all cycled the modes with the
+ *  music PAUSED, where a blank canvas is the right answer. */
+for(let i = 0; i < MODES.length; i++) {
+    await page.click(".MUS_VIZ");
+    await page.waitForTimeout(220);
+}
+await page.waitForTimeout(1000);
+/*  Not two hashes compared: a steady tone draws the SAME bars every
+    frame, so "it did not change" says nothing. What says everything is
+    that the bars are there at all — going off clears the canvas, so a
+    loop that never restarted leaves it empty — and that they are still
+    C5's, which only live data can put there. */
+const alive = await page.evaluate(read_bars);
+if(!alive || argmax(alive) !== C5_ROW || alive[C5_ROW] < 0.4) {
+    bad.push("after going round through \"off\" it never draws again " +
+             `(peak at ${alive ? argmax(alive) : "nothing"})`);
+}
+
+/*  7. The mini-player carries the same picture. It only exists off the
+    deck, so this has to leave first. */
+await route(page, "#/library", 1200);
+await page.waitForTimeout(1500);
+const mini = await page.evaluate(() => {
+    const $cv = document.querySelector(".MUS_VIZ_MINI .MUS_VIZ_CV");
+    if(!$cv || !$cv.width) {
+        return null;
+    }
+    const d = $cv.getContext("2d").getImageData(0, 0, $cv.width, $cv.height).data;
+    let painted = 0;
+    for(let i = 3; i < d.length; i += 4 * 37) {
+        if(d[i] > 8) {
+            painted++;
+        }
+    }
+    return {
+        painted: painted,
+        strip:   !!document.querySelector(".MUS_PLAYER.is-on"),
+        /*  It is a layer, not a control: nothing here may take a tap
+            away from the strip, whose job is to go to the deck. */
+        role:    document.querySelector(".MUS_VIZ_MINI").getAttribute("role")
+    };
+});
+if(!mini) {
+    bad.push("el mini-reproductor no tiene visualizador");
+} else {
+    if(!mini.strip) {
+        bad.push("la tira no está visible: la prueba no dice nada");
+    } else if(mini.painted < 4) {
+        bad.push(`the mini-player's layer drew ${mini.painted} pixels`);
+    }
+    if(mini.role) {
+        bad.push(`the strip's layer claims role="${mini.role}" and steals its tap`);
+    }
+}
+await page.screenshot({path: join(OUT, "viz-mini.png")});
+await route(page, "#/player", 1000);
 
 /*  4. Paused, it holds still. */
 await page.click(".MUS_TPLAY");

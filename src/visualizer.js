@@ -39,7 +39,7 @@ import {createElement2} from "@yuneta/gobj-js";
 import {t} from "i18next";
 
 import {frame, set_smoothing, SEMITONES} from "./analyser.js";
-import {progress, is_playing, current_track} from "./music_store.js";
+import {progress, is_playing, previewing, current_track} from "./music_store.js";
 
 
 /***************************************************************
@@ -82,6 +82,49 @@ const NOTE_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A"
     twelve lamps instead. Device pixels. */
 const WHEEL_MIN_PX = 116;
 
+/*  …and so does a box too wide to be one. A wheel is drawn at
+    min(w, h), so on the mini-player's strip it would be a small circle
+    marooned in the middle of nine hundred pixels. The deck's box is
+    2.5 wide and keeps its wheel; the strip is thirteen and does not. */
+const WHEEL_MAX_RATIO = 4;
+
+
+/***************************************************************
+ *  The mode is SHARED, not per instance.
+ *
+ *  There are two of these on screen — the deck's box and the
+ *  layer behind the mini-player — and they are not two settings.
+ *  Tapping one moves both, and what is stored is one value.
+ ***************************************************************/
+let MODE = null;
+const mode_listeners = new Set();
+
+function current_mode()
+{
+    if(MODE === null) {
+        MODE = initial_mode();
+    }
+    return MODE;
+}
+
+function set_mode(m)
+{
+    MODE = m;
+    try {
+        localStorage.setItem(MODE_KEY, m);
+    } catch(e) {
+        /*  A browser with storage blocked still gets the change, it
+            just does not get it back tomorrow. */
+    }
+    mode_listeners.forEach(function(fn) {
+        try {
+            fn();
+        } catch(e) {
+            console.error("visualizer listener failed", e);
+        }
+    });
+}
+
 
 /***************************************************************
  *  A colour string the palette gave us, as three numbers.
@@ -119,22 +162,30 @@ function rgb_of(colour, probe)
  *  Build one. Returns the node and the three verbs the deck
  *  needs: start, stop, destroy.
  ***************************************************************/
-function create_visualizer()
+function create_visualizer(opts)
 {
+    opts = opts || {};
+    /*  The deck's is a CONTROL: it is tapped to change the mode and it
+        says which one it landed on. The mini-player's is a LAYER — that
+        strip already has a gesture, it takes you to the deck, and a
+        second one competing for the same 68 pixels would be a trap. So
+        that one carries no button role, no label and no glyph. */
+    const tap = (opts.tap !== false);
+
     const $cv  = createElement2(["canvas", {class: "MUS_VIZ_CV", "aria-hidden": "true"}]);
     const $tag = createElement2(["span", {class: "MUS_VIZ_TAG"}, ""]);
     const $off = createElement2(["span", {class: "MUS_VIZ_OFF", "aria-hidden": "true"}, "∿"]);
 
     const $el = createElement2(
-        ["div", {
-            class: "MUS_VIZ",
-            role: "button",
-            tabindex: "0"
-        }, [$cv, $off, $tag]]);
+        ["div", tap
+            ? {class: "MUS_VIZ", role: "button", tabindex: "0"}
+            : {class: "MUS_VIZ " + (opts.cls || ""), "aria-hidden": "true"},
+            tap ? [$cv, $off, $tag] : [$cv]]);
 
     const V = {
         $el:      $el,
-        mode:     initial_mode(),
+        tap:      tap,
+        mode:     current_mode(),
         ctx:      null,
         probe:    null,     // the 1x1 context that normalises colours
         w:        0,        // device pixels
@@ -151,7 +202,8 @@ function create_visualizer()
         frames:   0,
         tag_timer: 0,
         ro:       null,
-        on_resize: null
+        on_resize: null,
+        on_mode:  null
     };
 
     try {
@@ -161,17 +213,25 @@ function create_visualizer()
         V.ctx = null;
     }
 
-    $el.addEventListener("click", () => cycle(V));
-    $el.addEventListener("keydown", function(ev) {
-        if(ev.key === "Enter" || ev.key === " " || ev.code === "Space") {
-            /*  Space is the app's play/pause, listened for on the
-                document. A focused button must not do both, so this
-                one never reaches it. */
-            ev.preventDefault();
-            ev.stopPropagation();
-            cycle(V);
-        }
-    });
+    if(tap) {
+        $el.addEventListener("click", () => cycle(V));
+        $el.addEventListener("keydown", function(ev) {
+            if(ev.key === "Enter" || ev.key === " " || ev.code === "Space") {
+                /*  Space is the app's play/pause, listened for on the
+                    document. A focused button must not do both, so this
+                    one never reaches it. */
+                ev.preventDefault();
+                ev.stopPropagation();
+                cycle(V);
+            }
+        });
+    }
+
+    /*  Tapped on the deck, changed here too. */
+    V.on_mode = function() {
+        apply_mode(V, V.tap);
+    };
+    mode_listeners.add(V.on_mode);
 
     /*  A canvas has to be told its pixel size; CSS only stretches what
         is there. ResizeObserver catches the wrap to its own line on a
@@ -217,20 +277,16 @@ function initial_mode()
     return "notes";
 }
 
+/*  Sets the shared mode, which brings every instance along with it —
+    this one included, through the listener registered above. */
 function cycle(V)
 {
-    V.mode = MODES[(MODES.indexOf(V.mode) + 1) % MODES.length];
-    try {
-        localStorage.setItem(MODE_KEY, V.mode);
-    } catch(e) {
-        /*  A browser with storage blocked still gets the change, it
-            just does not get it back tomorrow. */
-    }
-    apply_mode(V, true);
+    set_mode(MODES[(MODES.indexOf(current_mode()) + 1) % MODES.length]);
 }
 
 function apply_mode(V, announce)
 {
+    V.mode = current_mode();
     const off = (V.mode === "off");
     V.$el.classList.toggle("is-off", off);
     set_smoothing(SMOOTHING[V.mode] === undefined ? 0.7 : SMOOTHING[V.mode]);
@@ -249,6 +305,21 @@ function apply_mode(V, announce)
             V.roll_ctx.clearRect(0, 0, V.roll.width, V.roll.height);
         }
         V.peaks.fill(0);
+        /*  START it, do not merely nudge it.
+         *
+         *  `if(V.running) tick(V)` was the bug: coming back from "off"
+         *  the loop is stopped by definition, so nothing restarted it
+         *  and the box stayed blank — with the mode's name flashing
+         *  over it, which is what made it look so broken. It only came
+         *  back on the next repaint of the deck, i.e. when the track
+         *  changed or playback was paused and resumed.
+         *
+         *  The tests never saw it because they cycled the modes with
+         *  the music PAUSED, where a blank canvas is the right
+         *  answer. */
+        if(is_playing() || previewing()) {
+            start(V);
+        }
         if(V.running) {
             tick(V);
         }
@@ -260,6 +331,9 @@ function apply_mode(V, announce)
     own and not a line inside cycle(). */
 function sync(V)
 {
+    if(!V.tap) {
+        return;                     // a layer says nothing and is not focusable
+    }
     const label = t("viz " + V.mode);
     V.$el.setAttribute("aria-label", label);
     V.$el.setAttribute("title", label);
@@ -269,6 +343,9 @@ function sync(V)
 function show_tag(V)
 {
     const $tag = V.$el.querySelector(".MUS_VIZ_TAG");
+    if(!$tag) {
+        return;
+    }
     $tag.classList.add("is-on");
     if(V.tag_timer) {
         clearTimeout(V.tag_timer);
@@ -318,6 +395,10 @@ function destroy(V)
     if(V.on_resize) {
         window.removeEventListener("resize", V.on_resize);
         V.on_resize = null;
+    }
+    if(V.on_mode) {
+        mode_listeners.delete(V.on_mode);
+        V.on_mode = null;
     }
 }
 
@@ -402,11 +483,17 @@ function draw(V)
         return;
     }
     const f = frame();
-    if(!f) {
-        return;                         // nothing tapped yet: nothing to say
-    }
     V.frames++;
     const c = accent_of(V);
+    if(!f) {
+        /*  No tap yet, so no data — and a blank box is the worst way to
+            say so: it is indistinguishable from a broken one. A flat
+            line is what "no signal" looks like on anything else that
+            draws sound, and it goes away by itself the moment the tap
+            lands. */
+        draw_flatline(V, c);
+        return;
+    }
 
     if(V.mode === "notes") {
         draw_notes(V, f, c);
@@ -417,6 +504,16 @@ function draw(V)
     } else if(V.mode === "chroma") {
         draw_chroma(V, f, c);
     }
+}
+
+
+function draw_flatline(V, c)
+{
+    const g = V.ctx;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, V.w, V.h);
+    g.fillStyle = rgba(c, 0.3);
+    g.fillRect(0, Math.round(V.h / 2), V.w, Math.max(1, V.dpr));
 }
 
 
@@ -602,7 +699,7 @@ function draw_chroma(V, f, c)
     const g = V.ctx;
     g.clearRect(0, 0, V.w, V.h);
 
-    if(V.h < WHEEL_MIN_PX || V.w < WHEEL_MIN_PX) {
+    if(V.h < WHEEL_MIN_PX || V.w < WHEEL_MIN_PX || V.w > V.h * WHEEL_MAX_RATIO) {
         draw_chroma_row(V, f, c);
         return;
     }

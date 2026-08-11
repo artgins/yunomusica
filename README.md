@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.12.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.12.1** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -51,6 +51,13 @@ true statement about the sound and not a chord. It starts at C3 (130.8 Hz)
 because at 8192 bins the FFT resolves 5.4 Hz and a semitone down there is 7.6 Hz
 wide — one bin. Below C3 the answer would be shared out between neighbours, so
 it is not offered.
+
+The same picture runs **behind the mini-player's strip** when you are not on the
+deck — a layer, not a box, because that strip is 68 px tall and its width is
+already spoken for by the cover, the name and three buttons. It carries no tap
+of its own: the strip's gesture takes you to the deck and a second one competing
+for the same pixels would be a trap. The mode is one setting, so changing it on
+the deck changes it there too.
 
 Somebody who asked for less motion gets it **off** by default, collapsed to a
 strip they can still tap if they want it. And there is a hatch for the day a
