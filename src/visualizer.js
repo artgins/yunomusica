@@ -1,0 +1,923 @@
+/***********************************************************************
+ *          visualizer.js
+ *
+ *      Four pictures of the sound, drawn from the sound.
+ *
+ *      Not a decoration that moves while music happens to be playing:
+ *      every pixel below comes from analyser.js, which reads the
+ *      samples on their way to the speakers. Pause, and it stops
+ *      exactly where it is, because there is nothing left to draw.
+ *
+ *        notes     a ribbon that runs leftwards, one column per frame,
+ *                  one row per semitone from C3 up. Brightness is the
+ *                  energy in that semitone's band.
+ *        spectrum  the same 48 bands as standing bars, with a peak
+ *                  that holds and falls.
+ *        wave      the waveform itself, triggered on a rising zero
+ *                  crossing so it stands still instead of skidding.
+ *        chroma    the twelve pitch classes, octaves folded together,
+ *                  around the circle of fifths — so what is consonant
+ *                  is adjacent and a chord is a shape, not a scatter.
+ *        off       nothing, and no animation frame asked for either.
+ *
+ *      Tapping it moves to the next one; the choice is remembered.
+ *
+ *      NO GOBJ, ON PURPOSE. The deck builds its banner as plain DOM
+ *      and updates it in place; this is one more node in it, with the
+ *      same contract as the rest — build once, then start and stop.
+ *
+ *      THE COLOUR IS NOT CHOSEN HERE. It is --mus-accent, which is the
+ *      palette, or the dominant colour of the record when the palette
+ *      is "from the cover". Read from the document, never hard-coded:
+ *      a visualizer with a colour of its own would be the one thing on
+ *      the deck that does not follow the record.
+ *
+ *          Copyright (c) 2026, ArtGins.
+ *          All Rights Reserved.
+ ***********************************************************************/
+import {createElement2} from "@yuneta/gobj-js";
+import {t} from "i18next";
+
+import {frame, set_smoothing, SEMITONES} from "./analyser.js";
+import {progress, is_playing, current_track} from "./music_store.js";
+
+
+/***************************************************************
+ *              Constants
+ ***************************************************************/
+/*  The order the tap walks. "off" is in it so that turning the thing
+    off is the same gesture as changing it, and does not need a setting
+    on another screen. */
+const MODES = ["notes", "spectrum", "wave", "chroma", "off"];
+
+const MODE_KEY = "yunomusica:viz_mode";
+
+/*  How long the name of the mode stays on screen after a tap. */
+const TAG_MS = 1600;
+
+/*  How far the ribbon travels per frame, in CSS pixels. At 60 fps a
+    column is 2 px, so a 300 px strip holds about two and a half
+    seconds of music — long enough to see a phrase, short enough that
+    what is sounding is still at the edge. */
+const ROLL_STEP = 2;
+
+/*  Bars want a slow hand or they flicker; the ribbon wants none, or
+    every column is a smear of the ten before it. */
+const SMOOTHING = {
+    notes:    0.45,
+    spectrum: 0.78,
+    wave:     0.0,
+    chroma:   0.72,
+    off:      0.7
+};
+
+/*  Circle of fifths, as indices into the twelve pitch classes
+    (0 = C). Adjacent entries are a fifth apart, which is what makes a
+    chord come out as a compact shape instead of a scatter. */
+const FIFTHS = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
+
+const NOTE_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+
+/*  Below this the wheel has no room to be a wheel and becomes a row of
+    twelve lamps instead. Device pixels. */
+const WHEEL_MIN_PX = 116;
+
+
+/***************************************************************
+ *  A colour string the palette gave us, as three numbers.
+ *
+ *  --mus-accent is a hex in the stylesheet and whatever the
+ *  cover sampler produced at run time, so it is not parsed by
+ *  hand: a 2d context normalises any colour CSS accepts into
+ *  "#rrggbb", which is the one form worth parsing.
+ ***************************************************************/
+function rgb_of(colour, probe)
+{
+    try {
+        probe.fillStyle = "#000000";
+        probe.fillStyle = colour;
+        const s = probe.fillStyle;
+        if(s.charAt(0) === "#" && s.length === 7) {
+            return [
+                parseInt(s.slice(1, 3), 16),
+                parseInt(s.slice(3, 5), 16),
+                parseInt(s.slice(5, 7), 16)
+            ];
+        }
+        const m = s.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+        if(m) {
+            return [+m[1], +m[2], +m[3]];
+        }
+    } catch(e) {
+        /*  fall through to the default */
+    }
+    return [201, 162, 39];              /* the gold of the base palette */
+}
+
+
+/***************************************************************
+ *  Build one. Returns the node and the three verbs the deck
+ *  needs: start, stop, destroy.
+ ***************************************************************/
+function create_visualizer()
+{
+    const $cv  = createElement2(["canvas", {class: "MUS_VIZ_CV", "aria-hidden": "true"}]);
+    const $tag = createElement2(["span", {class: "MUS_VIZ_TAG"}, ""]);
+    const $off = createElement2(["span", {class: "MUS_VIZ_OFF", "aria-hidden": "true"}, "∿"]);
+
+    const $el = createElement2(
+        ["div", {
+            class: "MUS_VIZ",
+            role: "button",
+            tabindex: "0"
+        }, [$cv, $off, $tag]]);
+
+    const V = {
+        $el:      $el,
+        mode:     initial_mode(),
+        ctx:      null,
+        probe:    null,     // the 1x1 context that normalises colours
+        w:        0,        // device pixels
+        h:        0,
+        dpr:      1,
+        raf:      0,
+        running:  false,
+        roll:     null,     // the ribbon's own canvas
+        roll_ctx: null,
+        roll_debt: 0,       // sub-pixel travel carried between frames
+        peaks:    new Float32Array(SEMITONES),
+        accent:   [201, 162, 39],
+        accent_at: 0,       // frame count when the accent was last read
+        frames:   0,
+        tag_timer: 0,
+        ro:       null,
+        on_resize: null
+    };
+
+    try {
+        V.ctx = $cv.getContext("2d");
+        V.probe = document.createElement("canvas").getContext("2d");
+    } catch(e) {
+        V.ctx = null;
+    }
+
+    $el.addEventListener("click", () => cycle(V));
+    $el.addEventListener("keydown", function(ev) {
+        if(ev.key === "Enter" || ev.key === " " || ev.code === "Space") {
+            /*  Space is the app's play/pause, listened for on the
+                document. A focused button must not do both, so this
+                one never reaches it. */
+            ev.preventDefault();
+            ev.stopPropagation();
+            cycle(V);
+        }
+    });
+
+    /*  A canvas has to be told its pixel size; CSS only stretches what
+        is there. ResizeObserver catches the wrap to its own line on a
+        phone, which no window resize reports. */
+    if(window.ResizeObserver) {
+        V.ro = new ResizeObserver(() => resize(V));
+        V.ro.observe($el);
+    } else {
+        V.on_resize = () => resize(V);
+        window.addEventListener("resize", V.on_resize);
+    }
+
+    apply_mode(V, false);
+
+    return {
+        $el:     $el,
+        start:   () => start(V),
+        stop:    () => stop(V),
+        sync:    () => sync(V),
+        destroy: () => destroy(V),
+        mode:    () => V.mode
+    };
+}
+
+function initial_mode()
+{
+    let stored = null;
+    try {
+        stored = localStorage.getItem(MODE_KEY);
+    } catch(e) {
+        stored = null;
+    }
+    if(stored && MODES.indexOf(stored) >= 0) {
+        return stored;
+    }
+    /*  Somebody who asked for less motion did not ask for a ribbon
+        running under the title. They get the control, collapsed, and
+        nothing moving until they tap it. */
+    if(window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        return "off";
+    }
+    return "notes";
+}
+
+function cycle(V)
+{
+    V.mode = MODES[(MODES.indexOf(V.mode) + 1) % MODES.length];
+    try {
+        localStorage.setItem(MODE_KEY, V.mode);
+    } catch(e) {
+        /*  A browser with storage blocked still gets the change, it
+            just does not get it back tomorrow. */
+    }
+    apply_mode(V, true);
+}
+
+function apply_mode(V, announce)
+{
+    const off = (V.mode === "off");
+    V.$el.classList.toggle("is-off", off);
+    set_smoothing(SMOOTHING[V.mode] === undefined ? 0.7 : SMOOTHING[V.mode]);
+    sync(V);
+
+    if(announce) {
+        show_tag(V);
+    }
+    if(off) {
+        stop(V);
+        clear_all(V);
+    } else {
+        /*  The ribbon of the mode we just left says nothing about this
+            one. */
+        if(V.roll_ctx) {
+            V.roll_ctx.clearRect(0, 0, V.roll.width, V.roll.height);
+        }
+        V.peaks.fill(0);
+        if(V.running) {
+            tick(V);
+        }
+    }
+}
+
+/*  The name of the mode, in whatever language is on. Also called by
+    the deck after a language switch, which is why it is a verb of its
+    own and not a line inside cycle(). */
+function sync(V)
+{
+    const label = t("viz " + V.mode);
+    V.$el.setAttribute("aria-label", label);
+    V.$el.setAttribute("title", label);
+    V.$el.querySelector(".MUS_VIZ_TAG").textContent = label;
+}
+
+function show_tag(V)
+{
+    const $tag = V.$el.querySelector(".MUS_VIZ_TAG");
+    $tag.classList.add("is-on");
+    if(V.tag_timer) {
+        clearTimeout(V.tag_timer);
+    }
+    V.tag_timer = setTimeout(function() {
+        $tag.classList.remove("is-on");
+        V.tag_timer = 0;
+    }, TAG_MS);
+}
+
+
+/***************************************************************
+ *              The loop
+ ***************************************************************/
+function start(V)
+{
+    if(V.running || V.mode === "off" || !V.ctx) {
+        return;
+    }
+    V.running = true;
+    tick(V);
+}
+
+function stop(V)
+{
+    V.running = false;
+    if(V.raf) {
+        cancelAnimationFrame(V.raf);
+        V.raf = 0;
+    }
+    /*  What is on the canvas stays there. It is the last thing that
+        sounded, and freezing it is the truth; wiping it would suggest
+        the track ended. */
+}
+
+function destroy(V)
+{
+    stop(V);
+    if(V.tag_timer) {
+        clearTimeout(V.tag_timer);
+        V.tag_timer = 0;
+    }
+    if(V.ro) {
+        V.ro.disconnect();
+        V.ro = null;
+    }
+    if(V.on_resize) {
+        window.removeEventListener("resize", V.on_resize);
+        V.on_resize = null;
+    }
+}
+
+function tick(V)
+{
+    if(!V.running) {
+        return;
+    }
+    V.raf = requestAnimationFrame(() => tick(V));
+    draw(V);
+}
+
+function resize(V)
+{
+    if(!V.ctx) {
+        return;
+    }
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.round(V.$el.clientWidth * dpr);
+    const h = Math.round(V.$el.clientHeight * dpr);
+    if(w === V.w && h === V.h && dpr === V.dpr) {
+        return;
+    }
+    V.w = w;
+    V.h = h;
+    V.dpr = dpr;
+    if(w <= 0 || h <= 0) {
+        return;
+    }
+    const $cv = V.$el.querySelector(".MUS_VIZ_CV");
+    $cv.width = w;
+    $cv.height = h;
+
+    /*  The ribbon lives on its own canvas because it is CUMULATIVE:
+        each frame is the previous one shifted, and a canvas that the
+        browser resized has been cleared. */
+    if(!V.roll) {
+        V.roll = document.createElement("canvas");
+        V.roll_ctx = V.roll.getContext("2d");
+    }
+    V.roll.width = w;
+    V.roll.height = h;
+    V.roll_debt = 0;
+}
+
+function clear_all(V)
+{
+    if(V.ctx && V.w > 0) {
+        V.ctx.clearRect(0, 0, V.w, V.h);
+    }
+}
+
+/*  The accent is re-read a few times a second, not every frame: it
+    changes when the palette changes or when a record with another
+    dominant colour comes on, and getComputedStyle is a style read. */
+function accent_of(V)
+{
+    if(V.frames - V.accent_at < 20 && V.accent_at) {
+        return V.accent;
+    }
+    V.accent_at = V.frames || 1;
+    const c = getComputedStyle(document.documentElement)
+        .getPropertyValue("--mus-accent").trim();
+    if(c) {
+        V.accent = rgb_of(c, V.probe);
+    }
+    return V.accent;
+}
+
+function rgba(c, a)
+{
+    return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")";
+}
+
+
+/***************************************************************
+ *              The drawing
+ ***************************************************************/
+function draw(V)
+{
+    if(!V.ctx || V.w <= 0 || V.h <= 0) {
+        return;
+    }
+    const f = frame();
+    if(!f) {
+        return;                         // nothing tapped yet: nothing to say
+    }
+    V.frames++;
+    const c = accent_of(V);
+
+    if(V.mode === "notes") {
+        draw_notes(V, f, c);
+    } else if(V.mode === "spectrum") {
+        draw_spectrum(V, f, c);
+    } else if(V.mode === "wave") {
+        draw_wave(V, f, c);
+    } else if(V.mode === "chroma") {
+        draw_chroma(V, f, c);
+    }
+}
+
+
+/***************************************************************
+ *  notes — the ribbon.
+ *
+ *  One new column at the leading edge per frame, everything
+ *  before it shifted along. The shift is done with the canvas
+ *  drawn onto itself under "copy": under the default composite
+ *  the transparent part of the source would leave the old
+ *  pixels showing through and the ribbon would never clear.
+ ***************************************************************/
+function draw_notes(V, f, c)
+{
+    const rc = V.roll_ctx;
+    const step_px = ROLL_STEP * V.dpr;
+
+    /*  Whole pixels only — a fractional blit resamples the whole
+        ribbon every frame and turns it to mush in a second. The
+        remainder is carried. */
+    V.roll_debt += step_px;
+    const step = Math.floor(V.roll_debt);
+    V.roll_debt -= step;
+
+    if(step > 0) {
+        rc.globalCompositeOperation = "copy";
+        rc.drawImage(V.roll, -step, 0);
+        rc.globalCompositeOperation = "source-over";
+
+        const rows = f.notes.length;
+        const rh = V.h / rows;
+        const x = V.w - step;
+        for(let i = 0; i < rows; i++) {
+            const v = f.notes[i];
+            if(v <= 0.04) {
+                continue;               /* silence is the background */
+            }
+            /*  Squared, so the loud stands out from the merely
+                present: a linear ramp painted the whole ribbon a
+                uniform half-tone. */
+            const a = Math.min(1, v * v * 1.35 + 0.05);
+            rc.fillStyle = rgba(c, a);
+            rc.fillRect(x, V.h - (i + 1) * rh, step, rh + 0.5);
+        }
+    }
+
+    const g = V.ctx;
+    g.clearRect(0, 0, V.w, V.h);
+    g.drawImage(V.roll, 0, 0);
+
+    /*  A hairline at every C, so a row can be read as a pitch rather
+        than as a height. */
+    g.fillStyle = rgba(c, 0.16);
+    const rows = f.notes.length;
+    const rh = V.h / rows;
+    for(let i = 0; i < rows; i += 12) {
+        g.fillRect(0, Math.round(V.h - i * rh) - 1, V.w, 1);
+    }
+}
+
+
+/***************************************************************
+ *  spectrum — the same 48 bands, standing, with a peak that
+ *  holds and falls. The peak is what makes a transient
+ *  readable: without it the eye never catches the top.
+ ***************************************************************/
+function draw_spectrum(V, f, c)
+{
+    const g = V.ctx;
+    g.clearRect(0, 0, V.w, V.h);
+
+    const n = f.notes.length;
+    const slot = V.w / n;
+    const bw = Math.max(1, slot - Math.max(1, V.dpr));
+
+    const grad = g.createLinearGradient(0, V.h, 0, 0);
+    grad.addColorStop(0, rgba(c, 0.95));
+    grad.addColorStop(1, rgba(c, 0.35));
+    g.fillStyle = grad;
+
+    for(let i = 0; i < n; i++) {
+        const v = f.notes[i];
+        const h = Math.max(v > 0.02 ? 1 : 0, v * V.h);
+        if(h > 0) {
+            g.fillRect(i * slot, V.h - h, bw, h);
+        }
+        /*  Falls at a constant rate rather than a proportional one, so
+            the descent reads as a speed and not as a curve. */
+        V.peaks[i] = Math.max(v, V.peaks[i] - 0.011);
+    }
+
+    g.fillStyle = rgba(c, 0.75);
+    for(let i = 0; i < n; i++) {
+        const p = V.peaks[i];
+        if(p > 0.03) {
+            const y = Math.max(0, V.h - p * V.h - V.dpr);
+            g.fillRect(i * slot, y, bw, Math.max(1, V.dpr));
+        }
+    }
+
+    /*  An octave mark every twelve bands: the same reading aid the
+        ribbon gets from its hairlines. */
+    g.fillStyle = rgba(c, 0.18);
+    for(let i = 12; i < n; i += 12) {
+        g.fillRect(Math.round(i * slot) - 1, V.h * 0.72, 1, V.h * 0.28);
+    }
+}
+
+
+/***************************************************************
+ *  wave — the waveform, triggered.
+ *
+ *  Drawing the buffer from index 0 shows a wave that skids
+ *  sideways, because the frame boundary falls wherever it
+ *  falls. Starting at the first rising zero crossing instead
+ *  pins the picture: this is what an oscilloscope's trigger is
+ *  for, and it costs one pass over the buffer.
+ ***************************************************************/
+function draw_wave(V, f, c)
+{
+    const g = V.ctx;
+    g.clearRect(0, 0, V.w, V.h);
+
+    const w = f.wave;
+    const span = Math.min(w.length, 2048);
+    let start = 0;
+    const limit = w.length - span;
+    for(let i = 1; i < limit; i++) {
+        if(w[i - 1] < 128 && w[i] >= 128) {
+            start = i;
+            break;
+        }
+    }
+
+    const mid = V.h / 2;
+    g.strokeStyle = rgba(c, 0.22);
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(0, Math.round(mid) + 0.5);
+    g.lineTo(V.w, Math.round(mid) + 0.5);
+    g.stroke();
+
+    /*  Two passes: a wide soft one under a thin bright one. A glow
+        that is drawn rather than shadow-blurred, because shadowBlur on
+        a stroke this long costs more than a second pass. */
+    const points = Math.min(V.w, span);
+    const draw_line = function(width, alpha) {
+        g.strokeStyle = rgba(c, alpha);
+        g.lineWidth = width;
+        g.lineJoin = "round";
+        g.lineCap = "round";
+        g.beginPath();
+        for(let p = 0; p < points; p++) {
+            const s = w[start + Math.floor(p / points * span)];
+            const x = p / (points - 1) * V.w;
+            const y = mid - ((s - 128) / 128) * (V.h * 0.44);
+            if(p === 0) {
+                g.moveTo(x, y);
+            } else {
+                g.lineTo(x, y);
+            }
+        }
+        g.stroke();
+    };
+    draw_line(Math.max(3, 5 * V.dpr), 0.18);
+    draw_line(Math.max(1.5, 2 * V.dpr), 0.95);
+}
+
+
+/***************************************************************
+ *  chroma — the twelve pitch classes, octaves folded together.
+ *
+ *  Around the circle of fifths, not chromatically: consonant
+ *  intervals end up adjacent, so a chord is a compact shape and
+ *  a key change is that shape rotating. The polygon is the
+ *  reading; the lamps are there to say which note is which.
+ *
+ *  A strip too short to hold a wheel gets a row of twelve lamps
+ *  in the same order instead — the same data, laid flat.
+ ***************************************************************/
+function draw_chroma(V, f, c)
+{
+    const g = V.ctx;
+    g.clearRect(0, 0, V.w, V.h);
+
+    if(V.h < WHEEL_MIN_PX || V.w < WHEEL_MIN_PX) {
+        draw_chroma_row(V, f, c);
+        return;
+    }
+
+    const cx = V.w / 2;
+    const cy = V.h / 2;
+    const R = Math.min(V.w, V.h) / 2 - 6 * V.dpr;
+    const label = (R > 34 * V.dpr);
+    const ring = label ? R * 0.80 : R;
+
+    /*  The guide ring, so an empty wheel is still a wheel. */
+    g.strokeStyle = rgba(c, 0.14);
+    g.lineWidth = Math.max(1, V.dpr);
+    g.beginPath();
+    g.arc(cx, cy, ring, 0, Math.PI * 2);
+    g.stroke();
+
+    /*  The shape: a vertex per pitch class, at a radius its energy
+        chose. */
+    g.beginPath();
+    for(let k = 0; k < 12; k++) {
+        const v = f.chroma[FIFTHS[k]];
+        const ang = -Math.PI / 2 + k * (Math.PI / 6);
+        const r = ring * (0.14 + 0.86 * v);
+        const x = cx + Math.cos(ang) * r;
+        const y = cy + Math.sin(ang) * r;
+        if(k === 0) {
+            g.moveTo(x, y);
+        } else {
+            g.lineTo(x, y);
+        }
+    }
+    g.closePath();
+    g.fillStyle = rgba(c, 0.22);
+    g.fill();
+    g.strokeStyle = rgba(c, 0.7);
+    g.lineWidth = Math.max(1.2, 1.6 * V.dpr);
+    g.stroke();
+
+    /*  The lamps, and their letters when there is room for them. */
+    if(label) {
+        g.font = Math.round(9 * V.dpr) + "px system-ui, sans-serif";
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+    }
+    for(let k = 0; k < 12; k++) {
+        const pc = FIFTHS[k];
+        const v = f.chroma[pc];
+        const ang = -Math.PI / 2 + k * (Math.PI / 6);
+        const x = cx + Math.cos(ang) * ring;
+        const y = cy + Math.sin(ang) * ring;
+        g.beginPath();
+        g.arc(x, y, (1.2 + 2.6 * v) * V.dpr, 0, Math.PI * 2);
+        g.fillStyle = rgba(c, 0.28 + 0.72 * v);
+        g.fill();
+        if(label) {
+            g.fillStyle = rgba(c, 0.35 + 0.65 * v);
+            g.fillText(NOTE_NAMES[pc],
+                cx + Math.cos(ang) * R * 1.06,
+                cy + Math.sin(ang) * R * 1.06);
+        }
+    }
+}
+
+function draw_chroma_row(V, f, c)
+{
+    const g = V.ctx;
+    const slot = V.w / 12;
+    const cy = V.h / 2;
+    const rmax = Math.min(slot, V.h) * 0.42;
+    for(let k = 0; k < 12; k++) {
+        const v = f.chroma[FIFTHS[k]];
+        const x = slot * (k + 0.5);
+        g.beginPath();
+        g.arc(x, cy, Math.max(1, rmax * (0.18 + 0.82 * v)), 0, Math.PI * 2);
+        g.fillStyle = rgba(c, 0.25 + 0.75 * v);
+        g.fill();
+    }
+}
+
+
+
+                    /***************************
+                     *      The scrub bar
+                     ***************************/
+
+
+
+
+/***************************************************************
+ *  A DJ's bar, and honest about what it can know.
+ *
+ *  What a deck in a booth draws is the whole track, because it
+ *  read the whole file before you touched it. This app will not
+ *  do that: decoding a five-minute file to draw a picture of it
+ *  means tens of megabytes of PCM on a phone, for every track,
+ *  before a note is heard — and the whole point of this app is
+ *  that it opens what it plays and nothing else.
+ *
+ *  So it draws WHAT HAS SOUNDED. The loudness of every moment is
+ *  taken from the same tap the visualizer reads, twenty-five
+ *  times a second, and kept against its position in the track.
+ *  The bar fills in behind the playhead as the music goes by;
+ *  ahead of it there is a flat line, because ahead of it we have
+ *  not listened yet and would be inventing.
+ *
+ *  Play the track again and it is already drawn: the envelope is
+ *  kept per track for as long as it is the one on the deck.
+ ***************************************************************/
+
+/*  Buckets across the track. 480 is more than the bar has pixels on
+    any phone and less than the memory of anything. */
+const WAVE_BUCKETS = 480;
+
+/*  Twenty-five readings a second. `timeupdate` fires four times a
+    second, which draws a staircase, not an envelope. */
+const WAVE_MS = 40;
+
+/*  A bucket nobody has heard yet. */
+const UNHEARD = -1;
+
+function create_seek_wave()
+{
+    const $cv = createElement2(["canvas", {class: "MUS_SEEKWAVE", "aria-hidden": "true"}]);
+
+    const W = {
+        $el:    $cv,
+        ctx:    null,
+        probe:  null,
+        w:      0,
+        h:      0,
+        dpr:    1,
+        levels: new Float32Array(WAVE_BUCKETS).fill(UNHEARD),
+        key:    "",
+        timer:  0,
+        accent: [201, 162, 39],
+        accent_at: 0,
+        frames: 0,
+        ro:     null
+    };
+
+    try {
+        W.ctx = $cv.getContext("2d");
+        W.probe = document.createElement("canvas").getContext("2d");
+    } catch(e) {
+        W.ctx = null;
+    }
+
+    if(window.ResizeObserver) {
+        W.ro = new ResizeObserver(() => wave_resize(W));
+        W.ro.observe($cv);
+    }
+
+    return {
+        $el:     $cv,
+        start:   () => wave_start(W),
+        stop:    () => wave_stop(W),
+        paint:   () => wave_paint(W),
+        destroy: () => wave_destroy(W)
+    };
+}
+
+function wave_start(W)
+{
+    if(W.timer || !W.ctx) {
+        return;
+    }
+    W.timer = setInterval(() => wave_sample(W), WAVE_MS);
+    wave_sample(W);
+}
+
+function wave_stop(W)
+{
+    if(W.timer) {
+        clearInterval(W.timer);
+        W.timer = 0;
+    }
+}
+
+function wave_destroy(W)
+{
+    wave_stop(W);
+    if(W.ro) {
+        W.ro.disconnect();
+        W.ro = null;
+    }
+}
+
+function wave_resize(W)
+{
+    if(!W.ctx) {
+        return;
+    }
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.round(W.$el.clientWidth * dpr);
+    const h = Math.round(W.$el.clientHeight * dpr);
+    if(w === W.w && h === W.h && dpr === W.dpr) {
+        return;
+    }
+    W.w = w;
+    W.h = h;
+    W.dpr = dpr;
+    if(w > 0 && h > 0) {
+        W.$el.width = w;
+        W.$el.height = h;
+        wave_paint(W);
+    }
+}
+
+/*  One reading, filed under where in the track it happened. */
+function wave_sample(W)
+{
+    const track = current_track();
+    const key = track ? (track.source_id + "|" + track.path) : "";
+    if(key !== W.key) {
+        W.key = key;
+        W.levels.fill(UNHEARD);
+    }
+
+    const p = progress();
+    if(is_playing() && p.duration > 0) {
+        const f = frame();
+        if(f) {
+            /*  Peak, not average: what a DJ reads off a waveform is
+                where the hits are, and an average buries them. */
+            let peak = 0;
+            const w = f.wave;
+            /*  Every fourth sample. At 8192 samples per read, a
+                transient is hundreds of samples wide — nothing that
+                matters is between the ones we skip. */
+            for(let i = 0; i < w.length; i += 4) {
+                const v = Math.abs(w[i] - 128);
+                if(v > peak) {
+                    peak = v;
+                }
+            }
+            const level = Math.min(1, peak / 128);
+            let b = Math.floor(p.fraction * WAVE_BUCKETS);
+            if(b < 0) {
+                b = 0;
+            }
+            if(b >= WAVE_BUCKETS) {
+                b = WAVE_BUCKETS - 1;
+            }
+            /*  The loudest reading that landed in this bucket wins.
+                Two seconds of track can share a bucket on a long
+                piece, and the quiet half must not erase the loud one. */
+            if(level > W.levels[b]) {
+                W.levels[b] = level;
+            }
+        }
+    }
+    wave_paint(W);
+}
+
+function wave_paint(W)
+{
+    const g = W.ctx;
+    if(!g || W.w <= 0 || W.h <= 0) {
+        return;
+    }
+    W.frames++;
+    const c = accent_of(W);
+    const p = progress();
+    const played_x = Math.round(p.fraction * W.w);
+
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, W.w, W.h);
+
+    /*  In Arabic the bar runs the other way, and so must everything
+        drawn in it. One flip, rather than a sign in every line. */
+    if(getComputedStyle(W.$el).direction === "rtl") {
+        g.setTransform(-1, 0, 0, 1, W.w, 0);
+    }
+
+    const mid = W.h / 2;
+    const step = Math.max(1, Math.round(W.dpr));
+    const gap = W.dpr >= 2 ? 1 : 0;
+    const bw = Math.max(1, step - gap);
+
+    for(let x = 0; x < W.w; x += step) {
+        const b = Math.floor(x / W.w * WAVE_BUCKETS);
+        const lv = W.levels[b];
+        const before = (x < played_x);
+
+        let half;
+        let alpha;
+        if(lv === UNHEARD) {
+            /*  Not heard. Ahead of the playhead that is the normal
+                case; behind it, it means the track was seeked over.
+                Either way the honest drawing is a flat line. */
+            half = Math.max(1, W.h * 0.045);
+            alpha = before ? 0.34 : 0.16;
+        } else {
+            /*  A floor under the height, so a quiet passage is still a
+                bar and not a hole. */
+            half = Math.max(W.h * 0.05, lv * W.h * 0.46);
+            alpha = before ? 0.92 : 0.42;
+        }
+        g.fillStyle = rgba(c, alpha);
+        g.fillRect(x, mid - half, bw, half * 2);
+    }
+
+    /*  The playhead. On a bar this tall the boundary between played
+        and unplayed is not enough on its own — the eye wants a line. */
+    if(p.duration > 0) {
+        g.fillStyle = rgba(c, 1);
+        g.fillRect(Math.max(0, played_x - Math.round(W.dpr)), 0,
+            Math.max(2, 2 * W.dpr), W.h);
+    }
+}
+
+
+export {
+    create_visualizer,
+    create_seek_wave,
+    MODES as VIZ_MODES,
+};

@@ -108,6 +108,13 @@ const en = {
         "path":                 "File",
         "source":               "Source",
 
+        /* ---- the visualizer ---- */
+        "viz notes":            "Notes",
+        "viz spectrum":         "Spectrum",
+        "viz wave":             "Wave",
+        "viz chroma":           "Chroma",
+        "viz off":              "Visualizer off",
+
         /* ---- the sources ---- */
         "authorised sources":   "Authorised sources",
         "add a folder":         "Add a folder",

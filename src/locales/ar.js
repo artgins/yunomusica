@@ -98,6 +98,13 @@ const ar = {
         "path":                 "الملف",
         "source":               "المصدر",
 
+        /* ---- الرسم ---- */
+        "viz notes":            "النغمات",
+        "viz spectrum":         "الطيف",
+        "viz wave":             "الموجة",
+        "viz chroma":           "الكروما",
+        "viz off":              "متوقف",
+
         "authorised sources":   "المجلدات المصرَّح بها",
         "add a folder":         "إضافة مجلد",
         "add loose files":      "إضافة ملفات مفردة",

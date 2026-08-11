@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.10.3** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.11.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -28,6 +28,51 @@ the queue. This is the one screen that fades anything: covers crossfade, the
 title lifts in, the facts change on their own. Everywhere else the DOM is
 swapped outright, which is right for a list being edited under a finger, and
 `prefers-reduced-motion` turns all of it into a cut.
+
+### What is sounding, drawn from the sound
+
+Beside the title (under it on a phone) there is a live picture of the audio
+itself — not an animation that runs while music happens to be playing. It is
+read off the samples on their way to the speakers, so it stops dead when they
+do. **Tapping it** moves to the next one, and the choice is remembered:
+
+| | |
+|---|---|
+| **Notes** | a ribbon running leftwards, one column per frame, one row per semitone from C3 up. Brightness is the energy in that semitone's band |
+| **Spectrum** | the same 48 bands standing up, with a peak that holds and falls |
+| **Wave** | the waveform, triggered on a rising zero crossing so it stands still instead of skidding |
+| **Chroma** | the twelve pitch classes with the octaves folded together, around the **circle of fifths** — consonant intervals end up adjacent, so a chord is a compact shape and a key change is that shape rotating |
+| **Off** | nothing, and no animation frame asked for either |
+
+**"Notes" is not a transcription, and does not pretend to be.** It is the
+spectrum folded onto semitones: the energy that fell inside each semitone's
+band. One note lights its own row *and* the rows of its harmonics, which is a
+true statement about the sound and not a chord. It starts at C3 (130.8 Hz)
+because at 8192 bins the FFT resolves 5.4 Hz and a semitone down there is 7.6 Hz
+wide — one bin. Below C3 the answer would be shared out between neighbours, so
+it is not offered.
+
+Somebody who asked for less motion gets it **off** by default, collapsed to a
+strip they can still tap if they want it. And there is a hatch for the day a
+browser makes the whole trade a bad one:
+
+```js
+localStorage["yunomusica:viz"] = "off"    // never tap the audio at all
+```
+
+### The scrub bar
+
+The bar under the banner is a bar you can **aim at**: 44 px tall, dragged with a
+thumb, with the clock inside it instead of on a line of its own. It draws
+**what has sounded** — the loudness of every moment, taken from the same tap,
+twenty-five times a second and filed against its position in the track. It
+fills in behind the playhead as the music goes by.
+
+Ahead of the playhead there is a flat line, and that is the honest answer. A
+deck in a booth draws the whole track because it read the whole file first;
+doing that here means decoding a five-minute file into tens of megabytes of PCM
+on a phone, for every track, before a note is heard — in an app whose whole
+claim is that it opens what it plays and nothing else.
 
 **The banner does not scroll — only the list does.** The deck is a column as
 tall as the shell zone, and the queue is the box inside it that moves. What is
@@ -223,6 +268,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `preview` | the listening strip is unreadable, or its clock is the queue's |
 | `resume` | the track you come back to has no duration and does not sound |
 | `follow` | the banner scrolls away, or the queue stops following the music |
+| `viz` | the banner draws the wrong note — or tapping the audio silenced it |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
 
 Two things they are strict about, both learned the hard way:
@@ -236,7 +282,16 @@ Two things they are strict about, both learned the hard way:
 
 The MP3 trees are **generated, not committed** (`tests/fixtures.mjs`, ~7 MB, and
 gitignored): silence from ffmpeg, ID3v2.3 tags written by hand, which also means
-a tag the parser has to survive can be forged in one line. `ffmpeg` is the only
+a tag the parser has to survive can be forged in one line.
+
+One tree is **not** silence. `tones` is two 25-second sine waves at pitches with
+names — A4 at 440 Hz and C5 at 523.25 Hz — because a visualizer fed silence
+draws an empty canvas, and an empty canvas is also what a broken one draws. The
+`viz` test plays them and reads the canvas back: *the tallest bar is the one
+belonging to the note that is sounding*, which is one assertion covering the tap,
+the FFT, the fold onto semitones and the drawing. The tones are amplified to
+about −3.5 dBFS on the way out of ffmpeg, because `sine` comes out at −18 and
+real music does not. `ffmpeg` is the only
 thing the suite needs that `npm install` does not bring.
 
 ## Deployment
@@ -269,6 +324,8 @@ The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
 | `src/update_check.js` | is this tab still running the deployed bundle? |
 | `src/install_prompt.js` | the deferred install event: is there an offer, and taking it |
 | `src/install_dialog.js` | "do you want to install this?", asked once |
+| `src/analyser.js` | the Web Audio tap: spectrum, waveform, and the fold onto semitones |
+| `src/visualizer.js` | the four pictures and the envelope in the scrub bar |
 | `src/music_store.js` | domain: ID3, library, queue, preview and playback |
 | `src/sources_store.js` | the authorised sources, their recursive walk and their diagnostics |
 | `src/playlists_store.js` | the saved lists and how they resolve |
@@ -295,6 +352,15 @@ The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
   thrown away and made again has no previous state to animate from.
 - A programmatic smooth scroll emits the same `scroll` events a finger does. An
   auto-scroll that re-arms its own idle timer follows itself for ever.
+- **`createMediaElementSource` is a one-way door.** From the moment that node
+  exists, the `<audio>` element no longer reaches the output on its own — it
+  reaches it through the graph, and there is no putting it back. Tap an element
+  while the `AudioContext` is suspended and the music goes into silence: a player
+  whose play button does nothing. So the tap is taken inside a `play` handler
+  (the one place we are certainly in the gesture that grants `resume()`), only
+  once the context reports `running`, and the destination is connected **before**
+  the analyser, so that anything throwing afterwards cannot take the sound with
+  it.
 - A `File` restored from IndexedDB **does not keep `webkitRelativePath`**. The
   path has to be stored beside it, or the tag cache misses on every single file.
 - `createElement2` trims text nodes: the space between a figure and its noun

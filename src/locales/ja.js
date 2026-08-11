@@ -94,6 +94,13 @@ const ja = {
         "path":                 "ファイル",
         "source":               "ソース",
 
+        /* ---- ビジュアライザー ---- */
+        "viz notes":            "音符",
+        "viz spectrum":         "スペクトル",
+        "viz wave":             "波形",
+        "viz chroma":           "クロマ",
+        "viz off":              "オフ",
+
         "authorised sources":   "許可したフォルダー",
         "add a folder":         "フォルダーを追加",
         "add loose files":      "単体のファイルを追加",

@@ -421,6 +421,12 @@
     align-items: center;
     gap: 1rem;
     margin-bottom: 0.9rem;
+    /*  So the visualizer can drop to a line of its own when the row
+        runs out of width. .MUS_DECKMETA is `flex: 1`, i.e. a basis of
+        zero, so it never causes the break itself — the break happens
+        when the visualizer's own 300px no longer fit, which is exactly
+        when it should. */
+    flex-wrap: wrap;
 }
 .MUS_DECKART {
     position: relative;
@@ -458,6 +464,93 @@
     .MUS_DECKART { width: 64px; height: 64px; font-size: 22px; }
 }
 .MUS_DECKMETA { flex: 1; min-width: 0; }
+
+/*======================================================================
+ *      The visualizer — the banner's one piece of live information
+ *
+ *  Beside the title where there is room for it, on a line of its own
+ *  when there is not. Same node either way: the stylesheet moves it,
+ *  the JS never does.
+ *====================================================================*/
+.MUS_VIZ {
+    position: relative;
+    flex: 0 1 300px;
+    align-self: stretch;        /* exactly as tall as the cover tile */
+    min-width: 0;
+    min-height: 56px;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    background: color-mix(in srgb, var(--mus-accent) 7%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mus-accent) 16%, transparent);
+}
+.MUS_VIZ:focus-visible {
+    outline: 2px solid var(--mus-accent);
+    outline-offset: 2px;
+}
+.MUS_VIZ_CV {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+/*  Turned off, it keeps just enough of itself to be tapped back on.
+    A control that vanishes when used is a control that cannot be
+    undone. */
+.MUS_VIZ.is-off {
+    flex-basis: 2.4rem;
+    min-height: 0;
+    background: none;
+    border-color: color-mix(in srgb, var(--mus-accent) 10%, transparent);
+}
+.MUS_VIZ.is-off .MUS_VIZ_CV { display: none; }
+.MUS_VIZ_OFF {
+    position: absolute;
+    inset: 0;
+    display: none;
+    place-items: center;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--mus-accent);
+    opacity: 0.45;
+}
+.MUS_VIZ.is-off .MUS_VIZ_OFF { display: grid; }
+/*  The name of the mode, shown for a moment after a tap: the way to
+    learn what the next tap does without a legend taking up room for
+    ever. */
+.MUS_VIZ_TAG {
+    position: absolute;
+    inset-block-end: 0.25rem;
+    inset-inline-start: 0.45rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mus-accent);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+    white-space: nowrap;
+}
+.MUS_VIZ_TAG.is-on { opacity: 0.95; }
+.MUS_VIZ.is-off .MUS_VIZ_TAG { inset-inline-start: 0; text-align: center; width: 100%; }
+
+/*  Wrapped onto its own line, it has to be told a height: the line it
+    is alone on has no cover tile to take one from. */
+@media (max-width: 699px) {
+    .MUS_VIZ {
+        flex-basis: 100%;
+        height: 46px;
+        min-height: 0;
+    }
+    .MUS_VIZ.is-off { height: 1.5rem; }
+}
+/*  A phone in landscape has no height for the banner as it is; this is
+    the first thing to go. */
+@media (max-width: 699px) and (max-height: 520px) {
+    .MUS_VIZ { display: none; }
+}
 /*  Fades the whole block in when the track changes: one movement, not
     three lines each doing their own. */
 .MUS_DECKMETA.is-swap { animation: mus-meta-in 0.45s ease both; }
@@ -552,6 +645,79 @@
     color: var(--bulma-text-weak, #8a8a8a);
     margin-top: 0.4rem;
     font-variant-numeric: tabular-nums;
+}
+
+/*======================================================================
+ *      The scrub bar on the deck — the one you aim at
+ *
+ *  The mini-player keeps the 5px line: it is a status bar in a strip
+ *  two centimetres tall, and there is nothing there to aim at. The
+ *  deck's is a different instrument, so it is a different class rather
+ *  than a change to .MUS_SEEK, which both of them use.
+ *====================================================================*/
+.MUS_SEEK_DJ {
+    height: 36px;
+    border-radius: 10px;
+    margin-top: 0.2rem;
+    background: var(--bulma-scheme-main-ter, #e8e8e8);
+    overflow: hidden;
+    /*  Without this a drag along the bar scrolls the page on a phone
+        instead of seeking: the browser claims the gesture first. */
+    touch-action: none;
+}
+@media (min-width: 700px) {
+    .MUS_SEEK_DJ { height: 44px; border-radius: 12px; }
+}
+/*  A phone in landscape gives the banner no height to spend. */
+@media (max-height: 520px) {
+    .MUS_SEEK_DJ { height: 26px; border-radius: 8px; }
+}
+/*  Behind the envelope, the played side as a wash. At full strength it
+    fought with the bars drawn on top of it and won. */
+.MUS_SEEK_DJ .MUS_SEEK_FILL {
+    border-radius: 0;
+    background: color-mix(in srgb, var(--mus-accent) 15%, transparent);
+}
+.MUS_SEEKWAVE {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+/*  The clock moves INSIDE the bar. On a bar this tall a separate line
+    of times below it is a line of height spent saying what the bar is
+    already saying, and the banner has none to spare. */
+.MUS_SEEK_DJ .MUS_TIMES {
+    position: absolute;
+    inset: 0;
+    margin-top: 0;
+    align-items: center;
+    padding-inline: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    pointer-events: none;
+}
+/*  The digits carry their own ground.
+ *
+ *  They sit over whatever the envelope drew, and half the time that is
+ *  the played block at full accent. A shadow was tried first and is
+ *  not enough: in the dark scheme the ink is near-white and the block
+ *  is gold, and no amount of glow makes that pair readable. A chip of
+ *  the card's own colour is the only version that holds in both
+ *  schemes, under all five palettes, over played and unplayed alike. */
+.MUS_SEEK_DJ .MUS_TCUR,
+.MUS_SEEK_DJ .MUS_TTOT {
+    padding: 0.08rem 0.4rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--bulma-scheme-main-bis, #f7f7f7) 85%, transparent);
+    color: var(--bulma-text, #1b1b1b);
+    font-variant-numeric: tabular-nums;
+}
+@media (min-width: 700px) {
+    .MUS_SEEK_DJ .MUS_TIMES { font-size: 0.95rem; padding-inline: 0.5rem; }
 }
 
 .MUS_TRANSPORT {
@@ -1319,8 +1485,13 @@ img.MUS_ART { object-fit: cover; }
     .MUS_DECKMETA.is-swap { animation: none; }
     .MUS_DECKART_L,
     .MUS_DECKBG_L,
+    .MUS_VIZ_TAG,
     .MUS_FACT { transition: none; }
     .MUS_FACT { transform: none; }
+    /*  The visualizer is not turned off here — it is turned off in the
+        JS, which is where "unless the user asked for it" can be said.
+        Somebody who overrode the default asked for a moving picture
+        and gets one; this only takes the fade off its label. */
 }
 
 

@@ -94,6 +94,13 @@ const pt = {
         "path":                 "Ficheiro",
         "source":               "Fonte",
 
+        /* ---- o gráfico ---- */
+        "viz notes":            "Notas",
+        "viz spectrum":         "Espetro",
+        "viz wave":             "Onda",
+        "viz chroma":           "Cromática",
+        "viz off":              "Sem gráfico",
+
         "authorised sources":   "Pastas autorizadas",
         "add a folder":         "Adicionar uma pasta",
         "add loose files":      "Adicionar ficheiros soltos",

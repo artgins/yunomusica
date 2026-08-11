@@ -94,6 +94,13 @@ const hi = {
         "path":                 "फ़ाइल",
         "source":               "स्रोत",
 
+        /* ---- दृश्य ---- */
+        "viz notes":            "स्वर",
+        "viz spectrum":         "स्पेक्ट्रम",
+        "viz wave":             "तरंग",
+        "viz chroma":           "क्रोमा",
+        "viz off":              "बंद",
+
         "authorised sources":   "अधिकृत फ़ोल्डर",
         "add a folder":         "एक फ़ोल्डर जोड़ें",
         "add loose files":      "अलग फ़ाइलें जोड़ें",

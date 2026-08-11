@@ -94,6 +94,13 @@ const de = {
         "path":                 "Datei",
         "source":               "Quelle",
 
+        /* ---- die Anzeige ---- */
+        "viz notes":            "Noten",
+        "viz spectrum":         "Spektrum",
+        "viz wave":             "Welle",
+        "viz chroma":           "Chroma",
+        "viz off":              "Aus",
+
         "authorised sources":   "Freigegebene Ordner",
         "add a folder":         "Einen Ordner hinzufügen",
         "add loose files":      "Einzelne Dateien hinzufügen",

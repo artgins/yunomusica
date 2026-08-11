@@ -111,6 +111,47 @@ function silence(seconds)
     return readFileSync(path);
 }
 
+/***************************************************************
+ *  A tone, which is the one fixture that is NOT silence.
+ *
+ *  Everything else here is silence because nothing else cares
+ *  what the audio contains — a clock advances the same over a
+ *  quiet file. The visualizer does care: it draws the sound,
+ *  and over silence its correct output is an empty canvas,
+ *  which is also its output when it is broken.
+ *
+ *  A sine at a known frequency makes the difference testable.
+ *  A4 is 440 Hz and lands on one semitone, so "the tallest bar
+ *  is the twenty-second" is a statement about the whole chain:
+ *  the tap, the FFT, the fold onto semitones and the drawing.
+ ***************************************************************/
+/*  The gain is not decoration. lavfi's `sine` comes out at about
+    -18 dBFS, which is a real signal and a quiet one: the first version
+    of this fixture drew an envelope a seventh of the height of the bar
+    and the test called the app broken. Real music arrives mastered
+    close to full scale, so the fixture is brought there — +15 dB lands
+    at roughly -3.5 dBFS.
+
+    The gain is in the CACHED FILE NAME on purpose. Change the recipe
+    and leave the name alone, and every machine that already ran the
+    suite goes on testing against the old file for ever. */
+const TONE_GAIN_DB = 15;
+
+function tone(hz, seconds)
+{
+    let path = join(TMP, `tone-${hz}-${seconds}s-${TONE_GAIN_DB}db.mp3`);
+    if(!existsSync(path)) {
+        execFileSync("ffmpeg", ["-v", "quiet", "-y",
+            "-f", "lavfi", "-i", `sine=frequency=${hz}:sample_rate=44100`,
+            "-t", String(seconds),
+            "-af", `volume=${TONE_GAIN_DB}dB`,
+            "-b:a", "128k",
+            "-write_xing", "0", "-id3v2_version", "0",
+            path]);
+    }
+    return readFileSync(path);
+}
+
 function cover_png()
 {
     let path = join(TMP, "cover.png");
@@ -198,6 +239,25 @@ function build_mimusica()
 }
 
 
+/*  `tones`: two 25-second sine waves at pitches with names. The only
+    tree in here that makes a noise, and the only one the visualizer
+    test can say anything about — see tone() above. 25 seconds for the
+    same reason `longtracks` is 25: the test has to have time to look. */
+function build_tones()
+{
+    const notes = [
+        {title: "A4 440", hz: 440,    track: 1},
+        {title: "C5 523", hz: 523.25, track: 2}
+    ];
+    notes.forEach(function(n) {
+        write_track(join(ROOT, "tones", "Test Tones", `0${n.track} - ${n.title}.mp3`),
+            tone(n.hz, 25),
+            {title: n.title, artist: "sine", album: "Test Tones",
+             genre: "test", year: 2026, track: n.track}, null);
+    });
+}
+
+
 /***************************************************************
  *  Cheap when they already exist, so every test can just call
  *  it. `force` rebuilds from scratch.
@@ -213,12 +273,14 @@ function ensure_fixtures(force)
     if(!existsSync(join(ROOT, "music")))      { build_music();      built.push("music"); }
     if(!existsSync(join(ROOT, "longtracks"))) { build_longtracks(); built.push("longtracks"); }
     if(!existsSync(join(ROOT, "mimusica")))   { build_mimusica();   built.push("mimusica"); }
+    if(!existsSync(join(ROOT, "tones")))      { build_tones();      built.push("tones"); }
 
     return {
         root:       ROOT,
         music:      join(ROOT, "music"),
         longtracks: join(ROOT, "longtracks"),
         mimusica:   join(ROOT, "mimusica"),
+        tones:      join(ROOT, "tones"),
         built:      built
     };
 }

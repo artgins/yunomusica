@@ -47,6 +47,7 @@ import {
     add_dir, add_files,
     subscribe_sources, pending_authorisation, authorize_all,
 } from "./sources_store.js";
+import {create_visualizer, create_seek_wave} from "./visualizer.js";
 import {save_queue_as} from "./playlists_store.js";
 import {subscribe_update, is_stale, latest_version} from "./update_check.js";
 import {
@@ -163,6 +164,9 @@ let PRIVATE_DATA = {
     $facts:     null,   // the rotating line under the title
     $transport: null,
     $bars:      null,   // update / authorise / notice, rebuilt as before
+    viz:        null,   // the live picture of what is sounding
+    wave:       null,   // the envelope drawn inside the scrub bar
+    scrubbing:  false,  // a finger is dragging the scrub bar
     cover:      null,   // the cover URL currently on the front layer
     front:      0,      // which layer is the front one
     track_key:  "",     // identity of the track the banner is showing
@@ -270,6 +274,14 @@ function mt_stop(gobj)
     }
     stop_facts(gobj);
     stop_follow(gobj);
+    /*  Off this screen there is nothing to look at: the loop goes with
+        it, even though the music does not. */
+    if(priv.viz) {
+        priv.viz.stop();
+    }
+    if(priv.wave) {
+        priv.wave.stop();
+    }
 }
 
 /***************************************************************
@@ -277,6 +289,15 @@ function mt_stop(gobj)
  ***************************************************************/
 function mt_destroy(gobj)
 {
+    let priv = gobj.priv;
+    if(priv.viz) {
+        priv.viz.destroy();
+        priv.viz = null;
+    }
+    if(priv.wave) {
+        priv.wave.destroy();
+        priv.wave = null;
+    }
     let $c = gobj_read_attr(gobj, "$container");
     if($c && $c.parentNode) {
         $c.parentNode.removeChild($c);
@@ -444,22 +465,93 @@ function build_card(gobj)
     priv.$transport = createElement2(["div", {class: "MUS_TRANSPORT"}]);
     priv.$bars = createElement2(["div", {class: "MUS_DECKBARS"}]);
 
+    /*  What is sounding, drawn from the sound itself. It sits beside
+        the title on a desktop and wraps under it on a phone; both are
+        the same node, moved by the stylesheet. */
+    priv.viz = create_visualizer();
+    priv.wave = create_seek_wave();
+
     return createElement2(
         ["div", {class: "MUS_DECKCARD"}, [
             ["div", {class: "MUS_DECKBG", "aria-hidden": "true"},
                 [priv.$bg_l[0], priv.$bg_l[1]]],
             ["div", {class: "MUS_DECKBODY"}, [
-                ["div", {class: "MUS_DECKHEAD"}, [priv.$art, priv.$meta]],
-                ["div", {class: "MUS_SEEK", role: "progressbar"},
-                    [["i", {class: "MUS_SEEK_FILL"}]],
-                    {click: (ev) => seek_at(ev, ev.currentTarget)}],
-                ["div", {class: "MUS_TIMES"}, [
-                    ["span", {class: "MUS_TCUR"}, "0:00"],
-                    ["span", {class: "MUS_TTOT"}, "0:00"]
-                ]],
+                ["div", {class: "MUS_DECKHEAD"},
+                    [priv.$art, priv.$meta, priv.viz.$el]],
+                /*  The scrub bar is a bar you can aim at: tall enough
+                    to hold the envelope of what has sounded and to take
+                    a thumb, with the clock inside it rather than on a
+                    line of its own. */
+                ["div", {class: "MUS_SEEK MUS_SEEK_DJ", role: "progressbar"}, [
+                        ["i", {class: "MUS_SEEK_FILL"}],
+                        priv.wave.$el,
+                        ["div", {class: "MUS_TIMES"}, [
+                            ["span", {class: "MUS_TCUR"}, "0:00"],
+                            ["span", {class: "MUS_TTOT"}, "0:00"]
+                        ]]
+                    ],
+                    {
+                        pointerdown:   (ev) => scrub_down(gobj, ev),
+                        pointermove:   (ev) => scrub_move(gobj, ev),
+                        pointerup:     (ev) => scrub_up(gobj, ev),
+                        pointercancel: (ev) => scrub_up(gobj, ev)
+                    }],
                 priv.$transport
             ]]
         ]]);
+}
+
+
+/***************************************************************
+ *  Scrubbing. A bar this tall invites a thumb to be dragged
+ *  along it, and a bar that only answers to taps disappoints
+ *  the gesture it just asked for.
+ *
+ *  Pointer events rather than mouse plus touch: the capture is
+ *  what keeps the drag alive once the finger leaves the bar,
+ *  which on a bar 36 pixels tall happens constantly.
+ ***************************************************************/
+function scrub_down(gobj, ev)
+{
+    if(ev.button !== undefined && ev.button !== 0) {
+        return;                         // a right-click is not a seek
+    }
+    let priv = gobj.priv;
+    priv.scrubbing = true;
+    let $bar = ev.currentTarget;
+    if($bar.setPointerCapture && ev.pointerId !== undefined) {
+        try {
+            $bar.setPointerCapture(ev.pointerId);
+        } catch(e) {
+            /*  Not capturing is survivable: the drag just ends at the
+                edge of the bar. */
+        }
+    }
+    seek_at(ev, $bar);
+}
+
+function scrub_move(gobj, ev)
+{
+    if(gobj.priv.scrubbing) {
+        seek_at(ev, ev.currentTarget);
+    }
+}
+
+function scrub_up(gobj, ev)
+{
+    let priv = gobj.priv;
+    if(!priv.scrubbing) {
+        return;
+    }
+    priv.scrubbing = false;
+    let $bar = ev.currentTarget;
+    if($bar.releasePointerCapture && ev.pointerId !== undefined) {
+        try {
+            $bar.releasePointerCapture(ev.pointerId);
+        } catch(e) {
+            /*  Already released, or never captured. */
+        }
+    }
 }
 
 function paint_now(gobj)
@@ -475,7 +567,42 @@ function paint_now(gobj)
     update_transport(gobj);
     paint_bars(gobj);
     paint_time(gobj);
+    run_viz(gobj);
     refresh_language(priv.$now, t);
+}
+
+/***************************************************************
+ *  The picture runs while something is sounding, and not one
+ *  frame longer. An animation frame asked for over a paused
+ *  track is a battery bill for a still image — and the still
+ *  image is the right thing to leave on screen anyway: it is
+ *  the last thing that was heard.
+ ***************************************************************/
+function run_viz(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.viz) {
+        return;
+    }
+    /*  The name of the mode is a translated string, so it is re-read
+        here rather than only at the tap that changed it. */
+    priv.viz.sync();
+
+    if(is_playing() || previewing()) {
+        priv.viz.start();
+    } else {
+        priv.viz.stop();
+    }
+    /*  The envelope only follows the QUEUE. A preview sounds on its
+        own element, and filing its loudness against the position of
+        the track on the deck would draw one track's shape from
+        another's sound. */
+    if(is_playing()) {
+        priv.wave.start();
+    } else {
+        priv.wave.stop();
+        priv.wave.paint();
+    }
 }
 
 /*  A tag the file did not carry is stored as its English key. */
@@ -866,6 +993,12 @@ function paint_time(gobj)
     let $tot = priv.$now.querySelector(".MUS_TTOT");
     if($cur) { $cur.textContent = fmt_time(p.current); }
     if($tot) { $tot.textContent = fmt_time(p.duration); }
+    /*  While the music runs the envelope repaints on its own clock,
+        far faster than this one. This call is for the other times: a
+        seek on a paused track, and the first paint of a restored deck. */
+    if(priv.wave) {
+        priv.wave.paint();
+    }
 }
 
 

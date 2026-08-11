@@ -94,6 +94,13 @@ const zh = {
         "path":                 "文件",
         "source":               "来源",
 
+        /* ---- 可视化 ---- */
+        "viz notes":            "音符",
+        "viz spectrum":         "频谱",
+        "viz wave":             "波形",
+        "viz chroma":           "音级",
+        "viz off":              "关闭",
+
         "authorised sources":   "已授权的文件夹",
         "add a folder":         "添加一个文件夹",
         "add loose files":      "添加单独的文件",

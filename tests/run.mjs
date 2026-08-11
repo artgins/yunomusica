@@ -47,6 +47,7 @@ const TESTS = [
     {name: "preview",   what: "la tira de escucha se lee y su reloj avanza"},
     {name: "resume",    what: "al volver, la canción trae su duración y suena"},
     {name: "follow",    what: "el banner no scrollea y la cola sigue a la música"},
+    {name: "viz",       what: "el banner dibuja la nota que suena, y sigue sonando"},
     {name: "e2e",       what: "recorrido completo + recarga"}
 ];
 

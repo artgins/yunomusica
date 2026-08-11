@@ -94,6 +94,13 @@ const fr = {
         "path":                 "Fichier",
         "source":               "Source",
 
+        /* ---- le graphique ---- */
+        "viz notes":            "Notes",
+        "viz spectrum":         "Spectre",
+        "viz wave":             "Onde",
+        "viz chroma":           "Chroma",
+        "viz off":              "Désactivé",
+
         "authorised sources":   "Dossiers autorisés",
         "add a folder":         "Ajouter un dossier",
         "add loose files":      "Ajouter des fichiers isolés",

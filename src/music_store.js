@@ -17,6 +17,7 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {attach as attach_analyser} from "./analyser.js";
 
 
 /***************************************************************
@@ -879,6 +880,9 @@ function get_preview_audio()
         S.preview_audio = new Audio();
         /*  Same channel as the queue's clock: whoever is painting a
             position repaints, and each asks for the one it owns. */
+        /*  A preview is also something that is sounding, so the
+            visualizer follows it too. */
+        S.preview_audio.addEventListener("play", () => attach_analyser(S.preview_audio));
         S.preview_audio.addEventListener("timeupdate", () => emit("time"));
         S.preview_audio.addEventListener("ended", () => stop_preview());
         S.preview_audio.addEventListener("error", () => {
@@ -1050,7 +1054,14 @@ function get_audio()
         S.audio.preload = "metadata";
         S.audio.addEventListener("timeupdate", () => emit("time"));
         S.audio.addEventListener("ended", () => step(1));
-        S.audio.addEventListener("play",  () => emit("playing"));
+        /*  The visualizer's tap is taken HERE and nowhere else: it can
+            only be taken while the context is allowed to run, and a
+            `play` handler is the one place we are certainly inside the
+            gesture that granted it. See analyser.js. */
+        S.audio.addEventListener("play",  () => {
+            attach_analyser(S.audio);
+            emit("playing");
+        });
         S.audio.addEventListener("pause", () => emit("playing"));
         S.audio.addEventListener("canplay", () => { S.retry_for = 0; });
         /*  Metadata is the moment the element learns how long the track

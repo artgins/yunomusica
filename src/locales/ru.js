@@ -94,6 +94,13 @@ const ru = {
         "path":                 "Файл",
         "source":               "Источник",
 
+        /* ---- визуализация ---- */
+        "viz notes":            "Ноты",
+        "viz spectrum":         "Спектр",
+        "viz wave":             "Волна",
+        "viz chroma":           "Хрома",
+        "viz off":              "Выключено",
+
         "authorised sources":   "Разрешённые папки",
         "add a folder":         "Добавить папку",
         "add loose files":      "Добавить отдельные файлы",

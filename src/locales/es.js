@@ -98,6 +98,13 @@ const es = {
         "path":                 "Fichero",
         "source":               "Fuente",
 
+        /* ---- el gráfico ---- */
+        "viz notes":            "Notas",
+        "viz spectrum":         "Espectro",
+        "viz wave":             "Onda",
+        "viz chroma":           "Cromática",
+        "viz off":              "Sin gráfico",
+
         /* ---- las fuentes ---- */
         "authorised sources":   "Carpetas autorizadas",
         "add a folder":         "Añadir una carpeta",
