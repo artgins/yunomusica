@@ -99,6 +99,7 @@ const ar = {
         "source":               "المصدر",
 
         /* ---- الرسم ---- */
+        "viz flight":           "طيران",
         "viz notes":            "النغمات",
         "viz spectrum":         "الطيف",
         "viz wave":             "الموجة",

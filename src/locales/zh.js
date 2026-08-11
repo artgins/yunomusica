@@ -95,6 +95,7 @@ const zh = {
         "source":               "来源",
 
         /* ---- 可视化 ---- */
+        "viz flight":           "飞行",
         "viz notes":            "音符",
         "viz spectrum":         "频谱",
         "viz wave":             "波形",

@@ -95,6 +95,7 @@ const fr = {
         "source":               "Source",
 
         /* ---- le graphique ---- */
+        "viz flight":           "Vol",
         "viz notes":            "Notes",
         "viz spectrum":         "Spectre",
         "viz wave":             "Onde",

@@ -95,6 +95,7 @@ const hi = {
         "source":               "स्रोत",
 
         /* ---- दृश्य ---- */
+        "viz flight":           "उड़ान",
         "viz notes":            "स्वर",
         "viz spectrum":         "स्पेक्ट्रम",
         "viz wave":             "तरंग",

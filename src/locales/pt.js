@@ -95,6 +95,7 @@ const pt = {
         "source":               "Fonte",
 
         /* ---- o gráfico ---- */
+        "viz flight":           "Voo",
         "viz notes":            "Notas",
         "viz spectrum":         "Espetro",
         "viz wave":             "Onda",

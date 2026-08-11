@@ -95,6 +95,7 @@ const de = {
         "source":               "Quelle",
 
         /* ---- die Anzeige ---- */
+        "viz flight":           "Flug",
         "viz notes":            "Noten",
         "viz spectrum":         "Spektrum",
         "viz wave":             "Welle",

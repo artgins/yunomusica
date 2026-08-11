@@ -95,6 +95,7 @@ const ru = {
         "source":               "Источник",
 
         /* ---- визуализация ---- */
+        "viz flight":           "Полёт",
         "viz notes":            "Ноты",
         "viz spectrum":         "Спектр",
         "viz wave":             "Волна",

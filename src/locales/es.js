@@ -99,6 +99,7 @@ const es = {
         "source":               "Fuente",
 
         /* ---- el gráfico ---- */
+        "viz flight":           "Vuelo",
         "viz notes":            "Notas",
         "viz spectrum":         "Espectro",
         "viz wave":             "Onda",

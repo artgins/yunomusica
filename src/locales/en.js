@@ -109,6 +109,7 @@ const en = {
         "source":               "Source",
 
         /* ---- the visualizer ---- */
+        "viz flight":           "Flight",
         "viz notes":            "Notes",
         "viz spectrum":         "Spectrum",
         "viz wave":             "Wave",

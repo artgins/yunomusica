@@ -1,13 +1,17 @@
 /***********************************************************************
  *          visualizer.js
  *
- *      Four pictures of the sound, drawn from the sound.
+ *      Five pictures of the sound, drawn from the sound.
  *
  *      Not a decoration that moves while music happens to be playing:
  *      every pixel below comes from analyser.js, which reads the
  *      samples on their way to the speakers. Pause, and it stops
  *      exactly where it is, because there is nothing left to draw.
  *
+ *        flight    the loudest things in the room, moving: an arrow on
+ *                  the lead line, the other strong peaks behind it, the
+ *                  bass along the floor and a ring on every hit. The
+ *                  one that PICKS instead of showing everything.
  *        notes     a ribbon that runs leftwards, one column per frame,
  *                  one row per semitone from C3 up. Brightness is the
  *                  energy in that semitone's band.
@@ -26,11 +30,21 @@
  *      and updates it in place; this is one more node in it, with the
  *      same contract as the rest — build once, then start and stop.
  *
- *      THE COLOUR IS NOT CHOSEN HERE. It is --mus-accent, which is the
- *      palette, or the dominant colour of the record when the palette
- *      is "from the cover". Read from the document, never hard-coded:
- *      a visualizer with a colour of its own would be the one thing on
- *      the deck that does not follow the record.
+ *      THE COLOUR IS NOT CHOSEN HERE — with one deliberate exception.
+ *      Four of the five draw in --mus-accent, which is the palette, or
+ *      the dominant colour of the record when the palette is "from the
+ *      cover": read from the document, never hard-coded, because a
+ *      visualizer with a colour of its own would be the one thing on
+ *      the deck that does not follow the record. `flight` is the
+ *      exception, and it earns it: there the hue IS the pitch, so a
+ *      note is always the same colour and a key change moves the whole
+ *      picture through the wheel. Colour carrying meaning is worth
+ *      more there than colour carrying the palette.
+ *
+ *      Either way the ink is MEASURED against the card before it is
+ *      used — see readable(). An accent taken from a pale cover is
+ *      near-white, and a near-white line on a near-white card is a
+ *      picture that is drawn perfectly and seen by nobody.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
@@ -48,7 +62,7 @@ import {progress, is_playing, previewing, current_track} from "./music_store.js"
 /*  The order the tap walks. "off" is in it so that turning the thing
     off is the same gesture as changing it, and does not need a setting
     on another screen. */
-const MODES = ["notes", "spectrum", "wave", "chroma", "off"];
+const MODES = ["flight", "notes", "spectrum", "wave", "chroma", "off"];
 
 const MODE_KEY = "yunomusica:viz_mode";
 
@@ -79,12 +93,47 @@ const NOTE_PROMINENCE = 0.06;
 /*  Bars want a slow hand or they flicker; the ribbon wants none, or
     every column is a smear of the ten before it. */
 const SMOOTHING = {
+    /*  The arrow wants a steady hand — an unsmoothed lead jitters an
+        octave on every stray harmonic — but not so steady that an
+        onset arrives late. */
+    flight:   0.42,
     notes:    0.25,
     spectrum: 0.78,
     wave:     0.0,
     chroma:   0.72,
     off:      0.7
 };
+
+
+/***************************************************************
+ *              flight
+ *
+ *  The numbers behind the picture described in draw_flight().
+ ***************************************************************/
+/*  Where a lead line is looked for: G3 up. Below that is
+    accompaniment and above it is mostly harmonics of both. */
+const LEAD_LO_ROW = 7;
+
+/*  Bass is taken from the spectrum BELOW the semitone rows, which
+    start at C3 — everything under here, in hertz. */
+const BASS_HZ = 160;
+
+/*  How much of the trail survives each frame. Lower is longer: 0.028
+    keeps about three seconds of history, which is a phrase rather than
+    a moment, and is what makes the picture read as a flight path
+    instead of a smudge at the right edge. */
+const TRAIL_FADE = 0.028;
+
+/*  A hit is a jump in broadband energy this many times the running
+    average of those jumps. Percussion is a step; a held note is not. */
+const ONSET_RATIO = 1.7;
+const ONSET_MIN = 0.55;
+
+/*  …and no more than this many at once, however busy the drummer. */
+const MAX_BURSTS = 14;
+
+/*  How fast the arrow flies to a new pitch. Per frame. */
+const LEAD_CHASE = 0.22;
 
 /*  Circle of fifths, as indices into the twelve pitch classes
     (0 = C). Adjacent entries are a fifth apart, which is what makes a
@@ -213,6 +262,15 @@ function create_visualizer(opts)
         roll_debt: 0,       // sub-pixel travel carried between frames
         peaks:    new Float32Array(SEMITONES),
         agc:      0,        // the ribbon's ceiling, chasing the music
+        dark:     false,    // which way the colours have to lean
+        /*  flight */
+        lead:     -1,       // where the arrow is, in rows, fractional
+        lead_v:   0,        // …and how sure of itself it is
+        lead_dy:  0,        // its climb, for the tilt
+        lead_py:  -1,       // where its trail left off, in pixels
+        prev:     new Float32Array(SEMITONES),
+        flux_avg: 0,
+        bursts:   [],
         accent:   [201, 162, 39],
         accent_at: 0,       // frame count when the accent was last read
         frames:   0,
@@ -283,6 +341,9 @@ function initial_mode()
     if(stored && MODES.indexOf(stored) >= 0) {
         return stored;
     }
+    /*  "flight" is the one to meet first: it picks what matters out of
+        the sound instead of handing over everything and leaving the
+        eye to do it. The other four are still one tap away. */
     /*  Somebody who asked for less motion did not ask for a ribbon
         running under the title. They get the control, collapsed, and
         nothing moving until they tap it. */
@@ -290,7 +351,7 @@ function initial_mode()
         window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         return "off";
     }
-    return "notes";
+    return "flight";
 }
 
 /*  Sets the shared mode, which brings every instance along with it —
@@ -539,7 +600,9 @@ function accent_of(V)
         if(!bg) {
             bg = getComputedStyle(document.body).backgroundColor;
         }
-        V.accent = readable(rgb_of(c, V.probe), rgb_of(bg || "#ffffff", V.probe));
+        const ground = rgb_of(bg || "#ffffff", V.probe);
+        V.dark = srgb_lum(ground) < 0.5;
+        V.accent = readable(rgb_of(c, V.probe), ground);
     }
     return V.accent;
 }
@@ -571,7 +634,9 @@ function draw(V)
         return;
     }
 
-    if(V.mode === "notes") {
+    if(V.mode === "flight") {
+        draw_flight(V, f, c);
+    } else if(V.mode === "notes") {
         draw_notes(V, f, c);
     } else if(V.mode === "spectrum") {
         draw_spectrum(V, f, c);
@@ -579,6 +644,279 @@ function draw(V)
         draw_wave(V, f, c);
     } else if(V.mode === "chroma") {
         draw_chroma(V, f, c);
+    }
+}
+
+
+/***************************************************************
+ *  flight — the loudest thing in the room, flying.
+ *
+ *  The other four modes draw everything that is there and let
+ *  the eye do the picking. This one picks first: a lead line,
+ *  the handful of other peaks worth naming, the bass, and the
+ *  hits — and draws those, in colour, moving.
+ *
+ *    · The ARROW is the lead: the strongest peak from G3 up,
+ *      chased rather than jumped to, tilted by its own climb.
+ *    · The DOTS behind it are the other strong peaks, each in
+ *      the colour of its pitch class.
+ *    · The BAND along the bottom is the bass, taken from below
+ *      the semitone rows where the rows cannot reach.
+ *    · The RINGS are hits: a step in broadband energy well
+ *      above the running average of such steps.
+ *
+ *  Everything drifts left and fades, so what is on screen is
+ *  the last second or so of music with the present at the right
+ *  edge — the arrow always at the front, everything else
+ *  trailing behind it.
+ *
+ *  WHAT IT IS NOT. There is no source separation here and none
+ *  is claimed. "The lead" is the strongest peak in the range a
+ *  melody usually occupies, which most of the time IS the voice
+ *  or the lead instrument and sometimes is a harmonic of the
+ *  bass. "A hit" is a broadband transient, not a drum: a piano
+ *  chord struck hard is one too. It is an honest picture of the
+ *  loudest things in the sound, not a transcription of the band.
+ *
+ *  THE COLOUR IS THE PITCH. Hue comes from the pitch class, so
+ *  a note is always the same colour and a key change moves the
+ *  whole picture through the wheel. This is the one thing in
+ *  the app that does not take its colour from the palette,
+ *  which is a deliberate exception and the point of the mode.
+ ***************************************************************/
+function pitch_colour(pc, v, dark, a)
+{
+    const h = (pc * 30 + 20) % 360;
+    /*  Light card: darker ink. Dark card: brighter. The same problem
+        the accent has, answered the same way. */
+    const l = dark ? (48 + 24 * v) : (30 + 14 * v);
+    return "hsla(" + h + "," + (dark ? 82 : 88) + "%," + l + "%," + a + ")";
+}
+
+function draw_flight(V, f, c)
+{
+    const rc = V.roll_ctx;
+    const n = f.notes;
+    const rows = n.length;
+
+    V.roll_debt += ROLL_STEP * V.dpr;
+    const step = Math.floor(V.roll_debt);
+    V.roll_debt -= step;
+
+    /*  Drift, then fade. The fade is `destination-out`, which eats
+        alpha instead of laying paint down, so the card keeps showing
+        through and the trail thins out rather than going grey. */
+    if(step > 0) {
+        rc.globalCompositeOperation = "copy";
+        rc.drawImage(V.roll, -step, 0);
+        rc.globalCompositeOperation = "destination-out";
+        rc.fillStyle = "rgba(0,0,0," + TRAIL_FADE + ")";
+        rc.fillRect(0, 0, V.w, V.h);
+        rc.globalCompositeOperation = "source-over";
+    }
+
+    /*  A ceiling that follows the music, as the ribbon has. */
+    let top = 0;
+    for(let i = 0; i < rows; i++) {
+        if(n[i] > top) {
+            top = n[i];
+        }
+    }
+    V.agc = Math.max(top, (V.agc || 0) * AGC_FALL);
+    const ceiling = Math.max(0.05, V.agc);
+
+    /*  The hits: how much broadband energy STEPPED UP since the last
+        frame. A held note contributes nothing to this, however loud —
+        which is exactly the difference between a note and a hit. */
+    let flux = 0;
+    for(let i = 0; i < rows; i++) {
+        const d = n[i] - V.prev[i];
+        if(d > 0) {
+            flux += d;
+        }
+        V.prev[i] = n[i];
+    }
+    const hit = (flux > ONSET_MIN && flux > V.flux_avg * ONSET_RATIO);
+    V.flux_avg = V.flux_avg * 0.92 + flux * 0.08;
+
+    /*  The bass, straight from the spectrum: the rows start at C3 and
+        the bottom of a mix does not. */
+    const per_bin = f.rate / (f.freq.length * 2);
+    const bass_top = Math.min(f.freq.length - 1, Math.round(BASS_HZ / per_bin));
+    let bass = 0;
+    for(let b = 1; b <= bass_top; b++) {
+        if(f.freq[b] > bass) {
+            bass = f.freq[b];
+        }
+    }
+    bass /= 255;
+
+    /*  The peaks worth naming, strongest first. */
+    const ridges = [];
+    for(let i = 0; i < rows; i++) {
+        const v = n[i];
+        const lo = i > 0 ? n[i - 1] : 0;
+        const hi = i < rows - 1 ? n[i + 1] : 0;
+        if(v < lo || v < hi) {
+            continue;
+        }
+        const near = lo > hi ? lo : hi;
+        if(v - near < v * NOTE_PROMINENCE) {
+            continue;
+        }
+        const r = (v / ceiling - NOTE_FLOOR) / (1 - NOTE_FLOOR);
+        if(r > 0) {
+            ridges.push({i: i, r: r});
+        }
+    }
+    ridges.sort((a, b) => b.r - a.r);
+
+    /*  The lead is the strongest of them that is high enough up to be
+        a tune rather than an accompaniment. */
+    let lead = null;
+    for(const g of ridges) {
+        if(g.i >= LEAD_LO_ROW) {
+            lead = g;
+            break;
+        }
+    }
+
+    const dark = V.dark;
+    const rh = V.h / rows;
+    const y_of = (row) => V.h - (row + 0.5) * rh;
+    const x = V.w - step;
+
+    if(step > 0) {
+        /*  The bass: a band along the floor, warm, wide and behind
+            everything else. */
+        if(bass > 0.06) {
+            const bh = Math.max(1, bass * V.h * 0.38);
+            const grad = rc.createLinearGradient(0, V.h, 0, V.h - bh);
+            grad.addColorStop(0, "hsla(8,88%," + (dark ? 58 : 40) + "%," +
+                (0.22 + 0.62 * bass).toFixed(3) + ")");
+            grad.addColorStop(1, "hsla(28,90%," + (dark ? 62 : 46) + "%,0)");
+            rc.fillStyle = grad;
+            rc.fillRect(x, V.h - bh, step, bh);
+        }
+
+        /*  The others, behind: soft, smaller, and only the few that
+            earned it. Drawing all of them is the fog this mode exists
+            to get away from. */
+        for(let k = 0; k < ridges.length && k < 5; k++) {
+            const g = ridges[k];
+            if(lead && g.i === lead.i) {
+                continue;
+            }
+            const y = y_of(g.i);
+            const rad = Math.max(1, (1.2 + 3.4 * g.r) * V.dpr);
+            rc.fillStyle = pitch_colour(g.i % 12, g.r, dark,
+                (0.30 + 0.60 * g.r).toFixed(3));
+            rc.beginPath();
+            rc.arc(x, y, rad, 0, Math.PI * 2);
+            rc.fill();
+        }
+
+        /*  The lead's own trail: a LINE from where it was to where it
+            is, not a dot at where it is. Dots leave gaps the moment the
+            tune jumps an interval, and the jump is the part worth
+            seeing — joining them is what turns a row of marks into a
+            flight path. */
+        if(lead) {
+            const y = y_of(lead.i);
+            const py = (V.lead_py >= 0) ? V.lead_py : y;
+            rc.strokeStyle = pitch_colour(lead.i % 12, lead.r, dark,
+                (0.55 + 0.45 * lead.r).toFixed(3));
+            rc.lineWidth = Math.max(1.5, (1.6 + 2.6 * lead.r) * V.dpr);
+            rc.lineCap = "round";
+            rc.beginPath();
+            rc.moveTo(x - step, py);
+            rc.lineTo(x, y);
+            rc.stroke();
+            V.lead_py = y;
+        } else {
+            V.lead_py = -1;
+        }
+
+        /*  A hit leaves a mark in the history as well as throwing a
+            ring, or the past would show no rhythm at all. */
+        if(hit) {
+            rc.fillStyle = dark ? "rgba(255,246,230,0.55)" : "rgba(40,20,0,0.42)";
+            rc.fillRect(x, V.h * 0.62, step, V.h * 0.38);
+        }
+    }
+
+    /*  Where the arrow is going, chased rather than jumped to. */
+    if(lead) {
+        const target = lead.i;
+        if(V.lead < 0) {
+            V.lead = target;
+        }
+        const next = V.lead + (target - V.lead) * LEAD_CHASE;
+        V.lead_dy = next - V.lead;
+        V.lead = next;
+        V.lead_v = Math.min(1, V.lead_v * 0.7 + lead.r * 0.5);
+    } else {
+        V.lead_v *= 0.90;               // nothing to follow: it fades out
+    }
+
+    if(hit && V.bursts.length < MAX_BURSTS) {
+        /*  Low and broad for a hit with bass under it, up at the lead
+            for one without: a kick and a snare do not land in the same
+            place. */
+        V.bursts.push({
+            x: V.w - step,
+            y: bass > 0.4 ? V.h * 0.80 : V.h * 0.55,
+            r: 2 * V.dpr,
+            life: 1,
+            hue: bass > 0.4 ? 10 : 45
+        });
+    }
+
+    const g = V.ctx;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, V.w, V.h);
+    g.drawImage(V.roll, 0, 0);
+
+    /*  The rings: drawn live rather than stamped, because an explosion
+        that has been baked into the trail cannot go on expanding. */
+    for(let k = V.bursts.length - 1; k >= 0; k--) {
+        const b = V.bursts[k];
+        b.life -= 0.045;
+        b.r += (2.6 + 26 * b.life) * V.dpr * 0.16;
+        b.x -= step;
+        if(b.life <= 0 || b.x + b.r < 0) {
+            V.bursts.splice(k, 1);
+            continue;
+        }
+        g.strokeStyle = "hsla(" + b.hue + ",95%," + (dark ? 66 : 44) + "%," +
+            (b.life * b.life * 0.95).toFixed(3) + ")";
+        g.lineWidth = Math.max(1.2, 3.4 * b.life * V.dpr);
+        g.beginPath();
+        g.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        g.stroke();
+    }
+
+    /*  And the arrow itself, at the leading edge, tilted by its climb. */
+    if(V.lead >= 0 && V.lead_v > 0.03) {
+        const y = y_of(V.lead);
+        const ax = V.w - 12 * V.dpr;
+        const tilt = Math.max(-1, Math.min(1, -V.lead_dy * 0.55));
+        const size = (5 + 4 * V.lead_v) * V.dpr;
+        const pc = Math.round(V.lead) % 12;
+
+        g.save();
+        g.translate(ax, y);
+        g.rotate(tilt);
+        g.beginPath();
+        g.moveTo(size * 1.5, 0);
+        g.lineTo(-size, -size * 0.85);
+        g.lineTo(-size * 0.35, 0);
+        g.lineTo(-size, size * 0.85);
+        g.closePath();
+        g.fillStyle = pitch_colour(pc < 0 ? 0 : pc, 1, dark,
+            Math.min(1, V.lead_v + 0.25).toFixed(3));
+        g.fill();
+        g.restore();
     }
 }
 

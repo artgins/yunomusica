@@ -95,6 +95,7 @@ const ja = {
         "source":               "ソース",
 
         /* ---- ビジュアライザー ---- */
+        "viz flight":           "フライト",
         "viz notes":            "音符",
         "viz spectrum":         "スペクトル",
         "viz wave":             "波形",

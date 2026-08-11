@@ -47,7 +47,7 @@ const C5_ROW = 72 - LOW_MIDI;       // 24
 
 /*  Kept in step with visualizer.js by hand: the test needs to know how
     many taps go all the way round. */
-const MODES = ["notes", "spectrum", "wave", "chroma", "off"];
+const MODES = ["flight", "notes", "spectrum", "wave", "chroma", "off"];
 
 const browser = await launch();
 const bad = [];
@@ -299,6 +299,56 @@ if(!alive || argmax(alive) !== C5_ROW || alive[C5_ROW] < 0.4) {
              `(peak at ${alive ? argmax(alive) : "nothing"})`);
 }
 
+/*  9. `flight` brings its own colour.
+ *
+ *  Four of the five modes draw in the accent; this one draws in the
+ *  pitch, which is the whole point of it. With this album's colourless
+ *  cover the accent is a grey, so "is there any colour on the canvas at
+ *  all" is a real question with a real answer: if the pitch-to-hue
+ *  mapping is not wired up, what comes out is grey too. */
+for(let i = 0; i < MODES.length; i++) {
+    const at = await page.evaluate(() => localStorage.getItem("yunomusica:viz_mode"));
+    if(at === "flight") {
+        break;
+    }
+    await page.click(".MUS_VIZ:not(.MUS_VIZ_MINI)");
+    await page.waitForTimeout(220);
+}
+await page.waitForTimeout(1500);
+const flight = await page.evaluate(() => {
+    const $cv = document.querySelector(".MUS_VIZ:not(.MUS_VIZ_MINI) .MUS_VIZ_CV");
+    const d = $cv.getContext("2d").getImageData(0, 0, $cv.width, $cv.height).data;
+    let painted = 0;
+    let coloured = 0;
+    for(let i = 0; i < d.length; i += 4) {
+        if(d[i + 3] < 40) {
+            continue;
+        }
+        painted++;
+        /*  Saturation, the cheap way: how far apart the channels are. */
+        const mx = Math.max(d[i], d[i + 1], d[i + 2]);
+        const mn = Math.min(d[i], d[i + 1], d[i + 2]);
+        if(mx && (mx - mn) / mx > 0.25) {
+            coloured++;
+        }
+    }
+    return {
+        mode:     localStorage.getItem("yunomusica:viz_mode"),
+        painted:  painted,
+        coloured: painted ? +(coloured / painted).toFixed(2) : 0
+    };
+});
+if(flight.mode !== "flight") {
+    bad.push(`el ciclo no llega a "flight" (${flight.mode})`);
+} else if(!flight.painted) {
+    bad.push("flight draws nothing at all");
+} else if(flight.coloured < 0.5) {
+    console.log(`   flight: ${flight.painted} px, ${flight.coloured * 100}% con color`);
+    bad.push(`flight is drawing in grey (${flight.coloured * 100}% of its pixels ` +
+             `carry any hue): the pitch is not reaching the colour`);
+}
+await page.screenshot({path: join(OUT, "viz-flight.png")});
+
 /*  7. The mini-player carries the same picture. It only exists off the
     deck, so this has to leave first. */
 await route(page, "#/library", 1200);
@@ -348,30 +398,42 @@ if(h1 !== h2) {
     bad.push("it goes on drawing with the music paused");
 }
 
-/*  The tap cycles the modes, and remembers. */
-const before = await page.evaluate(() => document.querySelector(".MUS_VIZ").getAttribute("aria-label"));
-await page.click(".MUS_VIZ");
+/*  The tap cycles the modes, and remembers.
+ *
+ *  Read from wherever the cycle happens to be rather than assuming a
+ *  starting point: a mode added to the middle of the list used to make
+ *  three assertions down here fail for no reason at all. */
+const started = await page.evaluate(() => localStorage.getItem("yunomusica:viz_mode"));
+const before = await page.evaluate(
+    () => document.querySelector(".MUS_VIZ:not(.MUS_VIZ_MINI)").getAttribute("aria-label"));
+await page.click(".MUS_VIZ:not(.MUS_VIZ_MINI)");
 await page.waitForTimeout(300);
-const after = await page.evaluate(() => document.querySelector(".MUS_VIZ").getAttribute("aria-label"));
+const after = await page.evaluate(
+    () => document.querySelector(".MUS_VIZ:not(.MUS_VIZ_MINI)").getAttribute("aria-label"));
 const stored = await page.evaluate(() => localStorage.getItem("yunomusica:viz_mode"));
+const expect = MODES[(MODES.indexOf(started) + 1) % MODES.length];
 if(before === after) {
     bad.push(`tapping it does not change the mode (${before})`);
 }
-if(stored !== "wave") {
-    bad.push(`the mode was not remembered (${stored})`);
+if(stored !== expect) {
+    bad.push(`one tap from "${started}" landed on "${stored}", not "${expect}"`);
 }
 
 /*  And it can be turned off, which is what the last stop on the cycle
-    is for. Three more taps: wave → chroma → off. */
-await page.click(".MUS_VIZ");
-await page.waitForTimeout(200);
-await page.click(".MUS_VIZ");
-await page.waitForTimeout(300);
+    is for — however many stops there are before it. */
+for(let i = 0; i < MODES.length; i++) {
+    const at = await page.evaluate(() => localStorage.getItem("yunomusica:viz_mode"));
+    if(at === "off") {
+        break;
+    }
+    await page.click(".MUS_VIZ:not(.MUS_VIZ_MINI)");
+    await page.waitForTimeout(220);
+}
 const off = await page.evaluate(() => ({
-    cls:  document.querySelector(".MUS_VIZ").className,
+    cls:  document.querySelector(".MUS_VIZ:not(.MUS_VIZ_MINI)").className,
     mode: localStorage.getItem("yunomusica:viz_mode"),
     /*  Turned off it must still be tappable, or there is no way back. */
-    w:    document.querySelector(".MUS_VIZ").getBoundingClientRect().width
+    w:    document.querySelector(".MUS_VIZ:not(.MUS_VIZ_MINI)").getBoundingClientRect().width
 }));
 if(off.mode !== "off") {
     bad.push(`the cycle does not reach "off" (${off.mode})`);

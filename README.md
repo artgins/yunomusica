@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.13.1** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.14.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -38,11 +38,43 @@ do. **Tapping it** moves to the next one, and the choice is remembered:
 
 | | |
 |---|---|
+| **Flight** | the loudest things in the room, moving and in colour. The one that **picks** instead of showing everything — see below |
 | **Notes** | a ribbon running leftwards, one column per frame, one row per semitone from C3 up. It draws the **ridges**: a semitone only when the spectrum peaks on it |
 | **Spectrum** | the same 48 bands standing up, with a peak that holds and falls |
 | **Wave** | the waveform, triggered on a rising zero crossing so it stands still instead of skidding |
 | **Chroma** | the twelve pitch classes with the octaves folded together, around the **circle of fifths** — consonant intervals end up adjacent, so a chord is a compact shape and a key change is that shape rotating |
 | **Off** | nothing, and no animation frame asked for either |
+
+### Flight
+
+The other four draw everything that is there and leave the eye to do the
+picking. This one picks first, and moves:
+
+- an **arrow** rides the lead line — the strongest peak from G3 up — chased
+  rather than jumped to, tilted by its own climb, trailing the path it flew;
+- the other strong **peaks** fly behind it, each a dot in the colour of its
+  pitch class;
+- the **bass** runs along the floor, taken from the spectrum *below* the
+  semitone rows, where those rows cannot reach;
+- every **hit** throws an expanding ring: a step in broadband energy well above
+  the running average of such steps. A held note contributes nothing to that,
+  however loud, which is exactly the difference between a note and a hit.
+
+Everything drifts left and fades over about three seconds, so the picture is
+the last phrase of music with the present at the right edge.
+
+**The hue is the pitch.** A note is always the same colour and a key change
+moves the whole picture through the wheel. This is the one thing in the app
+that does not take its colour from the palette — a deliberate exception, and
+the point of the mode: colour carrying meaning is worth more here than colour
+carrying the palette.
+
+**What it is not.** There is no source separation here and none is claimed.
+"The lead" is the strongest peak in the range a melody usually occupies, which
+most of the time *is* the voice or the lead instrument and sometimes is a
+harmonic of the bass. "A hit" is a broadband transient, not a drum: a piano
+chord struck hard is one too. It is an honest picture of the loudest things in
+the sound, not a transcription of the band.
 
 **"Notes" is not a transcription, and does not pretend to be.** It is the
 spectrum folded onto semitones: the energy that fell inside each semitone's
