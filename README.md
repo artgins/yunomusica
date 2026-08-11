@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.15.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.16.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -40,7 +40,7 @@ do. **Tapping it** moves to the next one, and the choice is remembered:
 |---|---|
 | **Flight** | two or three **snakes** weaving: a few voices followed over time, each a smooth line crossing the others. The one that **picks** instead of showing everything — see below |
 | **Notes** | a ribbon running leftwards, one column per frame, one row per semitone from C3 up. It draws the **ridges**: a semitone only when the spectrum peaks on it |
-| **Spectrum** | the same 48 bands standing up, with a peak that holds and falls |
+| **Spectrum** | the same 48 bands standing up, **each in the colour of its note**, with a peak that holds and falls |
 | **Wave** | the waveform, triggered on a rising zero crossing so it stands still instead of skidding |
 | **Chroma** | the twelve pitch classes with the octaves folded together, around the **circle of fifths** — consonant intervals end up adjacent, so a chord is a compact shape and a key change is that shape rotating |
 | **Off** | nothing, and no animation frame asked for either |
@@ -72,11 +72,14 @@ Two things make the line sinuous, and neither is invented:
   as an S instead of a corner. That is smoothing of real data: no snake goes
   anywhere the sound did not.
 
-**The hue is the pitch.** A note is always the same colour and a key change
-moves the whole picture through the wheel. This is the one thing in the app
-that does not take its colour from the palette — a deliberate exception, and
-the point of the mode: colour carrying meaning is worth more here than colour
-carrying the palette.
+**The hue is the pitch**, here and in **Spectrum**. A note is always the same
+colour wherever it appears; the wheel turns once per octave, which is why the
+spectrum shows its octave structure as repeating bands of colour without a line
+being drawn to mark it; and a key change moves the whole picture through the
+wheel. These two are the only things in the app that do not take their colour
+from the palette — a deliberate exception, and the point of them: colour
+carrying meaning is worth more here than colour carrying the palette. The other
+three still follow the record.
 
 **What it is not.** There is no source separation and none is claimed. A snake
 follows a *peak*, which most of the time is a voice or an instrument holding a

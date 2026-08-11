@@ -151,6 +151,22 @@ function read_seekwave()
 }
 
 
+
+/*  Tap round to a named mode. The cycle is the only way in — there is
+    no setting — so this is how a test reaches a particular one. */
+async function goto_mode(page, name)
+{
+    for(let i = 0; i < MODES.length; i++) {
+        const at = await page.evaluate(() => localStorage.getItem("yunomusica:viz_mode"));
+        if(at === name) {
+            return true;
+        }
+        await page.click(".MUS_VIZ:not(.MUS_VIZ_MINI)");
+        await page.waitForTimeout(220);
+    }
+    return false;
+}
+
 const page = await new_page(browser, {
     /*  The bars, not the ribbon: a still picture with one bar per
         semitone is the one mode that can be read back as numbers. */
@@ -198,53 +214,6 @@ if(!a4) {
 }
 
 await page.screenshot({path: join(OUT, "viz-spectrum-a4.png")});
-
-/*  8. It is drawn in something you can SEE.
- *
- *  The picture is painted in --mus-accent, and under the default
- *  palette that accent is taken from the cover. This album's artwork is
- *  colourless on purpose, which drives the accent to near-white — and
- *  near-white lines on a near-white card are a picture that is drawn
- *  perfectly and seen by nobody. That failure shows up as a blank box
- *  and as nothing else: no error, no missing frame, the pixel count
- *  unchanged. Only a contrast measurement catches it. */
-const ink = await page.evaluate(() => {
-    const $cv = document.querySelector(".MUS_VIZ:not(.MUS_VIZ_MINI) .MUS_VIZ_CV");
-    const d = $cv.getContext("2d").getImageData(0, 0, $cv.width, $cv.height).data;
-    let n = 0;
-    const sum = [0, 0, 0];
-    for(let i = 0; i < d.length; i += 4) {
-        /*  Only what was laid down at close to full strength: a
-            half-transparent pixel says nothing about the ink. */
-        if(d[i + 3] > 200) {
-            sum[0] += d[i];
-            sum[1] += d[i + 1];
-            sum[2] += d[i + 2];
-            n++;
-        }
-    }
-    return {
-        n:      n,
-        ink:    n ? sum.map((x) => Math.round(x / n)) : null,
-        /*  The card's own colour, computed rather than read off the
-            custom property: the browser normalises this one to rgb(),
-            and a hex is not something lib.mjs's lum() can read. */
-        ground: getComputedStyle(document.querySelector(".MUS_DECKCARD")).backgroundColor,
-        accent: getComputedStyle(document.documentElement)
-                    .getPropertyValue("--mus-accent").trim()
-    };
-});
-if(!ink.n) {
-    bad.push("no hay tinta opaca que medir");
-} else {
-    const r = contrast(`rgb(${ink.ink.join(",")})`, ink.ground);
-    console.log(`   tinta ${ink.ink.join(",")} sobre ${ink.ground} = ${r.toFixed(2)}:1` +
-                `  (acento ${ink.accent})`);
-    if(r < 2) {
-        bad.push(`the picture is drawn at ${r.toFixed(2)}:1 against the card: ` +
-                 `nobody can see it (accent ${ink.accent})`);
-    }
-}
 
 /*  5. The scrub bar drew what sounded, and nothing ahead of it. */
 const wave = await page.evaluate(read_seekwave);
@@ -297,6 +266,62 @@ const alive = await page.evaluate(read_bars);
 if(!alive || argmax(alive) !== C5_ROW || alive[C5_ROW] < 0.4) {
     bad.push("after going round through \"off\" it never draws again " +
              `(peak at ${alive ? argmax(alive) : "nothing"})`);
+}
+
+/*  8. It is drawn in something you can SEE.
+ *
+ *  Four of the modes paint in --mus-accent, and under the default
+ *  palette that accent is taken from the cover. This album's artwork is
+ *  colourless on purpose, which drives the accent to near-white — and
+ *  near-white lines on a near-white card are a picture that is drawn
+ *  perfectly and seen by nobody. That failure shows up as a blank box
+ *  and as nothing else: no error, no missing frame, the pixel count
+ *  unchanged. Only a contrast measurement catches it.
+ *
+ *  Measured in `wave`, which is accent-drawn and always lays down a
+ *  full-width line. NOT in `spectrum`, which used to be accent-drawn
+ *  and now colours each bar by its pitch: measuring there would have
+ *  gone on passing while the accent path rotted. */
+if(!await goto_mode(page, "wave")) {
+    bad.push("el ciclo no llega a \"wave\"");
+}
+await page.waitForTimeout(900);
+const ink = await page.evaluate(() => {
+    const $cv = document.querySelector(".MUS_VIZ:not(.MUS_VIZ_MINI) .MUS_VIZ_CV");
+    const d = $cv.getContext("2d").getImageData(0, 0, $cv.width, $cv.height).data;
+    let n = 0;
+    const sum = [0, 0, 0];
+    for(let i = 0; i < d.length; i += 4) {
+        /*  Only what was laid down at close to full strength: a
+            half-transparent pixel says nothing about the ink. */
+        if(d[i + 3] > 200) {
+            sum[0] += d[i];
+            sum[1] += d[i + 1];
+            sum[2] += d[i + 2];
+            n++;
+        }
+    }
+    return {
+        n:      n,
+        ink:    n ? sum.map((x) => Math.round(x / n)) : null,
+        /*  The card's own colour, computed rather than read off the
+            custom property: the browser normalises this one to rgb(),
+            and a hex is not something lib.mjs's lum() can read. */
+        ground: getComputedStyle(document.querySelector(".MUS_DECKCARD")).backgroundColor,
+        accent: getComputedStyle(document.documentElement)
+                    .getPropertyValue("--mus-accent").trim()
+    };
+});
+if(!ink.n) {
+    bad.push("no hay tinta opaca que medir");
+} else {
+    const r = contrast(`rgb(${ink.ink.join(",")})`, ink.ground);
+    console.log(`   tinta ${ink.ink.join(",")} sobre ${ink.ground} = ${r.toFixed(2)}:1` +
+                `  (acento ${ink.accent})`);
+    if(r < 2) {
+        bad.push(`the picture is drawn at ${r.toFixed(2)}:1 against the card: ` +
+                 `nobody can see it (accent ${ink.accent})`);
+    }
 }
 
 /*  9. `flight` brings its own colour.

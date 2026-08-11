@@ -15,8 +15,9 @@
  *        notes     a ribbon that runs leftwards, one column per frame,
  *                  one row per semitone from C3 up. Brightness is the
  *                  energy in that semitone's band.
- *        spectrum  the same 48 bands as standing bars, with a peak
- *                  that holds and falls.
+ *        spectrum  the same 48 bands as standing bars, each in the
+ *                  colour of its note, with a peak that holds and
+ *                  falls.
  *        wave      the waveform itself, triggered on a rising zero
  *                  crossing so it stands still instead of skidding.
  *        chroma    the twelve pitch classes, octaves folded together,
@@ -30,14 +31,18 @@
  *      and updates it in place; this is one more node in it, with the
  *      same contract as the rest — build once, then start and stop.
  *
- *      THE COLOUR IS NOT CHOSEN HERE — with one deliberate exception.
- *      Four of the five draw in --mus-accent, which is the palette, or
- *      the dominant colour of the record when the palette is "from the
- *      cover": read from the document, never hard-coded, because a
- *      visualizer with a colour of its own would be the one thing on
- *      the deck that does not follow the record. `flight` is the
- *      exception, and it earns it: there the hue IS the pitch, so a
- *      note is always the same colour and a key change moves the whole
+ *      THE COLOUR IS NOT CHOSEN HERE — with two deliberate exceptions.
+ *      `notes`, `wave` and `chroma` draw in --mus-accent, which is the
+ *      palette, or the dominant colour of the record when the palette
+ *      is "from the cover": read from the document, never hard-coded,
+ *      because a visualizer with a colour of its own would be the one
+ *      thing on the deck that does not follow the record.
+ *
+ *      `flight` and `spectrum` are the exceptions and they earn it:
+ *      there the hue IS the pitch. A note is always the same colour,
+ *      wherever it appears; the wheel turns once per octave, so the
+ *      spectrum shows its octave structure as repeating bands without
+ *      a line being drawn to mark it; and a key change moves the whole
  *      picture through the wheel. Colour carrying meaning is worth
  *      more there than colour carrying the palette.
  *
@@ -1045,16 +1050,18 @@ function draw_spectrum(V, f, c)
     const n = f.notes.length;
     const slot = V.w / n;
     const bw = Math.max(1, slot - Math.max(1, V.dpr));
+    const dark = V.dark;
 
-    const grad = g.createLinearGradient(0, V.h, 0, 0);
-    grad.addColorStop(0, rgba(c, 0.95));
-    grad.addColorStop(1, rgba(c, 0.35));
-    g.fillStyle = grad;
-
+    /*  A BAR IS THE COLOUR OF ITS NOTE, the same mapping the snakes
+        use: hue from the pitch class. Which means the wheel turns once
+        per octave, and the octave structure of what is playing shows
+        up as repeating bands of colour without a single line being
+        drawn to mark it. */
     for(let i = 0; i < n; i++) {
         const v = f.notes[i];
         const h = Math.max(v > 0.02 ? 1 : 0, v * V.h);
         if(h > 0) {
+            g.fillStyle = pitch_colour(i % 12, v, dark, 0.92);
             g.fillRect(i * slot, V.h - h, bw, h);
         }
         /*  Falls at a constant rate rather than a proportional one, so
@@ -1062,17 +1069,36 @@ function draw_spectrum(V, f, c)
         V.peaks[i] = Math.max(v, V.peaks[i] - 0.011);
     }
 
-    g.fillStyle = rgba(c, 0.75);
+    /*  The tips faded off, in ONE pass over the whole canvas rather
+        than a gradient per bar: 48 gradients built sixty times a
+        second is real work, and the fade was never per bar anyway —
+        the old code used one gradient the height of the box for all of
+        them. `destination-out` eats alpha, so the card shows through
+        the tops instead of them being painted over. */
+    const fade = g.createLinearGradient(0, 0, 0, V.h);
+    fade.addColorStop(0, "rgba(0,0,0,0.55)");
+    fade.addColorStop(0.75, "rgba(0,0,0,0)");
+    g.globalCompositeOperation = "destination-out";
+    g.fillStyle = fade;
+    g.fillRect(0, 0, V.w, V.h);
+    g.globalCompositeOperation = "source-over";
+
+    /*  The peak caps go on AFTER the fade, at full strength: they are
+        the one part of this that has to stay readable at the top of
+        the box, which is exactly where the fade is strongest. */
     for(let i = 0; i < n; i++) {
         const p = V.peaks[i];
         if(p > 0.03) {
             const y = Math.max(0, V.h - p * V.h - V.dpr);
+            g.fillStyle = pitch_colour(i % 12, 1, dark, 0.85);
             g.fillRect(i * slot, y, bw, Math.max(1, V.dpr));
         }
     }
 
     /*  An octave mark every twelve bands: the same reading aid the
-        ribbon gets from its hairlines. */
+        ribbon gets from its hairlines. In the ACCENT, not in a pitch
+        colour — it is furniture, not data, and it should not read as
+        another bar. */
     g.fillStyle = rgba(c, 0.18);
     for(let i = 12; i < n; i += 12) {
         g.fillRect(Math.round(i * slot) - 1, V.h * 0.72, 1, V.h * 0.28);
