@@ -115,6 +115,13 @@ const en = {
         "viz wave":             "Wave",
         "viz chroma":           "Chroma",
         "viz off":              "Visualizer off",
+
+        "loved":                "Loved",
+        "most played":          "Most played",
+        "no hearts yet":        "Nothing has a heart yet.",
+        "how to give a heart":  "Tap the heart beside a name to give it one. Tap again for another.",
+        "nothing played yet":   "Nothing has been played yet.",
+        "how playing counts":   "A track counts once it has really sounded for a while, so skipping past one does not count it.",
         "artist":               "Artist",
         "times played":         "Times played",
         "played through":       "played through",

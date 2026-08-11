@@ -137,6 +137,41 @@ function stats_of(track)
     return S.by_key.get(key) || ZERO;
 }
 
+/***************************************************************
+ *  Everything with a count, most first.
+ *
+ *  `by` is "hearts" or "plays". Ties break on the other one,
+ *  because a list where equal favourites come out in whatever
+ *  order a Map happened to hold them looks like a bug.
+ ***************************************************************/
+function ranked(by)
+{
+    const hearts = (by === "hearts");
+    const out = [];
+    for(const row of S.by_key.values()) {
+        if((hearts ? row.hearts : row.plays) > 0) {
+            out.push(row);
+        }
+    }
+    out.sort(function(a, b) {
+        return hearts
+            ? (b.hearts - a.hearts) || (b.plays - a.plays)
+            : (b.plays - a.plays) || (b.hearts - a.hearts);
+    });
+    return out;
+}
+
+/*  A key back into the pair it was made of. Split on the FIRST
+    separator, not the last: a source id never contains one and a path
+    on some systems can. */
+function split_key(key)
+{
+    const i = key.indexOf("|");
+    return i < 0
+        ? {source_id: key, path: ""}
+        : {source_id: key.slice(0, i), path: key.slice(i + 1)};
+}
+
 function stats_total()
 {
     let tracks = 0;
@@ -382,6 +417,8 @@ export {
     subscribe_stats,
     stats_of,
     stats_total,
+    ranked,
+    split_key,
     heart,
     heart_reset,
     stats_reset,

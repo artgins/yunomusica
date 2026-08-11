@@ -101,6 +101,13 @@ const fr = {
         "viz wave":             "Onde",
         "viz chroma":           "Chroma",
         "viz off":              "Désactivé",
+
+        "loved":                "Avec un cœur",
+        "most played":          "Les plus écoutées",
+        "no hearts yet":        "Aucun cœur pour l'instant.",
+        "how to give a heart":  "Touchez le cœur à côté d'un nom pour en donner un. Encore une fois pour un autre.",
+        "nothing played yet":   "Rien n'a encore été écouté.",
+        "how playing counts":   "Un morceau compte quand il a vraiment sonné un moment : le passer ne compte pas.",
         "artist":               "Artiste",
         "times played":         "Fois écoutée",
         "played through":       "écoutées en entier",

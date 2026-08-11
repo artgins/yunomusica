@@ -26,8 +26,12 @@ import {
     subscribe_playlists, all_playlists, resolve, remove_playlist,
 } from "./playlists_store.js";
 
-import {subscribe, queue_add, set_queue_origin} from "./music_store.js";
+import {
+    subscribe, queue_add, set_queue_origin, find_track,
+} from "./music_store.js";
 import {confirm_replace} from "./confirm_replace.js";
+import {subscribe_stats, ranked, split_key} from "./stats_store.js";
+import {open_track, track_counts} from "./track_card.js";
 
 import {t} from "i18next";
 
@@ -72,6 +76,7 @@ SDATA_END()
 let PRIVATE_DATA = {
     unsub_lists: null,
     unsub_music: null,
+    unsub_stats: null,      // the two lists that build themselves
     $content:    null,
     confirming:  "",        // id of the list awaiting a delete confirmation
 };
@@ -114,6 +119,9 @@ function mt_start(gobj)
             render(gobj);
         }
     });
+    /*  The two lists below the saved ones ARE the counts, so they are
+        rebuilt whenever a count moves. */
+    priv.unsub_stats = subscribe_stats(() => render(gobj));
 
     let shell = yui_shell_of(gobj);
     if(shell) {
@@ -133,6 +141,10 @@ function mt_stop(gobj)
     if(priv.unsub_music) {
         priv.unsub_music();
         priv.unsub_music = null;
+    }
+    if(priv.unsub_stats) {
+        priv.unsub_stats();
+        priv.unsub_stats = null;
     }
 }
 
@@ -184,17 +196,127 @@ function render(gobj)
                 ["p", {class: "MUS_DIM", i18n: "how to save a list"},
                     t("how to save a list")]
             ]]));
-        refresh_language($c, t);
+    } else {
+        let $list = createElement2(["div", {class: "MUS_SRCLIST"}, []]);
+        for(const p of lists) {
+            $list.appendChild(build_list_row(gobj, p));
+        }
+        $c.appendChild($list);
+    }
+
+    /*  …and the two that make themselves. */
+    build_ranked(gobj, $c, "hearts", "loved", "no hearts yet", "how to give a heart");
+    build_ranked(gobj, $c, "plays", "most played", "nothing played yet",
+        "how playing counts");
+
+    refresh_language($c, t);
+}
+
+
+/***************************************************************
+ *  The lists nobody saved.
+ *
+ *  A saved list is a decision; these two are a consequence —
+ *  what you have loved and what you have actually played, in
+ *  order. They are built from the counts every time this screen
+ *  is drawn rather than stored anywhere, which is what keeps
+ *  them from ever disagreeing with the numbers on the rows.
+ *
+ *  A track whose source is not authorised in this session
+ *  cannot be resolved, and is REPORTED rather than dropped in
+ *  silence — the same rule the saved lists follow. Its count is
+ *  still real; it is the file that is out of reach.
+ ***************************************************************/
+function build_ranked(gobj, $c, by, title_key, empty_key, hint_key)
+{
+    const rows = ranked(by);
+    const tracks = [];
+    let missing = 0;
+
+    for(const row of rows) {
+        const id = split_key(row.key);
+        const track = find_track(id.source_id, id.path);
+        if(track) {
+            tracks.push({track: track, n: (by === "hearts") ? row.hearts : row.plays});
+        } else {
+            missing++;
+        }
+    }
+
+    $c.appendChild(createElement2(
+        ["header", {class: "MUS_SECHEAD"}, [
+            ["h2", {class: "MUS_SECTITLE", i18n: title_key}, t(title_key)],
+            tracks.length
+                ? ["span", {class: "MUS_SECCOUNT"}, String(tracks.length)]
+                : ["span", {}]
+        ]]));
+
+    if(!tracks.length) {
+        $c.appendChild(createElement2(
+            ["div", {class: "MUS_EMPTY_NOTE"}, [
+                ["p", {i18n: empty_key}, t(empty_key)],
+                ["p", {class: "MUS_DIM", i18n: hint_key}, t(hint_key)]
+            ]]));
         return;
     }
 
-    let $list = createElement2(["div", {class: "MUS_SRCLIST"}, []]);
-    for(const p of lists) {
-        $list.appendChild(build_list_row(gobj, p));
-    }
-    $c.appendChild($list);
+    const all = tracks.map((x) => x.track);
 
-    refresh_language($c, t);
+    $c.appendChild(createElement2(
+        ["div", {class: "MUS_RANKACTIONS"}, [
+            ["button", {class: "MUS_QBTN button is-primary", type: "button"},
+                [ico(P.play, 15), ["span", {i18n: "play"}, t("play")]],
+                {click: async () => {
+                    let shell = yui_shell_of(gobj);
+                    let answer = await confirm_replace(shell);
+                    if(!answer) {
+                        return;
+                    }
+                    queue_add(all, answer);
+                    /*  Deliberately NOT stamped as a saved list: this
+                        one has no id and is a different thing every
+                        time a count moves. The deck says "queue put
+                        together by hand", which is closer to true than
+                        naming a list that cannot be reopened. */
+                    if(shell) {
+                        yui_shell_navigate(shell, "/player");
+                    }
+                }}],
+            ["button", {class: "MUS_QBTN button", type: "button"},
+                [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
+                {click: () => queue_add(all, "append")}],
+            missing
+                ? ["span", {class: "MUS_T2 is-warn"}, [
+                    ["span", {}, String(missing)],
+                    ["span", {i18n: "missing"}, t("missing")]
+                  ]]
+                : ["span", {}]
+        ]]));
+
+    const $rows = createElement2(["ol", {class: "MUS_RANKS"}, []]);
+    tracks.forEach(function(x, i) {
+        $rows.appendChild(createElement2(
+            ["li", {class: "MUS_RANK"}, [
+                ["span", {class: "MUS_RANKN"}, String(i + 1)],
+                ["button", {
+                        class: "MUS_RANKMAIN", type: "button",
+                        "aria-haspopup": "dialog"
+                    }, [
+                    ["span", {class: "MUS_T1"}, x.track.title],
+                    ["span", {class: "MUS_T2"}, x.track.artist]
+                ], {click: () => open_track(yui_shell_of(gobj), x.track)}],
+                track_counts(x.track),
+                ["button", {
+                        class: "MUS_IBTN", type: "button",
+                        "aria-label": t("add to queue"),
+                        "data-i18n-aria-label": "add to queue",
+                        title: t("add to queue"),
+                        "data-i18n-title": "add to queue"
+                    }, svg(P.plus, 16),
+                    {click: () => queue_add([x.track], "append")}]
+            ]]));
+    });
+    $c.appendChild($rows);
 }
 
 

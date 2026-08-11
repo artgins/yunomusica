@@ -101,6 +101,13 @@ const de = {
         "viz wave":             "Welle",
         "viz chroma":           "Chroma",
         "viz off":              "Aus",
+
+        "loved":                "Mit Herz",
+        "most played":          "Am meisten gehört",
+        "no hearts yet":        "Noch kein Herz vergeben.",
+        "how to give a heart":  "Tippe auf das Herz neben einem Namen, um eines zu vergeben. Noch einmal für ein weiteres.",
+        "nothing played yet":   "Noch nichts gehört.",
+        "how playing counts":   "Ein Titel zählt, wenn er wirklich eine Weile geklungen hat — Überspringen zählt nicht.",
         "artist":               "Künstler",
         "times played":         "Wie oft gehört",
         "played through":       "ganz gehört",

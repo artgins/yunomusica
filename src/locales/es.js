@@ -105,6 +105,13 @@ const es = {
         "viz wave":             "Onda",
         "viz chroma":           "Cromática",
         "viz off":              "Sin gráfico",
+
+        "loved":                "Con corazón",
+        "most played":          "Más escuchadas",
+        "no hearts yet":        "Todavía no hay ningún corazón.",
+        "how to give a heart":  "Toca el corazón que hay junto a un nombre para dárselo. Otro toque, otro corazón.",
+        "nothing played yet":   "Todavía no has escuchado nada.",
+        "how playing counts":   "Una canción cuenta cuando ha sonado de verdad un rato, así que pasarla de largo no cuenta.",
         "artist":               "Artista",
         "times played":         "Veces escuchada",
         "played through":       "completas",

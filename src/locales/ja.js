@@ -101,6 +101,13 @@ const ja = {
         "viz wave":             "波形",
         "viz chroma":           "クロマ",
         "viz off":              "オフ",
+
+        "loved":                "お気に入り",
+        "most played":          "再生が多い順",
+        "no hearts yet":        "まだハートがありません。",
+        "how to give a heart":  "名前の横のハートを押すと付きます。もう一度押すともう一つ。",
+        "nothing played yet":   "まだ何も再生していません。",
+        "how playing counts":   "曲は実際にしばらく鳴ってから数えられます。飛ばした曲は数えません。",
         "artist":               "アーティスト",
         "times played":         "再生回数",
         "played through":       "回は最後まで",

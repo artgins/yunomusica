@@ -101,6 +101,13 @@ const zh = {
         "viz wave":             "波形",
         "viz chroma":           "音级",
         "viz off":              "关闭",
+
+        "loved":                "喜欢的",
+        "most played":          "最常播放",
+        "no hearts yet":        "还没有任何喜欢。",
+        "how to give a heart":  "点名称旁边的心形即可添加，再点一次再加一个。",
+        "nothing played yet":   "还没有播放过任何内容。",
+        "how playing counts":   "一首曲子真正播放一段时间后才计数，跳过不算。",
         "artist":               "艺术家",
         "times played":         "播放次数",
         "played through":       "次完整播放",

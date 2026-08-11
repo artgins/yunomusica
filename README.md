@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.16.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.17.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -189,7 +189,21 @@ This is where the app says out loud what it does with your disk: it copies
 nothing, it takes a folder **whole** (that one and every folder below it), and
 it tells you what your browser can and cannot remember.
 
-**Lists** — the queues you saved with a name.
+**Lists** — the queues you saved with a name, and two more that nobody saved.
+
+A saved list is a decision; the other two are a consequence: **Loved**, every
+track with at least one heart, most first, and **Most played**, everything that
+has been listened to, most first. Both carry the whole-list **Play** and **Add
+to queue**, and each row shows its counts and opens the track's card.
+
+They are built from the counts every time the screen is drawn rather than stored
+anywhere, which is what keeps them from ever disagreeing with the numbers on the
+rows. A track whose source is not authorised in this session cannot be resolved
+and is **reported** rather than dropped in silence — the same rule the saved
+lists follow; the count is still real, it is the file that is out of reach.
+Playing one does not stamp the deck with a list name: this list has no id and is
+a different thing the moment a count moves, so the deck says "queue put together
+by hand", which is closer to true.
 
 ## Play is explicit
 

@@ -260,6 +260,82 @@
     flex: 1;
     min-width: 12ch;
 }
+/*  How many are in the section, as its own node beside the title —
+    never interpolated into it. Ten languages, and Arabic alone has six
+    plural forms. */
+.MUS_SECCOUNT {
+    flex: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--bulma-text-weak, #8a8a8a);
+}
+
+
+/*======================================================================
+ *      The two lists nobody saved: loved, and most played
+ *====================================================================*/
+/*  They come after the saved lists, so they need air above them. */
+.MUS_LISTS .MUS_SECHEAD + .MUS_SECHEAD,
+.MUS_SRCLIST + .MUS_SECHEAD,
+.MUS_RANKS + .MUS_SECHEAD,
+.MUS_EMPTY_NOTE + .MUS_SECHEAD {
+    margin-top: 2rem;
+}
+.MUS_RANKACTIONS {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+.MUS_RANKS {
+    list-style: none;
+    margin: 0 0 0.5rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+.MUS_RANK {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 12px;
+}
+.MUS_RANK:hover { background: var(--bulma-background, rgba(0, 0, 0, 0.04)); }
+.MUS_RANKN {
+    flex: none;
+    min-width: 1.9ch;
+    text-align: end;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--bulma-text-weak, #8a8a8a);
+}
+/*  As wide as the name and no wider, so the counts stay beside it —
+    the same reasoning as .MUS_QMETA on the deck. */
+.MUS_RANKMAIN {
+    flex: 0 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: start;
+    gap: 1px;
+    padding: 0.2rem 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.MUS_RANKMAIN .MUS_T1,
+.MUS_RANKMAIN .MUS_T2 {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 .MUS_EMPTY_NOTE {
     color: var(--bulma-text-weak, #8a8a8a);

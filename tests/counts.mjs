@@ -137,6 +137,85 @@ if(!back) {
     }
 }
 
+/*  6. The two lists in Lists that nobody saved.
+ *
+ *  They are built from the counts every time that screen is drawn, so
+ *  what has to be true is that they carry the right tracks IN THE RIGHT
+ *  ORDER — a "most loved" list that is not sorted is worse than no list,
+ *  because it looks like one. A second track gets one heart first, so
+ *  there is an order to get wrong. */
+await page.locator(".MUS_QROW").nth(1).locator(".MUS_CNT_HEART").click();
+await page.waitForTimeout(400);
+await route(page, "#/lists", 1200);
+
+const derived = await page.evaluate(() => {
+    /*  Section by section: the heading, then the rows under it until
+        the next heading. */
+    const out = [];
+    const $c = document.querySelector(".C_MUS_LISTS") || document;
+    let cur = null;
+    for(const $n of $c.querySelectorAll(".MUS_SECTITLE, .MUS_RANK")) {
+        if($n.classList.contains("MUS_SECTITLE")) {
+            cur = {title: $n.textContent.trim(), rows: []};
+            out.push(cur);
+        } else if(cur) {
+            const $h = $n.querySelector(".MUS_CNT_HEART .MUS_CNT_N");
+            const $p = $n.querySelector(".MUS_CNT_PLAYS .MUS_CNT_N");
+            cur.rows.push({
+                title:  $n.querySelector(".MUS_T1").textContent,
+                hearts: Number(($h && $h.textContent) || 0),
+                plays:  Number(($p && $p.textContent) || 0)
+            });
+        }
+    }
+    return out.filter((s) => s.rows.length);
+});
+
+if(derived.length < 2) {
+    bad.push(`Lists shows ${derived.length} derived sections, not 2`);
+} else {
+    const loved = derived[0].rows;
+    const played = derived[1].rows;
+    if(loved.length !== 2) {
+        bad.push(`"loved" holds ${loved.length} tracks, not the 2 with hearts`);
+    }
+    /*  Descending, and it is the HEARTS that order it. */
+    for(let i = 1; i < loved.length; i++) {
+        if(loved[i].hearts > loved[i - 1].hearts) {
+            bad.push(`"loved" is out of order: ${loved.map((r) => r.hearts).join(" ")}`);
+            break;
+        }
+    }
+    if(loved[0] && loved[0].hearts !== 2) {
+        bad.push(`the most loved track shows ${loved[0].hearts} hearts, not 2`);
+    }
+    /*  …and the played list must NOT be the same list: only one track
+        has ever been played here. */
+    if(played.length !== 1) {
+        bad.push(`"most played" holds ${played.length} tracks, not 1`);
+    }
+    if(played[0] && played[0].plays < 1) {
+        bad.push(`"most played" shows a track with ${played[0].plays} plays`);
+    }
+}
+
+await page.screenshot({path: join(OUT, "counts-lists.png")});
+
+/*  And playing one of them fills the deck. */
+await page.locator(".MUS_RANKACTIONS .MUS_QBTN.is-primary").first().click();
+await page.waitForTimeout(1200);
+if(await page.locator(".MUS_CONFIRM_CARD").count()) {
+    await page.click(".MUS_CONFIRM_ACTIONS .is-danger");
+    await page.waitForTimeout(1200);
+}
+const queued = await page.locator(".MUS_QROW").count();
+if(queued !== 2) {
+    bad.push(`playing "loved" put ${queued} tracks on the deck, not 2`);
+}
+
+/*  Back to a known place for what follows. */
+await route(page, "#/player", 800);
+
 /*  5. The card: the whole title, the fields, and the counts. */
 await page.locator(".MUS_QROW").first().locator(".MUS_QMETA").click();
 await page.waitForTimeout(500);
