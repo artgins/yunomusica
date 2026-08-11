@@ -8,10 +8,10 @@
  *      samples on their way to the speakers. Pause, and it stops
  *      exactly where it is, because there is nothing left to draw.
  *
- *        flight    the loudest things in the room, moving: an arrow on
- *                  the lead line, the other strong peaks behind it, the
- *                  bass along the floor and a ring on every hit. The
- *                  one that PICKS instead of showing everything.
+ *        flight    two or three snakes: a few voices followed over
+ *                  time, each a smooth line gliding through the
+ *                  picture and crossing the others. The one that PICKS
+ *                  a handful of things instead of showing everything.
  *        notes     a ribbon that runs leftwards, one column per frame,
  *                  one row per semitone from C3 up. Brightness is the
  *                  energy in that semitone's band.
@@ -93,10 +93,11 @@ const NOTE_PROMINENCE = 0.06;
 /*  Bars want a slow hand or they flicker; the ribbon wants none, or
     every column is a smear of the ten before it. */
 const SMOOTHING = {
-    /*  The arrow wants a steady hand — an unsmoothed lead jitters an
-        octave on every stray harmonic — but not so steady that an
-        onset arrives late. */
-    flight:   0.42,
+    /*  The snakes want a steady hand: unsmoothed, a peak jumps an
+        octave on every stray harmonic and the tracking follows it
+        there. This is the first line of defence against a snake that
+        twitches; the glide is the second. */
+    flight:   0.6,
     notes:    0.25,
     spectrum: 0.78,
     wave:     0.0,
@@ -110,30 +111,40 @@ const SMOOTHING = {
  *
  *  The numbers behind the picture described in draw_flight().
  ***************************************************************/
-/*  Where a lead line is looked for: G3 up. Below that is
-    accompaniment and above it is mostly harmonics of both. */
-const LEAD_LO_ROW = 7;
+/*  How many voices are followed at once. Four is the ceiling and two
+    or three is what most music actually offers: the point of this mode
+    is that it shows a FEW things clearly. */
+const SNAKE_MAX = 4;
 
-/*  Bass is taken from the spectrum BELOW the semitone rows, which
-    start at C3 — everything under here, in hertz. */
-const BASS_HZ = 160;
+/*  How far a snake will reach to claim a peak, in semitones. Wider and
+    a snake grabs the next instrument along; narrower and it lets go
+    every time a singer slides. */
+const SNAKE_JUMP = 7;
 
-/*  How much of the trail survives each frame. Lower is longer: 0.028
-    keeps about three seconds of history, which is a phrase rather than
-    a moment, and is what makes the picture read as a flight path
-    instead of a smudge at the right edge. */
-const TRAIL_FADE = 0.028;
+/*  How much of the way to its peak a snake moves per frame. This is
+    the glide, and it is what turns a step between two notes into an S
+    instead of a corner. */
+const SNAKE_CHASE = 0.14;
 
-/*  A hit is a jump in broadband energy this many times the running
-    average of those jumps. Percussion is a step; a held note is not. */
-const ONSET_RATIO = 1.7;
-const ONSET_MIN = 0.55;
+/*  A snake with no peak near it dims by this much per frame, and is
+    given up on after this many frames without one. Holding on for
+    about a third of a second is what carries a voice across a breath
+    instead of starting a new snake after it. */
+const SNAKE_DECAY = 0.93;
+const SNAKE_HOLD = 30;
+const SNAKE_MIN = 0.05;
 
-/*  …and no more than this many at once, however busy the drummer. */
-const MAX_BURSTS = 14;
+/*  A peak below this fraction of the running ceiling is not offered to
+    the snakes at all, and one below SNAKE_BORN cannot start a new
+    snake — though it can keep an existing one alive, which is what
+    lets a voice be followed as it fades. */
+const SNAKE_SEEN = 0.22;
+const SNAKE_BORN = 0.45;
 
-/*  How fast the arrow flies to a new pitch. Per frame. */
-const LEAD_CHASE = 0.22;
+/*  Slower than the scrolling of the other modes: about three seconds
+    of history across the box. This is a picture to watch, not to
+    read. */
+const SNAKE_STEP = 1.1;
 
 /*  Circle of fifths, as indices into the twelve pitch classes
     (0 = C). Adjacent entries are a fifth apart, which is what makes a
@@ -263,14 +274,7 @@ function create_visualizer(opts)
         peaks:    new Float32Array(SEMITONES),
         agc:      0,        // the ribbon's ceiling, chasing the music
         dark:     false,    // which way the colours have to lean
-        /*  flight */
-        lead:     -1,       // where the arrow is, in rows, fractional
-        lead_v:   0,        // …and how sure of itself it is
-        lead_dy:  0,        // its climb, for the tilt
-        lead_py:  -1,       // where its trail left off, in pixels
-        prev:     new Float32Array(SEMITONES),
-        flux_avg: 0,
-        bursts:   [],
+        snakes:   [],       // the voices being followed, for `flight`
         accent:   [201, 162, 39],
         accent_at: 0,       // frame count when the accent was last read
         frames:   0,
@@ -382,6 +386,10 @@ function apply_mode(V, announce)
             V.roll_ctx.clearRect(0, 0, V.roll.width, V.roll.height);
         }
         V.peaks.fill(0);
+        /*  …and neither do the snakes: coming back to this mode they
+            would otherwise pick up wherever a tune left off minutes
+            ago, and drag a straight line across from it. */
+        V.snakes = [];
         /*  START it, do not merely nudge it.
          *
          *  `if(V.running) tick(V)` was the bug: coming back from "off"
@@ -649,34 +657,35 @@ function draw(V)
 
 
 /***************************************************************
- *  flight — the loudest thing in the room, flying.
+ *  flight — two or three snakes, weaving.
  *
- *  The other four modes draw everything that is there and let
- *  the eye do the picking. This one picks first: a lead line,
- *  the handful of other peaks worth naming, the bass, and the
- *  hits — and draws those, in colour, moving.
+ *  The first version of this mode drew four things at once —
+ *  a lead, the peaks behind it, the bass and a ring on every
+ *  hit — and the result was thick. This one draws ONE kind of
+ *  thing: a handful of voices, followed over time, each a
+ *  smooth line gliding through the picture and crossing the
+ *  others.
  *
- *    · The ARROW is the lead: the strongest peak from G3 up,
- *      chased rather than jumped to, tilted by its own climb.
- *    · The DOTS behind it are the other strong peaks, each in
- *      the colour of its pitch class.
- *    · The BAND along the bottom is the bass, taken from below
- *      the semitone rows where the rows cannot reach.
- *    · The RINGS are hits: a step in broadband energy well
- *      above the running average of such steps.
+ *  The difference from every other mode here is that a snake
+ *  has MEMORY. The rest of them draw whatever the current
+ *  frame contains and forget it; a snake is matched to the
+ *  peak nearest where it already was, so it stays the same
+ *  snake while a tune moves under it. That is what makes two
+ *  lines cross rather than swap.
  *
- *  Everything drifts left and fades, so what is on screen is
- *  the last second or so of music with the present at the right
- *  edge — the arrow always at the front, everything else
- *  trailing behind it.
+ *  Where the curve comes from, honestly: the peaks are real
+ *  and their positions are real. What is added is GLIDE —
+ *  each snake moves a fraction of the way to its peak per
+ *  frame instead of jumping there, and the path is drawn
+ *  through midpoints as a spline instead of as a staircase.
+ *  So a step between two notes reads as an S rather than as a
+ *  corner. That is smoothing of real data, not invention: no
+ *  snake goes anywhere the sound did not.
  *
- *  WHAT IT IS NOT. There is no source separation here and none
- *  is claimed. "The lead" is the strongest peak in the range a
- *  melody usually occupies, which most of the time IS the voice
- *  or the lead instrument and sometimes is a harmonic of the
- *  bass. "A hit" is a broadband transient, not a drum: a piano
- *  chord struck hard is one too. It is an honest picture of the
- *  loudest things in the sound, not a transcription of the band.
+ *  WHAT IT IS NOT. There is no source separation and none is
+ *  claimed. A snake follows a PEAK, which most of the time is
+ *  a voice or an instrument holding a line, and sometimes is a
+ *  harmonic of one wandering off on its own.
  *
  *  THE COLOUR IS THE PITCH. Hue comes from the pitch class, so
  *  a note is always the same colour and a key change moves the
@@ -686,36 +695,90 @@ function draw(V)
  ***************************************************************/
 function pitch_colour(pc, v, dark, a)
 {
-    const h = (pc * 30 + 20) % 360;
-    /*  Light card: darker ink. Dark card: brighter. The same problem
-        the accent has, answered the same way. */
-    const l = dark ? (48 + 24 * v) : (30 + 14 * v);
-    return "hsla(" + h + "," + (dark ? 82 : 88) + "%," + l + "%," + a + ")";
+    const h = (((pc * 30 + 20) % 360) + 360) % 360;
+    /*  Soft rather than poster-bright: the ask was for something
+        restful, and a fully saturated line at 60 frames a second is
+        not that. Light card gets darker ink, dark card brighter — the
+        same problem the accent has, answered the same way. */
+    const l = dark ? (56 + 18 * v) : (38 + 12 * v);
+    return "hsla(" + h + "," + (dark ? 68 : 64) + "%," + l + "%," + a + ")";
+}
+
+/*  One frame of tracking: match the snakes that exist to the peaks
+    that are here, let the unmatched ones fade, and give a free slot to
+    a strong peak nobody claimed.
+
+    Greedy nearest-first, not an optimal assignment. With four snakes
+    and six candidates the difference is not visible and the cost of
+    the real thing is not worth paying sixty times a second. */
+function track_snakes(V, ridges, rows)
+{
+    const taken = new Array(ridges.length).fill(false);
+
+    for(const sn of V.snakes) {
+        let best = -1;
+        let dist = SNAKE_JUMP + 1;
+        for(let k = 0; k < ridges.length; k++) {
+            if(taken[k]) {
+                continue;
+            }
+            const d = Math.abs(ridges[k].i - sn.row);
+            if(d < dist) {
+                dist = d;
+                best = k;
+            }
+        }
+        if(best >= 0) {
+            taken[best] = true;
+            sn.target = ridges[best].i;
+            sn.e = sn.e * 0.6 + ridges[best].r * 0.4;
+            sn.miss = 0;
+        } else {
+            /*  Nothing near it this frame. It keeps its height and
+                dims: a voice that stops for a beat and comes back is
+                the same voice, and killing it would break the line. */
+            sn.e *= SNAKE_DECAY;
+            sn.miss++;
+        }
+    }
+
+    V.snakes = V.snakes.filter((sn) => sn.e > SNAKE_MIN && sn.miss < SNAKE_HOLD);
+
+    for(let k = 0; k < ridges.length && V.snakes.length < SNAKE_MAX; k++) {
+        if(taken[k] || ridges[k].r < SNAKE_BORN) {
+            continue;
+        }
+        /*  Not on top of one that is already there: two snakes a
+            semitone apart are one thick snake. */
+        let clear = true;
+        for(const sn of V.snakes) {
+            if(Math.abs(sn.row - ridges[k].i) < 2) {
+                clear = false;
+                break;
+            }
+        }
+        if(clear) {
+            V.snakes.push({
+                row: ridges[k].i, target: ridges[k].i,
+                e: ridges[k].r, miss: 0, pts: []
+            });
+        }
+    }
 }
 
 function draw_flight(V, f, c)
 {
-    const rc = V.roll_ctx;
     const n = f.notes;
     const rows = n.length;
 
-    V.roll_debt += ROLL_STEP * V.dpr;
+    /*  Slower than the other scrolling modes. Three seconds of history
+        across the box instead of one and a half, which is what lets a
+        phrase be seen as a shape rather than as something rushing
+        past. */
+    V.roll_debt += SNAKE_STEP * V.dpr;
     const step = Math.floor(V.roll_debt);
     V.roll_debt -= step;
 
-    /*  Drift, then fade. The fade is `destination-out`, which eats
-        alpha instead of laying paint down, so the card keeps showing
-        through and the trail thins out rather than going grey. */
-    if(step > 0) {
-        rc.globalCompositeOperation = "copy";
-        rc.drawImage(V.roll, -step, 0);
-        rc.globalCompositeOperation = "destination-out";
-        rc.fillStyle = "rgba(0,0,0," + TRAIL_FADE + ")";
-        rc.fillRect(0, 0, V.w, V.h);
-        rc.globalCompositeOperation = "source-over";
-    }
-
-    /*  A ceiling that follows the music, as the ribbon has. */
     let top = 0;
     for(let i = 0; i < rows; i++) {
         if(n[i] > top) {
@@ -725,33 +788,17 @@ function draw_flight(V, f, c)
     V.agc = Math.max(top, (V.agc || 0) * AGC_FALL);
     const ceiling = Math.max(0.05, V.agc);
 
-    /*  The hits: how much broadband energy STEPPED UP since the last
-        frame. A held note contributes nothing to this, however loud —
-        which is exactly the difference between a note and a hit. */
-    let flux = 0;
-    for(let i = 0; i < rows; i++) {
-        const d = n[i] - V.prev[i];
-        if(d > 0) {
-            flux += d;
-        }
-        V.prev[i] = n[i];
-    }
-    const hit = (flux > ONSET_MIN && flux > V.flux_avg * ONSET_RATIO);
-    V.flux_avg = V.flux_avg * 0.92 + flux * 0.08;
-
-    /*  The bass, straight from the spectrum: the rows start at C3 and
-        the bottom of a mix does not. */
-    const per_bin = f.rate / (f.freq.length * 2);
-    const bass_top = Math.min(f.freq.length - 1, Math.round(BASS_HZ / per_bin));
-    let bass = 0;
-    for(let b = 1; b <= bass_top; b++) {
-        if(f.freq[b] > bass) {
-            bass = f.freq[b];
-        }
-    }
-    bass /= 255;
-
-    /*  The peaks worth naming, strongest first. */
+    /*  The peaks on offer this frame, strongest first.
+     *
+     *  DELIBERATELY LOOSER THAN THE RIBBON'S. `notes` draws every ridge
+     *  it finds, so it has to reject anything that might be noise —
+     *  hence the prominence test over there. Here only the strongest
+     *  few are ever used and a snake needs SNAKE_BORN to start, so the
+     *  same test does nothing but harm: measured against a signal of
+     *  gliding tones it rejected every peak in most frames, the snakes
+     *  starved, and all of them died and restarted together about once
+     *  a second. What is wanted here is simply "the local maxima,
+     *  ranked". */
     const ridges = [];
     for(let i = 0; i < rows; i++) {
         const v = n[i];
@@ -760,163 +807,99 @@ function draw_flight(V, f, c)
         if(v < lo || v < hi) {
             continue;
         }
-        const near = lo > hi ? lo : hi;
-        if(v - near < v * NOTE_PROMINENCE) {
-            continue;
-        }
-        const r = (v / ceiling - NOTE_FLOOR) / (1 - NOTE_FLOOR);
-        if(r > 0) {
-            ridges.push({i: i, r: r});
+        const r = v / ceiling;
+        if(r > SNAKE_SEEN) {
+            /*  WHERE the peak really is, between the semitones.
+             *
+             *  A peak snapped to its row can only sit on twelve heights
+             *  per octave, so a singer's vibrato and every slide
+             *  between two notes disappear and the snake comes out as
+             *  a staircase of flat runs. Three points around a maximum
+             *  define a parabola, and its vertex is a much better
+             *  estimate of the true position than the middle sample —
+             *  the standard trick, and it costs one line.
+             *
+             *  This is what makes the picture undulate: what moves is
+             *  the pitch actually moving, not a wobble put there for
+             *  the look of it. */
+            const den = lo - 2 * v + hi;
+            const off = den ? 0.5 * (lo - hi) / den : 0;
+            ridges.push({i: i + Math.max(-0.5, Math.min(0.5, off)), r: r});
         }
     }
     ridges.sort((a, b) => b.r - a.r);
+    ridges.length = Math.min(ridges.length, SNAKE_MAX + 2);
 
-    /*  The lead is the strongest of them that is high enough up to be
-        a tune rather than an accompaniment. */
-    let lead = null;
-    for(const g of ridges) {
-        if(g.i >= LEAD_LO_ROW) {
-            lead = g;
-            break;
+    track_snakes(V, ridges, rows);
+
+    const rh = V.h / rows;
+    const y_of = (row) => V.h - (row + 0.5) * rh;
+
+    /*  Glide, then remember where that put it. */
+    if(step > 0) {
+        for(const sn of V.snakes) {
+            sn.row += (sn.target - sn.row) * SNAKE_CHASE;
+            for(const p of sn.pts) {
+                p.x -= step;
+            }
+            sn.pts.push({x: V.w, y: y_of(sn.row), e: sn.e});
+            while(sn.pts.length && sn.pts[0].x < -step) {
+                sn.pts.shift();
+            }
         }
     }
 
     const dark = V.dark;
-    const rh = V.h / rows;
-    const y_of = (row) => V.h - (row + 0.5) * rh;
-    const x = V.w - step;
-
-    if(step > 0) {
-        /*  The bass: a band along the floor, warm, wide and behind
-            everything else. */
-        if(bass > 0.06) {
-            const bh = Math.max(1, bass * V.h * 0.38);
-            const grad = rc.createLinearGradient(0, V.h, 0, V.h - bh);
-            grad.addColorStop(0, "hsla(8,88%," + (dark ? 58 : 40) + "%," +
-                (0.22 + 0.62 * bass).toFixed(3) + ")");
-            grad.addColorStop(1, "hsla(28,90%," + (dark ? 62 : 46) + "%,0)");
-            rc.fillStyle = grad;
-            rc.fillRect(x, V.h - bh, step, bh);
-        }
-
-        /*  The others, behind: soft, smaller, and only the few that
-            earned it. Drawing all of them is the fog this mode exists
-            to get away from. */
-        for(let k = 0; k < ridges.length && k < 5; k++) {
-            const g = ridges[k];
-            if(lead && g.i === lead.i) {
-                continue;
-            }
-            const y = y_of(g.i);
-            const rad = Math.max(1, (1.2 + 3.4 * g.r) * V.dpr);
-            rc.fillStyle = pitch_colour(g.i % 12, g.r, dark,
-                (0.30 + 0.60 * g.r).toFixed(3));
-            rc.beginPath();
-            rc.arc(x, y, rad, 0, Math.PI * 2);
-            rc.fill();
-        }
-
-        /*  The lead's own trail: a LINE from where it was to where it
-            is, not a dot at where it is. Dots leave gaps the moment the
-            tune jumps an interval, and the jump is the part worth
-            seeing — joining them is what turns a row of marks into a
-            flight path. */
-        if(lead) {
-            const y = y_of(lead.i);
-            const py = (V.lead_py >= 0) ? V.lead_py : y;
-            rc.strokeStyle = pitch_colour(lead.i % 12, lead.r, dark,
-                (0.55 + 0.45 * lead.r).toFixed(3));
-            rc.lineWidth = Math.max(1.5, (1.6 + 2.6 * lead.r) * V.dpr);
-            rc.lineCap = "round";
-            rc.beginPath();
-            rc.moveTo(x - step, py);
-            rc.lineTo(x, y);
-            rc.stroke();
-            V.lead_py = y;
-        } else {
-            V.lead_py = -1;
-        }
-
-        /*  A hit leaves a mark in the history as well as throwing a
-            ring, or the past would show no rhythm at all. */
-        if(hit) {
-            rc.fillStyle = dark ? "rgba(255,246,230,0.55)" : "rgba(40,20,0,0.42)";
-            rc.fillRect(x, V.h * 0.62, step, V.h * 0.38);
-        }
-    }
-
-    /*  Where the arrow is going, chased rather than jumped to. */
-    if(lead) {
-        const target = lead.i;
-        if(V.lead < 0) {
-            V.lead = target;
-        }
-        const next = V.lead + (target - V.lead) * LEAD_CHASE;
-        V.lead_dy = next - V.lead;
-        V.lead = next;
-        V.lead_v = Math.min(1, V.lead_v * 0.7 + lead.r * 0.5);
-    } else {
-        V.lead_v *= 0.90;               // nothing to follow: it fades out
-    }
-
-    if(hit && V.bursts.length < MAX_BURSTS) {
-        /*  Low and broad for a hit with bass under it, up at the lead
-            for one without: a kick and a snare do not land in the same
-            place. */
-        V.bursts.push({
-            x: V.w - step,
-            y: bass > 0.4 ? V.h * 0.80 : V.h * 0.55,
-            r: 2 * V.dpr,
-            life: 1,
-            hue: bass > 0.4 ? 10 : 45
-        });
-    }
-
     const g = V.ctx;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, V.w, V.h);
-    g.drawImage(V.roll, 0, 0);
+    g.lineCap = "round";
+    g.lineJoin = "round";
 
-    /*  The rings: drawn live rather than stamped, because an explosion
-        that has been baked into the trail cannot go on expanding. */
-    for(let k = V.bursts.length - 1; k >= 0; k--) {
-        const b = V.bursts[k];
-        b.life -= 0.045;
-        b.r += (2.6 + 26 * b.life) * V.dpr * 0.16;
-        b.x -= step;
-        if(b.life <= 0 || b.x + b.r < 0) {
-            V.bursts.splice(k, 1);
+    for(const sn of V.snakes) {
+        const p = sn.pts;
+        if(p.length < 3) {
             continue;
         }
-        g.strokeStyle = "hsla(" + b.hue + ",95%," + (dark ? 66 : 44) + "%," +
-            (b.life * b.life * 0.95).toFixed(3) + ")";
-        g.lineWidth = Math.max(1.2, 3.4 * b.life * V.dpr);
+        const pc = Math.round(sn.row) % 12;
+
+        /*  Faded at the tail, solid at the head: the snake arrives out
+            of the past rather than starting somewhere. */
+        const grad = g.createLinearGradient(0, 0, V.w, 0);
+        grad.addColorStop(0, pitch_colour(pc, sn.e, dark, 0));
+        grad.addColorStop(0.45, pitch_colour(pc, sn.e, dark, 0.30));
+        grad.addColorStop(1, pitch_colour(pc, sn.e, dark, 0.92));
+
+        /*  Through the MIDPOINTS, with each sample as the control
+            point. A polyline through the samples themselves is a
+            staircase with a corner at every note; this is the curve
+            that staircase implies. */
         g.beginPath();
-        g.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        g.moveTo(p[0].x, p[0].y);
+        for(let i = 1; i < p.length - 1; i++) {
+            g.quadraticCurveTo(p[i].x, p[i].y,
+                (p[i].x + p[i + 1].x) / 2, (p[i].y + p[i + 1].y) / 2);
+        }
+        g.lineTo(p[p.length - 1].x, p[p.length - 1].y);
+
+        /*  Twice: a wide soft pass for the glow, a thin one for the
+            line. Cheaper than a shadow blur over a path this long, and
+            it is what makes the thing look lit rather than drawn. */
+        const w = (1.1 + 2.6 * sn.e) * V.dpr;
+        g.strokeStyle = grad;
+        g.lineWidth = w * 3.2;
+        g.globalAlpha = 0.22;
         g.stroke();
-    }
+        g.globalAlpha = 1;
+        g.lineWidth = w;
+        g.stroke();
 
-    /*  And the arrow itself, at the leading edge, tilted by its climb. */
-    if(V.lead >= 0 && V.lead_v > 0.03) {
-        const y = y_of(V.lead);
-        const ax = V.w - 12 * V.dpr;
-        const tilt = Math.max(-1, Math.min(1, -V.lead_dy * 0.55));
-        const size = (5 + 4 * V.lead_v) * V.dpr;
-        const pc = Math.round(V.lead) % 12;
-
-        g.save();
-        g.translate(ax, y);
-        g.rotate(tilt);
+        /*  The head, a soft eye at the front. */
+        const head = p[p.length - 1];
+        g.fillStyle = pitch_colour(pc, sn.e, dark, 0.95);
         g.beginPath();
-        g.moveTo(size * 1.5, 0);
-        g.lineTo(-size, -size * 0.85);
-        g.lineTo(-size * 0.35, 0);
-        g.lineTo(-size, size * 0.85);
-        g.closePath();
-        g.fillStyle = pitch_colour(pc < 0 ? 0 : pc, 1, dark,
-            Math.min(1, V.lead_v + 0.25).toFixed(3));
+        g.arc(head.x - w, head.y, w * 1.15, 0, Math.PI * 2);
         g.fill();
-        g.restore();
     }
 }
 

@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.14.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.15.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -38,7 +38,7 @@ do. **Tapping it** moves to the next one, and the choice is remembered:
 
 | | |
 |---|---|
-| **Flight** | the loudest things in the room, moving and in colour. The one that **picks** instead of showing everything — see below |
+| **Flight** | two or three **snakes** weaving: a few voices followed over time, each a smooth line crossing the others. The one that **picks** instead of showing everything — see below |
 | **Notes** | a ribbon running leftwards, one column per frame, one row per semitone from C3 up. It draws the **ridges**: a semitone only when the spectrum peaks on it |
 | **Spectrum** | the same 48 bands standing up, with a peak that holds and falls |
 | **Wave** | the waveform, triggered on a rising zero crossing so it stands still instead of skidding |
@@ -48,20 +48,29 @@ do. **Tapping it** moves to the next one, and the choice is remembered:
 ### Flight
 
 The other four draw everything that is there and leave the eye to do the
-picking. This one picks first, and moves:
+picking. This one picks a handful of things and follows them: **two to four
+snakes**, each a voice, gliding across the picture and crossing each other,
+fading into the past over about three seconds.
 
-- an **arrow** rides the lead line — the strongest peak from G3 up — chased
-  rather than jumped to, tilted by its own climb, trailing the path it flew;
-- the other strong **peaks** fly behind it, each a dot in the colour of its
-  pitch class;
-- the **bass** runs along the floor, taken from the spectrum *below* the
-  semitone rows, where those rows cannot reach;
-- every **hit** throws an expanding ring: a step in broadband energy well above
-  the running average of such steps. A held note contributes nothing to that,
-  however loud, which is exactly the difference between a note and a hit.
+What makes them snakes rather than marks is **memory**. Every other mode draws
+whatever the current frame holds and forgets it; a snake is matched to the peak
+nearest where it already was, so it stays the same snake while the tune moves
+under it — which is why two lines *cross* instead of swapping. A voice that
+stops for a breath keeps its snake for half a second before it is given up on.
 
-Everything drifts left and fades over about three seconds, so the picture is
-the last phrase of music with the present at the right edge.
+Two things make the line sinuous, and neither is invented:
+
+- **The pitch is read between the semitones.** A peak snapped to its row can
+  only sit on twelve heights per octave, so vibrato and every slide between two
+  notes vanish and the line comes out as a staircase. Three points around a
+  maximum define a parabola, and its vertex is a far better estimate of where
+  the peak really is. What ripples along a held note is a singer's vibrato,
+  measured.
+- **It glides.** Each snake moves a fraction of the way to its peak per frame
+  rather than jumping, and the path is drawn as a spline through the midpoints
+  rather than as a polyline through the samples. A step between two notes reads
+  as an S instead of a corner. That is smoothing of real data: no snake goes
+  anywhere the sound did not.
 
 **The hue is the pitch.** A note is always the same colour and a key change
 moves the whole picture through the wheel. This is the one thing in the app
@@ -69,12 +78,16 @@ that does not take its colour from the palette — a deliberate exception, and
 the point of the mode: colour carrying meaning is worth more here than colour
 carrying the palette.
 
-**What it is not.** There is no source separation here and none is claimed.
-"The lead" is the strongest peak in the range a melody usually occupies, which
-most of the time *is* the voice or the lead instrument and sometimes is a
-harmonic of the bass. "A hit" is a broadband transient, not a drum: a piano
-chord struck hard is one too. It is an honest picture of the loudest things in
-the sound, not a transcription of the band.
+**What it is not.** There is no source separation and none is claimed. A snake
+follows a *peak*, which most of the time is a voice or an instrument holding a
+line, and sometimes is a harmonic of one wandering off on its own.
+
+Its peak-picking is **deliberately looser than the ribbon's**. `notes` draws
+every ridge it finds, so it has to reject anything that might be noise; here
+only the strongest few are ever used and a peak has to be strong to start a
+snake at all, so the same prominence test did nothing but harm — measured
+against gliding tones it rejected every peak in most frames, the snakes starved,
+and all of them died and restarted together about once a second.
 
 **"Notes" is not a transcription, and does not pretend to be.** It is the
 spectrum folded onto semitones: the energy that fell inside each semitone's
@@ -107,6 +120,14 @@ already spoken for by the cover, the name and three buttons. It carries no tap
 of its own: the strip's gesture takes you to the deck and a second one competing
 for the same pixels would be a trap. The mode is one setting, so changing it on
 the deck changes it there too.
+
+**Headroom in the analyser is not a detail.** `maxDecibels` is the level that
+maps to the top of the byte range, and everything above it maps there too. At
+−25 a loud master pins whole neighbourhoods of the spectrum at the ceiling, and
+a plateau has no peaks in it — so the ridge tests every drawing here depends on
+reject every band and the picture goes blank on exactly the tracks with the most
+going on. It sits at −12, and the running ceiling in each renderer takes care of
+the contrast that costs on a quiet track.
 
 **The ink is measured, not assumed.** The picture is drawn in `--mus-accent`,
 and under the default palette that accent is taken from the record's artwork.

@@ -60,7 +60,15 @@ const FFT_SIZE = 8192;
     left everything pinned; this is measured against real tracks, not
     against a test tone. */
 const MIN_DB = -85;
-const MAX_DB = -25;
+/*  HEADROOM MATTERS MORE THAN IT LOOKS. This is the level that maps to
+    255, and everything above it maps to 255 as well. At -25 a loud
+    master pins whole neighbourhoods of the spectrum at the top, and a
+    plateau has no peaks in it — so the ridge and prominence tests that
+    the drawing depends on reject every band, and the picture goes
+    blank on exactly the tracks that have the most going on. -12 keeps
+    the peaks distinguishable on a hot master; the running ceiling in
+    the renderers takes care of the loss of contrast on a quiet one. */
+const MAX_DB = -12;
 
 /*  C3 (MIDI 48) to B6 (MIDI 95): four octaves, 48 rows. See the header
     for why it does not start lower. */
