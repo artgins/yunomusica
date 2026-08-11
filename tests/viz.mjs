@@ -34,7 +34,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {launch, new_page, boot, route, add_source, report, OUT} from "./lib.mjs";
+import {launch, new_page, boot, route, add_source, report, contrast, OUT} from "./lib.mjs";
 import {join} from "path";
 
 const FIX = ensure_fixtures();
@@ -198,6 +198,53 @@ if(!a4) {
 }
 
 await page.screenshot({path: join(OUT, "viz-spectrum-a4.png")});
+
+/*  8. It is drawn in something you can SEE.
+ *
+ *  The picture is painted in --mus-accent, and under the default
+ *  palette that accent is taken from the cover. This album's artwork is
+ *  colourless on purpose, which drives the accent to near-white — and
+ *  near-white lines on a near-white card are a picture that is drawn
+ *  perfectly and seen by nobody. That failure shows up as a blank box
+ *  and as nothing else: no error, no missing frame, the pixel count
+ *  unchanged. Only a contrast measurement catches it. */
+const ink = await page.evaluate(() => {
+    const $cv = document.querySelector(".MUS_VIZ:not(.MUS_VIZ_MINI) .MUS_VIZ_CV");
+    const d = $cv.getContext("2d").getImageData(0, 0, $cv.width, $cv.height).data;
+    let n = 0;
+    const sum = [0, 0, 0];
+    for(let i = 0; i < d.length; i += 4) {
+        /*  Only what was laid down at close to full strength: a
+            half-transparent pixel says nothing about the ink. */
+        if(d[i + 3] > 200) {
+            sum[0] += d[i];
+            sum[1] += d[i + 1];
+            sum[2] += d[i + 2];
+            n++;
+        }
+    }
+    return {
+        n:      n,
+        ink:    n ? sum.map((x) => Math.round(x / n)) : null,
+        /*  The card's own colour, computed rather than read off the
+            custom property: the browser normalises this one to rgb(),
+            and a hex is not something lib.mjs's lum() can read. */
+        ground: getComputedStyle(document.querySelector(".MUS_DECKCARD")).backgroundColor,
+        accent: getComputedStyle(document.documentElement)
+                    .getPropertyValue("--mus-accent").trim()
+    };
+});
+if(!ink.n) {
+    bad.push("no hay tinta opaca que medir");
+} else {
+    const r = contrast(`rgb(${ink.ink.join(",")})`, ink.ground);
+    console.log(`   tinta ${ink.ink.join(",")} sobre ${ink.ground} = ${r.toFixed(2)}:1` +
+                `  (acento ${ink.accent})`);
+    if(r < 2) {
+        bad.push(`the picture is drawn at ${r.toFixed(2)}:1 against the card: ` +
+                 `nobody can see it (accent ${ink.accent})`);
+    }
+}
 
 /*  5. The scrub bar drew what sounded, and nothing ahead of it. */
 const wave = await page.evaluate(read_seekwave);

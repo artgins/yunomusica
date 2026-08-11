@@ -152,6 +152,23 @@ function tone(hz, seconds)
     return readFileSync(path);
 }
 
+/*  A cover with almost no colour in it.
+ *
+ *  The accent is taken from the cover, and the visualizer draws in the
+ *  accent. A record like this one produces a near-white accent, which
+ *  on a near-white card is a picture that is drawn perfectly and seen
+ *  by nobody — the exact failure this fixture exists to catch. */
+function pale_png()
+{
+    let path = join(TMP, "cover-pale.png");
+    if(!existsSync(path)) {
+        execFileSync("ffmpeg", ["-v", "quiet", "-y",
+            "-f", "lavfi", "-i", "color=c=0xEDE7E0:s=96x96",
+            "-frames:v", "1", path]);
+    }
+    return readFileSync(path);
+}
+
 function cover_png()
 {
     let path = join(TMP, "cover.png");
@@ -245,6 +262,12 @@ function build_mimusica()
     same reason `longtracks` is 25: the test has to have time to look. */
 function build_tones()
 {
+    /*  The album carries the colourless cover ON PURPOSE — see
+        pale_png(). Covers are held per album, so both tones get it, and
+        that means every assertion in the `viz` test runs against the
+        worst accent the app can produce rather than against a
+        convenient one. */
+    const pale = pale_png();
     const notes = [
         {title: "A4 440", hz: 440,    track: 1},
         {title: "C5 523", hz: 523.25, track: 2}
@@ -253,7 +276,7 @@ function build_tones()
         write_track(join(ROOT, "tones", "Test Tones", `0${n.track} - ${n.title}.mp3`),
             tone(n.hz, 25),
             {title: n.title, artist: "sine", album: "Test Tones",
-             genre: "test", year: 2026, track: n.track}, null);
+             genre: "test", year: 2026, track: n.track}, pale);
     });
 }
 

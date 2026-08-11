@@ -308,10 +308,49 @@ function set_smoothing(v)
 }
 
 
+/***************************************************************
+ *  What the visualizer's picture depends on, in words.
+ *
+ *  "Nothing is drawn" has three quite different causes and they
+ *  are indistinguishable from the outside: the browser has no
+ *  Web Audio, or the context never reached `running` so the tap
+ *  was never taken, or the tap is fine and the sound reaching
+ *  it is silence. This screen already says out loud what the
+ *  browser can and cannot do; the picture belongs in the same
+ *  list.
+ ***************************************************************/
+function diagnostics()
+{
+    const AC = (typeof window !== "undefined") &&
+        (window.AudioContext || window.webkitAudioContext);
+    if(!AC) {
+        return {supported: false, state: "-", tapped: false, level: 0};
+    }
+    let level = 0;
+    if(active && ctx) {
+        active.analyser.getByteFrequencyData(active.freq);
+        for(let i = 0; i < active.freq.length; i++) {
+            if(active.freq[i] > level) {
+                level = active.freq[i];
+            }
+        }
+    }
+    return {
+        supported: true,
+        dead:      dead,
+        state:     ctx ? ctx.state : "not created yet",
+        rate:      ctx ? ctx.sampleRate : 0,
+        tapped:    !!active,
+        level:     Math.round(level / 255 * 100)
+    };
+}
+
+
 export {
     attach,
     frame,
     available,
+    diagnostics,
     set_smoothing,
     SEMITONES,
     LOW_MIDI,

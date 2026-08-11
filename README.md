@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.13.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.13.1** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -75,6 +75,18 @@ already spoken for by the cover, the name and three buttons. It carries no tap
 of its own: the strip's gesture takes you to the deck and a second one competing
 for the same pixels would be a trap. The mode is one setting, so changing it on
 the deck changes it there too.
+
+**The ink is measured, not assumed.** The picture is drawn in `--mus-accent`,
+and under the default palette that accent is taken from the record's artwork.
+The lift applied there puts the brightest channel at 235, which is right for a
+button carrying its own dark ink and wrong for a line drawn straight onto a
+near-white card: a pale or nearly grey cover produces a pale accent, and a pale
+accent on a light card is a picture that is drawn perfectly and seen by nobody.
+Nothing is broken in that case and nothing says so — it just looks dead. So the
+contrast is measured at run time and the colour is pushed away from the ground,
+keeping its hue, until it clears 2.2:1. The `tones` fixture's album carries a
+colourless cover on purpose, so every assertion in the `viz` test runs against
+the worst accent the app can produce.
 
 Somebody who asked for less motion gets it **off** by default, collapsed to a
 strip they can still tap if they want it. And there is a hatch for the day a
@@ -273,7 +285,12 @@ accent against the page and 4.5:1 for ink on the accent.
 - **Diagnostics** in Sources: which APIs the browser has, whether storage is
   durable, whether the last write landed, and per source how many files the walk
   handed over, how many were taken as audio, and whether a stored reference
-  **can still be read**.
+  **can still be read**. It also answers "why is the visualizer blank?", which
+  has three causes that look identical from outside: no Web Audio at all, an
+  `AudioContext` that never reached `running` so the tap was never taken, or a
+  tap that is fine and hearing silence. It reports the state of the context,
+  whether the tap was taken, the level reaching it **right now**, and the accent
+  the picture is drawn in.
 - The **welcome dialog** (what this is, how it works, credits) shows once,
   carries "do not show this again", and stays reachable from the toolbar and the
   player footer. It also carries the version and the build stamp.

@@ -42,6 +42,7 @@ import {
     is_stale as update_stale, latest_version as update_latest,
 } from "./update_check.js";
 import {drop_source_stats} from "./stats_store.js";
+import {diagnostics as viz_diagnostics} from "./analyser.js";
 
 /*  Files are stored in batches. One record holding every File of a big
     folder exceeds the structured-clone limit and the write is refused,
@@ -540,6 +541,23 @@ async function diagnose()
             /*  Not every engine answers; the line is simply omitted. */
         }
     }
+    /*  The visualizer, which has three ways of drawing nothing and no
+        way of telling them apart from the outside. `level` is what the
+        tap is hearing RIGHT NOW, so with music playing a 0 there means
+        the picture is right to be empty and the fault is upstream. */
+    let v = viz_diagnostics();
+    add("Web Audio", v.supported ? (v.dead ? "DISABLED" : "yes") : "NO");
+    add("audio context", v.state + (v.rate ? " @ " + v.rate + " Hz" : ""));
+    add("visualizer tap", v.tapped ? "taken" : "NOT TAKEN");
+    add("level now", v.level + "%");
+    if(typeof getComputedStyle === "function") {
+        /*  The picture is drawn in the accent, and the accent is taken
+            from the cover. A pale record makes a pale accent, and a
+            pale accent on a light card is a picture nobody can see. */
+        add("accent", getComputedStyle(document.documentElement)
+            .getPropertyValue("--mus-accent").trim() || "(palette default)");
+    }
+
     add("userAgent", (typeof navigator !== "undefined" ? navigator.userAgent : "?").slice(0, 90));
 
     for(const s of S.sources) {

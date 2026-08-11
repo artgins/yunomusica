@@ -467,6 +467,61 @@ function clear_all(V)
     }
 }
 
+/***************************************************************
+ *  Ink that can be seen on the ground it is drawn on.
+ *
+ *  The picture is painted in --mus-accent, and under the default
+ *  palette that accent is TAKEN FROM THE COVER. The lift applied
+ *  there puts the brightest channel at 235, which is right for a
+ *  button with its own dark ink on top and wrong for a line
+ *  drawn straight onto a near-white card: a record whose artwork
+ *  is pale or nearly grey produces a pale accent, and a pale
+ *  accent on a light card is a picture nobody can see. Nothing
+ *  is broken in that case and nothing says so — it just looks
+ *  like the visualizer is dead.
+ *
+ *  Elsewhere the app measures contrast in a test rather than
+ *  judging it by eye. Here it cannot: the colour is not known
+ *  until a record is playing. So it is measured at run time and
+ *  pushed away from the ground until it clears.
+ ***************************************************************/
+const MIN_RATIO = 2.2;
+
+function srgb_lum(c)
+{
+    const f = function(v) {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+}
+
+function ratio_of(a, b)
+{
+    const la = srgb_lum(a);
+    const lb = srgb_lum(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+function readable(c, ground)
+{
+    /*  Towards white on a dark ground, towards black on a light one —
+        keeping the hue, which is the whole point of taking it from the
+        cover in the first place. */
+    const up = srgb_lum(ground) < 0.5;
+    let out = c;
+    for(let i = 0; i < 16 && ratio_of(out, ground) < MIN_RATIO; i++) {
+        out = up
+            ? [Math.round(out[0] + (255 - out[0]) * 0.16),
+               Math.round(out[1] + (255 - out[1]) * 0.16),
+               Math.round(out[2] + (255 - out[2]) * 0.16)]
+            : [Math.round(out[0] * 0.84),
+               Math.round(out[1] * 0.84),
+               Math.round(out[2] * 0.84)];
+    }
+    return out;
+}
+
 /*  The accent is re-read a few times a second, not every frame: it
     changes when the palette changes or when a record with another
     dominant colour comes on, and getComputedStyle is a style read. */
@@ -476,10 +531,15 @@ function accent_of(V)
         return V.accent;
     }
     V.accent_at = V.frames || 1;
-    const c = getComputedStyle(document.documentElement)
-        .getPropertyValue("--mus-accent").trim();
+    const css = getComputedStyle(document.documentElement);
+    const c = css.getPropertyValue("--mus-accent").trim();
     if(c) {
-        V.accent = rgb_of(c, V.probe);
+        /*  The card the box sits on, or the page under the strip. */
+        let bg = css.getPropertyValue("--bulma-scheme-main-bis").trim();
+        if(!bg) {
+            bg = getComputedStyle(document.body).backgroundColor;
+        }
+        V.accent = readable(rgb_of(c, V.probe), rgb_of(bg || "#ffffff", V.probe));
     }
     return V.accent;
 }
