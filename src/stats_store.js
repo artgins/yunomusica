@@ -271,6 +271,45 @@ function stats_reset(track)
     emit();
 }
 
+/***************************************************************
+ *  One kind of count, gone, everywhere.
+ *
+ *  `kind` is "plays" or "hearts", and it clears ONLY that one:
+ *  the button lives on a list, and pressing it should empty the
+ *  list it is on and nothing else. Wiping the hearts from a
+ *  button that says "most played" would be a surprise, and a
+ *  surprise that cannot be undone.
+ ***************************************************************/
+function clear_counts(kind)
+{
+    const plays = (kind !== "hearts");
+    let touched = false;
+    for(const key of Array.from(S.by_key.keys())) {
+        const row = S.by_key.get(key);
+        if(plays ? (row.plays || row.full) : row.hearts) {
+            if(plays) {
+                row.plays = 0;
+                row.full = 0;
+            } else {
+                row.hearts = 0;
+            }
+            touched = true;
+            /*  A row left at all zeroes is deleted rather than stored:
+                the database should not keep a list of everything that
+                was ever played and then cleared. */
+            touch(key);
+        }
+    }
+    /*  The listen in progress would otherwise hand its count straight
+        back the moment the track passes the threshold. */
+    if(plays) {
+        S.counted = true;
+    }
+    if(touched) {
+        emit();
+    }
+}
+
 /*  A source that is removed takes its counts with it. Anything else
     leaves an orphan nobody can see and nobody can clear. */
 function drop_source_stats(source_id)
@@ -422,6 +461,7 @@ export {
     heart,
     heart_reset,
     stats_reset,
+    clear_counts,
     drop_source_stats,
     start_counting,
     stop_counting,

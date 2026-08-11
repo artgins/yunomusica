@@ -105,6 +105,9 @@ const ja = {
 
         "loved":                "お気に入り",
         "most played":          "再生が多い順",
+        "clear the counts":     "再生回数をゼロに",
+        "yes, clear them":      "はい、ゼロにします",
+        "hearts are not touched": "ハートはそのままです",
         "no hearts yet":        "まだハートがありません。",
         "how to give a heart":  "名前の横のハートを押すと付きます。もう一度押すともう一つ。",
         "nothing played yet":   "まだ何も再生していません。",

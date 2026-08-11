@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.18.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.19.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -204,6 +204,14 @@ A saved list is a decision; the other two are a consequence: **Loved**, every
 track with at least one heart, most first, and **Most played**, everything that
 has been listened to, most first. Both carry the whole-list **Play** and **Add
 to queue**, and each row shows its counts and opens the track's card.
+
+**Most played can be emptied**, which means putting its counts back to zero —
+the only way it *can* be emptied, since the list is not stored anywhere but is
+what the counts say. It asks twice, in place, because there is no undo, and it
+clears only the play counts: the hearts are somebody's choices, one tap at a
+time, and a button on the played list has no business touching them. Loved has
+no such button rather than a dangerous one; a heart comes off the way it went
+on, one at a time, from the track's card.
 
 They are built from the counts every time the screen is drawn rather than stored
 anywhere, which is what keeps them from ever disagreeing with the numbers on the

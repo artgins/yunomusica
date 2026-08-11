@@ -109,6 +109,9 @@ const ar = {
 
         "loved":                "المفضّلة",
         "most played":          "الأكثر استماعًا",
+        "clear the counts":     "تصفير الأعداد",
+        "yes, clear them":      "نعم، صفّرها",
+        "hearts are not touched": "لن تُمسّ القلوب",
         "no hearts yet":        "لا توجد قلوب بعد.",
         "how to give a heart":  "انقر القلب بجانب الاسم لتمنحه واحدًا، وانقر مرة أخرى لتمنحه آخر.",
         "nothing played yet":   "لم تستمع إلى شيء بعد.",

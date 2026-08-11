@@ -105,6 +105,9 @@ const fr = {
 
         "loved":                "Avec un cœur",
         "most played":          "Les plus écoutées",
+        "clear the counts":     "Remettre les compteurs à zéro",
+        "yes, clear them":      "Oui, remettre à zéro",
+        "hearts are not touched": "Les cœurs ne sont pas touchés",
         "no hearts yet":        "Aucun cœur pour l'instant.",
         "how to give a heart":  "Touchez le cœur à côté d'un nom pour en donner un. Encore une fois pour un autre.",
         "nothing played yet":   "Rien n'a encore été écouté.",

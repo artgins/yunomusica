@@ -109,6 +109,9 @@ const es = {
 
         "loved":                "Con corazón",
         "most played":          "Más escuchadas",
+        "clear the counts":     "Poner los contadores a cero",
+        "yes, clear them":      "Sí, ponerlos a cero",
+        "hearts are not touched": "Los corazones no se tocan",
         "no hearts yet":        "Todavía no hay ningún corazón.",
         "how to give a heart":  "Toca el corazón que hay junto a un nombre para dárselo. Otro toque, otro corazón.",
         "nothing played yet":   "Todavía no has escuchado nada.",

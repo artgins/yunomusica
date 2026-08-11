@@ -18,7 +18,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {STORE_PLAYLISTS, idb_all, idb_put, idb_del} from "./idb.js";
-import {queue_tracks, find_track} from "./music_store.js";
+import {queue_tracks, find_track, set_queue_origin} from "./music_store.js";
 
 
 /***************************************************************
@@ -104,6 +104,17 @@ async function save_queue_as(name)
     };
     S.lists.unshift(list);
     await idb_put(STORE_PLAYLISTS, list);
+
+    /*  THE QUEUE YOU JUST SAVED IS NOW THAT LIST, and the deck has to
+        say so. Without this the deck went on calling itself a queue put
+        together by hand the moment after it was given a name: it would
+        offer to save it again, and take a second copy under a second
+        name without a word.
+
+        Here rather than at the one call site, so that no future caller
+        can save a list and forget the half that makes it true. */
+    set_queue_origin(list.id, list.name);
+
     emit();
     return list.id;
 }

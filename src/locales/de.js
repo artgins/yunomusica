@@ -105,6 +105,9 @@ const de = {
 
         "loved":                "Mit Herz",
         "most played":          "Am meisten gehört",
+        "clear the counts":     "Zähler zurücksetzen",
+        "yes, clear them":      "Ja, zurücksetzen",
+        "hearts are not touched": "Die Herzen bleiben unberührt",
         "no hearts yet":        "Noch kein Herz vergeben.",
         "how to give a heart":  "Tippe auf das Herz neben einem Namen, um eines zu vergeben. Noch einmal für ein weiteres.",
         "nothing played yet":   "Noch nichts gehört.",

@@ -31,7 +31,7 @@ import {
     subscribe, queue_add, set_queue_origin, find_track,
 } from "./music_store.js";
 import {confirm_replace} from "./confirm_replace.js";
-import {subscribe_stats, ranked, split_key} from "./stats_store.js";
+import {subscribe_stats, ranked, split_key, clear_counts} from "./stats_store.js";
 import {open_track, track_counts} from "./track_card.js";
 
 import {t} from "i18next";
@@ -81,6 +81,7 @@ let PRIVATE_DATA = {
     $content:    null,
     confirming:  "",        // id of the list awaiting a delete confirmation
     open_id:     "",        // id of the list whose songs are unfolded
+    clearing:    "",        // which ranked list is asking "are you sure?"
 };
 
 let __gclass__ = null;
@@ -287,6 +288,14 @@ function build_ranked(gobj, $c, by, title_key, empty_key, hint_key)
             ["button", {class: "MUS_QBTN button", type: "button"},
                 [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
                 {click: () => queue_add(all, "append")}],
+
+            /*  Emptying the list means putting its counts back to
+                zero, which is the only way it CAN be emptied: the list
+                is not stored anywhere, it is what the counts say.
+                Asked twice, in place, like deleting a saved list —
+                there is no undo behind it. */
+            ...clear_button(gobj, by),
+
             missing
                 ? ["span", {class: "MUS_T2 is-warn"}, [
                     ["span", {}, String(missing)],
@@ -297,6 +306,42 @@ function build_ranked(gobj, $c, by, title_key, empty_key, hint_key)
 
     $c.appendChild(track_rows(gobj,
         tracks.map((x, i) => ({track: x.track, n: i + 1}))));
+}
+
+
+/*  On "most played" only. The hearts are somebody's choices, one tap at
+    a time; the play counts are a by-product of listening, and a
+    by-product is the kind of thing anyone might reasonably want to
+    start again. The button says which of the two it touches, and the
+    other list is left with no such button rather than given a
+    dangerous one. */
+function clear_button(gobj, by)
+{
+    if(by !== "plays") {
+        return [];
+    }
+    if(gobj.priv.clearing !== by) {
+        return [["button", {
+                class: "MUS_QBTN button is-ghost", type: "button",
+                title: t("hearts are not touched"),
+                "data-i18n-title": "hearts are not touched"
+            },
+            [ico(P.trash, 15),
+             ["span", {i18n: "clear the counts"}, t("clear the counts")]],
+            {click: () => { gobj.priv.clearing = by; render(gobj); }}]];
+    }
+    return [
+        ["button", {class: "MUS_QBTN button is-danger", type: "button",
+                    i18n: "yes, clear them"}, t("yes, clear them"),
+            {click: () => {
+                gobj.priv.clearing = "";
+                clear_counts(by);
+                render(gobj);
+            }}],
+        ["button", {class: "MUS_QBTN button is-ghost", type: "button",
+                    i18n: "cancel"}, t("cancel"),
+            {click: () => { gobj.priv.clearing = ""; render(gobj); }}]
+    ];
 }
 
 

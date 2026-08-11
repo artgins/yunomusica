@@ -105,6 +105,9 @@ const ru = {
 
         "loved":                "С сердцем",
         "most played":          "Чаще всего слушали",
+        "clear the counts":     "Обнулить счётчики",
+        "yes, clear them":      "Да, обнулить",
+        "hearts are not touched": "Сердца не трогаем",
         "no hearts yet":        "Пока ни одного сердца.",
         "how to give a heart":  "Нажмите на сердце рядом с названием, чтобы поставить его. Ещё нажатие — ещё одно.",
         "nothing played yet":   "Пока ничего не прослушано.",

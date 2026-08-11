@@ -105,6 +105,9 @@ const zh = {
 
         "loved":                "喜欢的",
         "most played":          "最常播放",
+        "clear the counts":     "计数清零",
+        "yes, clear them":      "是，全部清零",
+        "hearts are not touched": "不会动喜欢",
         "no hearts yet":        "还没有任何喜欢。",
         "how to give a heart":  "点名称旁边的心形即可添加，再点一次再加一个。",
         "nothing played yet":   "还没有播放过任何内容。",

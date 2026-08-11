@@ -201,6 +201,7 @@ if(derived.length < 2) {
 
 await page.screenshot({path: join(OUT, "counts-lists.png")});
 
+
 /*  And playing one of them fills the deck. */
 await page.locator(".MUS_RANKACTIONS .MUS_QBTN.is-primary").first().click();
 await page.waitForTimeout(1200);
@@ -295,6 +296,21 @@ await page.fill(".MUS_NAME_INPUT", "Test list");
 await page.click(".MUS_NAMEROW .is-primary");
 await page.waitForTimeout(700);
 
+/*  Saving it is itself one of the three states: the deck IS that list
+    now, so the button that just saved it has nothing left to do. It
+    used to go on calling itself a hand-built queue and offering to
+    save the same thing again under another name. */
+const just_saved = await page.evaluate(() => ({
+    off:    document.querySelector(".MUS_QHEAD .MUS_QBTN").disabled,
+    origin: (document.querySelector(".MUS_QORIGIN") || {}).textContent || ""
+}));
+if(!just_saved.off) {
+    bad.push(`right after saving, "save as list" is still on (${just_saved.origin})`);
+}
+if(just_saved.origin.indexOf("Test list") < 0) {
+    bad.push(`the deck does not say it is the list just saved (${just_saved.origin})`);
+}
+
 await route(page, "#/lists", 900);
 await page.locator(".MUS_SRCROW .MUS_QBTN.is-primary").first().click();
 await page.waitForTimeout(900);
@@ -346,6 +362,75 @@ const folded = await page.evaluate(
 if(folded !== 0) {
     bad.push("tapping the name again does not close it");
 }
+
+/*  9. "Most played" can be emptied, and empties only itself.
+ *
+ *  SELF-CONTAINED on purpose: it makes its own play count first rather
+ *  than borrowing one from the assertions above. Dropped in the middle
+ *  of them it cleared a count they still needed, which is the second
+ *  time that has happened in this file — a block that destroys state
+ *  has to own the state it destroys.
+ *
+ *  Asked twice, because there is no undo. And the hearts have to
+ *  survive it: they are somebody's choices, one tap at a time, and a
+ *  button on the played list has no business touching them — which is
+ *  the half of this that would go unnoticed without a test. */
+await route(page, "#/player", 900);
+await page.locator(".MUS_QROW").first().locator(".MUS_IBTN").first().click();
+await page.waitForTimeout(HEARD_MS);
+await page.click(".MUS_TPLAY");
+await page.waitForTimeout(600);
+await route(page, "#/lists", 1200);
+
+const sections = () => page.evaluate(() => {
+    const out = [];
+    let cur = null;
+    for(const $n of document.querySelectorAll(
+            ".C_MUS_LISTS .MUS_SECTITLE, .C_MUS_LISTS .MUS_RANK")) {
+        if($n.classList.contains("MUS_SECTITLE")) {
+            cur = {title: $n.textContent.trim(), n: 0};
+            out.push(cur);
+        } else if(cur) {
+            cur.n++;
+        }
+    }
+    return out;
+});
+
+const was = await sections();
+const played_before = was.length ? was[was.length - 1].n : 0;
+const loved_before = was.length > 1 ? was[was.length - 2].n : 0;
+if(!played_before) {
+    bad.push("nada que vaciar: la prueba no dice nada");
+}
+
+const $clear = page.locator(".MUS_RANKACTIONS").last().locator(".MUS_QBTN.is-ghost").first();
+if(!await $clear.count()) {
+    bad.push("\"most played\" has no way to be emptied");
+} else {
+    await $clear.click();
+    await page.waitForTimeout(350);
+    /*  One press must not have done it. */
+    const armed = await sections();
+    const still = armed.length ? armed[armed.length - 1].n : 0;
+    if(still !== played_before) {
+        bad.push("emptying the played list is not asked about, it just happens");
+    }
+    await page.locator(".MUS_RANKACTIONS .is-danger").first().click();
+    await page.waitForTimeout(700);
+
+    const now = await sections();
+    const played_after = now.length ? now[now.length - 1].n : 0;
+    const loved_after = now.length > 1 ? now[now.length - 2].n : 0;
+    if(played_after !== 0) {
+        bad.push(`"most played" still holds ${played_after} tracks after being cleared`);
+    }
+    if(loved_after !== loved_before) {
+        bad.push(`clearing the play counts took the hearts with it ` +
+                 `(${loved_before} loved before, ${loved_after} after)`);
+    }
+}
+await page.screenshot({path: join(OUT, "counts-cleared.png")});
 
 bad.forEach((b) => console.log("  ✗ " + b));
 const errs = report(page);

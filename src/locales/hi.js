@@ -105,6 +105,9 @@ const hi = {
 
         "loved":                "पसंदीदा",
         "most played":          "सबसे ज़्यादा सुने",
+        "clear the counts":     "गिनतियाँ शून्य करें",
+        "yes, clear them":      "हाँ, शून्य कर दें",
+        "hearts are not touched": "दिलों को हाथ नहीं लगेगा",
         "no hearts yet":        "अभी तक कोई दिल नहीं है।",
         "how to give a heart":  "नाम के पास वाले दिल पर टैप करके एक दें। दोबारा टैप करें, एक और।",
         "nothing played yet":   "अभी तक कुछ नहीं सुना गया।",

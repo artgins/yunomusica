@@ -105,6 +105,9 @@ const pt = {
 
         "loved":                "Com coração",
         "most played":          "Mais ouvidas",
+        "clear the counts":     "Pôr as contagens a zero",
+        "yes, clear them":      "Sim, pôr a zero",
+        "hearts are not touched": "Os corações não se tocam",
         "no hearts yet":        "Ainda não há nenhum coração.",
         "how to give a heart":  "Toca no coração ao lado de um nome para lho dar. Outro toque, outro coração.",
         "nothing played yet":   "Ainda não ouviste nada.",

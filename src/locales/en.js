@@ -119,6 +119,9 @@ const en = {
 
         "loved":                "Loved",
         "most played":          "Most played",
+        "clear the counts":     "Clear the counts",
+        "yes, clear them":      "Yes, clear them",
+        "hearts are not touched": "The hearts are left alone",
         "no hearts yet":        "Nothing has a heart yet.",
         "how to give a heart":  "Tap the heart beside a name to give it one. Tap again for another.",
         "nothing played yet":   "Nothing has been played yet.",
