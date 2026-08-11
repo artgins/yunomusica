@@ -834,13 +834,78 @@
     color: var(--bulma-text-weak, #8a8a8a);
     font-variant-numeric: tabular-nums;
 }
+/*  `0 1 auto`, NOT `1`: the name has to be as wide as the name and no
+    wider, or the counts that belong beside it get pushed to the far end
+    of the row and stop reading as part of it. What takes up the slack
+    is the margin on .MUS_CNTS below. */
 .MUS_QMETA {
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    text-align: start;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
 }
 .MUS_QCTL { display: flex; flex: none; }
+
+
+/*======================================================================
+ *      The two counts beside a name
+ *
+ *  How often it has been listened to, and how many hearts it was
+ *  given. They sit right after the title on both screens that list
+ *  tracks, and they are `flex: none` so the TITLE is the thing that
+ *  gives up width, never them: a number that gets an ellipsis is worse
+ *  than no number.
+ *
+ *  A count of zero is an empty number, not an absent chip — that is
+ *  what lets the JS change a count without replacing the node the
+ *  finger is on. The play count then hides itself; the heart stays,
+ *  because the heart is how one is given.
+ *====================================================================*/
+.MUS_CNTS {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    /*  Hugs the name, and pushes everything after it — the verbs, the
+        move and remove buttons — to the far end of the row. */
+    margin-inline-end: auto;
+}
+.MUS_CNT {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.4rem;
+    border: none;
+    border-radius: 999px;
+    background: none;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    color: var(--bulma-text-weak, #8a8a8a);
+}
+.MUS_CNT .MUS_ICO { margin-inline-end: 0.25em; }
+.MUS_CNT_N:empty { display: none; }
+/*  The play count says nothing at all until there is something to say. */
+.MUS_CNT_PLAYS:not(.is-on) { display: none; }
+.MUS_CNT_PLAYS { background: var(--bulma-background, rgba(0, 0, 0, 0.05)); }
+
+.MUS_CNT_HEART { cursor: pointer; opacity: 0.45; }
+.MUS_CNT_HEART:hover,
+.MUS_CNT_HEART:focus-visible { opacity: 1; }
+.MUS_CNT_HEART.is-on {
+    opacity: 1;
+    color: var(--mus-accent);
+    background: var(--mus-accent-soft);
+}
 
 
 /*======================================================================
@@ -887,29 +952,7 @@
 
 .MUS_ROWS { display: flex; flex-direction: column; }
 
-/*  A selected row and the details it unfolds are one block, so the
-    highlight covers both. */
 .MUS_ROWWRAP { border-radius: 12px; }
-.MUS_ROWWRAP.is-selected { background: var(--bulma-background, rgba(0, 0, 0, 0.05)); }
-.MUS_ROWWRAP.is-selected .MUS_ROW:hover { background: none; }
-.MUS_ROWWRAP.is-selected .MUS_T1 { font-weight: 600; }
-
-.MUS_DETAILS {
-    margin: 0;
-    padding: 0.1rem 0.6rem 0.7rem 3.9rem;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 0.15rem 0.7rem;
-    font-size: 0.78rem;
-}
-.MUS_DETAIL { display: contents; }
-.MUS_DETAILS dt { color: var(--bulma-text-weak, #8a8a8a); white-space: nowrap; }
-.MUS_DETAILS dd {
-    margin: 0;
-    min-width: 0;
-    overflow-wrap: anywhere;
-    color: var(--bulma-text, #1b1b1b);
-}
 
 .MUS_ROW {
     display: flex;
@@ -925,7 +968,9 @@
 
 /*  The row's main hit area: everything except the two verb buttons. */
 .MUS_ROWMAIN {
-    flex: 1;
+    /*  Same as .MUS_QMETA: as wide as the name, so the counts stay
+        beside it. */
+    flex: 0 1 auto;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -1669,6 +1714,131 @@ img.MUS_ART { object-fit: cover; }
  *====================================================================*/
 [data-theme="dark"] .MUS_NOTICE { color: var(--bulma-text, #eee); }
 [data-theme="dark"] .MUS_ABOUT_BACKDROP { background: rgba(0, 0, 0, 0.7); }
+
+
+/*======================================================================
+ *      The card of one track
+ *
+ *  It exists because of the title, so the title is the one string in
+ *  this app with no ellipsis anywhere near it: it wraps, over as many
+ *  lines as it takes, and `overflow-wrap: anywhere` covers the name
+ *  with no spaces in it that a row could never have shown either.
+ *====================================================================*/
+.MUS_TCARD {
+    width: min(460px, 100%);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    border-radius: 18px;
+    padding: 1.2rem 1.3rem 1.3rem;
+    background: var(--bulma-scheme-main, #fff);
+    color: var(--bulma-text, #1b1b1b);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+}
+.MUS_TCARD_HEAD {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+}
+.MUS_TCARD_TITLE {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+.MUS_TCARD_CLOSE {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 50%;
+    background: var(--bulma-background, rgba(0, 0, 0, 0.05));
+    color: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.MUS_TCARD_FACTS {
+    margin: 0 0 1rem;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.3rem 0.9rem;
+    font-size: 0.85rem;
+}
+.MUS_TCARD_FACT { display: contents; }
+.MUS_TCARD_FACTS dt { color: var(--bulma-text-weak, #8a8a8a); white-space: nowrap; }
+.MUS_TCARD_FACTS dd {
+    margin: 0;
+    min-width: 0;
+    /*  A path has no spaces to break at and is the longest string here. */
+    overflow-wrap: anywhere;
+}
+
+.MUS_TCARD_COUNTS {
+    border-top: 1px solid var(--bulma-border-weak, #ededed);
+    padding-top: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.MUS_TCARD_COUNT {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.MUS_TCARD_CK {
+    flex: 1;
+    min-width: 6rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+    font-size: 0.85rem;
+}
+.MUS_TCARD_CV {
+    display: inline-flex;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+.MUS_TCARD_CV.is-heart { color: var(--mus-accent); }
+.MUS_TCARD_CSUB { font-size: 0.78rem; color: var(--bulma-text-weak, #8a8a8a); }
+.MUS_TCARD_CSUBN { font-weight: 700; margin-inline-end: 0.3em; }
+
+.MUS_TCARD_HBTNS { display: flex; gap: 0.3rem; }
+.MUS_TCARD_HBTN {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--bulma-border-weak, #ededed);
+    border-radius: 10px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.MUS_TCARD_HBTN:hover:not(:disabled) { background: var(--bulma-background, rgba(0, 0, 0, 0.05)); }
+.MUS_TCARD_HBTN:disabled { opacity: 0.35; cursor: default; }
+.MUS_TCARD_HADD { border-color: var(--mus-accent); color: var(--mus-accent); }
+
+.MUS_TCARD_FORGET {
+    align-self: flex-start;
+    padding: 0.25rem 0;
+    border: none;
+    background: none;
+    color: var(--bulma-text-weak, #8a8a8a);
+    font: inherit;
+    font-size: 0.78rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.MUS_TCARD_FORGET:hover { color: var(--bulma-text, #1b1b1b); }
 
 
 /*======================================================================

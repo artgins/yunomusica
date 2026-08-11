@@ -114,6 +114,14 @@ const en = {
         "viz wave":             "Wave",
         "viz chroma":           "Chroma",
         "viz off":              "Visualizer off",
+        "artist":               "Artist",
+        "times played":         "Times played",
+        "played through":       "played through",
+        "hearts":               "Hearts",
+        "give a heart":         "Give a heart",
+        "take one back":        "Take one back",
+        "reset hearts":         "Reset the hearts",
+        "forget these counts":  "Forget these counts",
 
         /* ---- the sources ---- */
         "authorised sources":   "Authorised sources",

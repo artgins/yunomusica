@@ -48,6 +48,8 @@ import {
     subscribe_sources, pending_authorisation, authorize_all,
 } from "./sources_store.js";
 import {create_visualizer, create_seek_wave} from "./visualizer.js";
+import {open_track, track_counts, refresh_counts} from "./track_card.js";
+import {subscribe_stats} from "./stats_store.js";
 import {save_queue_as} from "./playlists_store.js";
 import {subscribe_update, is_stale, latest_version} from "./update_check.js";
 import {
@@ -146,6 +148,7 @@ let PRIVATE_DATA = {
     unsub_src:  null,   // sources channel, for the authorisation banner
     unsub_upd:  null,   // a newer build was deployed
     unsub_ins:  null,   // the browser will let us offer an install
+    unsub_st:   null,   // hearts and play counts, which the rows show
     $now:       null,   // the transport card and the bars under it
     $queue:     null,   // the queue box
     naming:     false,  // the "save as list" row is open
@@ -233,6 +236,8 @@ function mt_start(gobj)
 
     start_follow(gobj);
 
+    priv.unsub_st = subscribe_stats(() => paint_queue_counts(gobj));
+
     /*  The authorisation banner lives on this screen, so it has to
         follow the sources too. */
     priv.unsub_src = subscribe_sources(() => paint_now(gobj));
@@ -271,6 +276,10 @@ function mt_stop(gobj)
     if(priv.unsub_ins) {
         priv.unsub_ins();
         priv.unsub_ins = null;
+    }
+    if(priv.unsub_st) {
+        priv.unsub_st();
+        priv.unsub_st = null;
     }
     stop_facts(gobj);
     stop_follow(gobj);
@@ -1122,13 +1131,22 @@ function queue_row(gobj, track, i, cur, total)
             draggable: "true"
         }, [
             /*  Not a button any more: browsing the queue must not change
-                what is playing. Starting this track is the ▶ below. */
+                what is playing. Starting this track is the ▶ below.
+
+                The NAME is a button, though, and it opens the track's
+                card — the whole title over as many lines as it takes,
+                which on a phone is the only place a long one can be
+                read at all. */
             ["div", {class: "MUS_QPLAY"}, [
                 ["span", {class: "MUS_QNUM"}, String(i + 1)],
-                ["span", {class: "MUS_QMETA"}, [
+                ["button", {
+                        class: "MUS_QMETA", type: "button",
+                        "aria-haspopup": "dialog"
+                    }, [
                     ["span", {class: "MUS_T1"}, track.title],
                     ["span", {class: "MUS_T2"}, track.artist]
-                ]]
+                ], {click: () => open_track(yui_shell_of(gobj), track)}],
+                track_counts(track)
             ]],
             ["div", {class: "MUS_QCTL"}, [
                 icon_button(P.play, 16, "play this", true,
@@ -1173,6 +1191,24 @@ function icon_button(path, size, key, enabled, on_click)
         attrs.disabled = "disabled";
     }
     return ["button", attrs, svg(path, size), {click: on_click}];
+}
+
+/*  Same reasoning as the highlight below: a heart or a play count moves
+    two numbers, and moving two numbers is not a reason to rebuild a
+    list somebody may have a finger on. */
+function paint_queue_counts(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.$queue) {
+        return;
+    }
+    let queue = queue_tracks();
+    for(const $row of priv.$queue.querySelectorAll(".MUS_QROW[data-qi]")) {
+        let track = queue[Number($row.getAttribute("data-qi"))];
+        if(track) {
+            refresh_counts($row.querySelector(".MUS_CNTS"), track);
+        }
+    }
 }
 
 /*  Only the "is-playing" class moves on a track change, so the list is

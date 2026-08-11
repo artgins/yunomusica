@@ -71,14 +71,45 @@ const check = async (hash, label) => {
 
 await check("#/player", "player");
 
-/*  unfold a track's details first: the path is the longest unbreakable
-    string the library can produce */
-await route(page, "#/library");
+await check("#/library", "library");
+
+/*  The track's card, which is where the longest unbreakable string the
+    app can produce now lives: a full path. It needs its own pass —
+    the card hangs off <body>, not off the shell zone, so the sweep
+    above cannot see it. */
+await route(page, "#/library", 900);
 await page.locator(".MUS_CHIP").nth(4).click();
 await page.waitForTimeout(700);
 await page.locator(".C_MUS_VIEW .MUS_ROWMAIN").nth(1).click();
 await page.waitForTimeout(500);
-await check("#/library", "library");
+const card = await page.evaluate(() => {
+    const vw = innerWidth;
+    const out = [];
+    for(const e of document.querySelectorAll(".MUS_TCARD, .MUS_TCARD *")) {
+        const b = e.getBoundingClientRect();
+        if(b.width === 0 && b.height === 0) {
+            continue;
+        }
+        if(b.right > vw + 1 || b.left < -1) {
+            out.push(`${e.tagName.toLowerCase()}.${(e.className || "").toString().split(" ")[0]} [${Math.round(b.left)}..${Math.round(b.right)}]`);
+        }
+    }
+    return {vw, open: !!document.querySelector(".MUS_TCARD"), out: [...new Set(out)].slice(0, 6)};
+});
+if(!card.open) {
+    bad_routes++;
+    console.log("  card         >>> NO ABRE");
+} else {
+    const ok = card.out.length === 0;
+    if(!ok) {
+        bad_routes++;
+    }
+    console.log(`  card         ${ok ? "cabe" : ">>> SE SALE"}  vw=${card.vw}`);
+    card.out.forEach((o) => console.log("      " + o));
+}
+await page.screenshot({path: `${OUT}/fit-card.png`});
+await page.click(".MUS_TCARD_CLOSE");
+await page.waitForTimeout(400);
 
 await check("#/sources", "sources");
 await check("#/lists", "lists");

@@ -48,6 +48,7 @@ const TESTS = [
     {name: "resume",    what: "al volver, la canción trae su duración y suena"},
     {name: "follow",    what: "el banner no scrollea y la cola sigue a la música"},
     {name: "viz",       what: "el banner dibuja la nota que suena, y sigue sonando"},
+    {name: "counts",    what: "escuchas y corazones: se cuentan, se borran y aguantan una recarga"},
     {name: "e2e",       what: "recorrido completo + recarga"}
 ];
 

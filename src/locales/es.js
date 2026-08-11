@@ -104,6 +104,14 @@ const es = {
         "viz wave":             "Onda",
         "viz chroma":           "Cromática",
         "viz off":              "Sin gráfico",
+        "artist":               "Artista",
+        "times played":         "Veces escuchada",
+        "played through":       "completas",
+        "hearts":               "Corazones",
+        "give a heart":         "Dar un corazón",
+        "take one back":        "Quitar uno",
+        "reset hearts":         "Poner los corazones a cero",
+        "forget these counts":  "Olvidar estos contadores",
 
         /* ---- las fuentes ---- */
         "authorised sources":   "Carpetas autorizadas",

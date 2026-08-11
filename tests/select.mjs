@@ -3,11 +3,11 @@
  *
  *      Browsing must never change what is sounding.
  *
- *      Row click selects and unfolds; the row's ▶ only previews; "Play
- *      all" is the one gesture that replaces the queue. This test exists
- *      because the app used to play on row click, and that made it
- *      impossible to look for the next track without losing the current
- *      one.
+ *      Tapping the name opens the track's card; the row's ▶ only
+ *      previews; "Play all" is the one gesture that replaces the queue.
+ *      This test exists because the app used to play on row click, and
+ *      that made it impossible to look for the next track without
+ *      losing the current one.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
@@ -34,14 +34,18 @@ await route(page, "#/library", 800);
 await page.locator(".MUS_CHIP").nth(4).click();
 await page.waitForTimeout(700);
 
-/*  1. click the row: selects + unfolds, changes nothing */
+/*  1. click the name: opens the card, changes nothing */
 await page.locator(".C_MUS_VIEW .MUS_ROWMAIN").nth(2).click();
 await page.waitForTimeout(700);
-console.log("1. seleccionada:", await page.locator(".MUS_ROWWRAP.is-selected").count(),
-            "| detalles:", await page.locator(".MUS_DETAILS").count());
-console.log("   campos:", (await page.locator(".MUS_DETAILS dt").allTextContents()).join(" / "));
+console.log("1. ficha:", await page.locator(".MUS_TCARD").count(),
+            "| título:", await page.locator(".MUS_TCARD_TITLE").textContent());
+console.log("   campos:", (await page.locator(".MUS_TCARD_FACTS dt").allTextContents()).join(" / "));
 console.log("   previa:", await page.locator(".MUS_PLAYER.is-preview").count(),
             "| cola:", await page.locator(".MUS_QROW").count());
+/*  The card is modal: it has to be shut before the row under it can be
+    reached again. */
+await page.click(".MUS_TCARD_CLOSE");
+await page.waitForTimeout(400);
 
 /*  2. the row's ▶ previews, does not replace the queue */
 await page.locator(".C_MUS_VIEW .MUS_ROW").nth(4).locator(".MUS_IBTN").first().click();

@@ -34,8 +34,10 @@ import {
     queue_add, current_track, preview_track,
 } from "./music_store.js";
 
-import {add_dir, add_files, source_name} from "./sources_store.js";
+import {add_dir, add_files} from "./sources_store.js";
 import {confirm_replace} from "./confirm_replace.js";
+import {open_track, track_counts, refresh_counts} from "./track_card.js";
+import {subscribe_stats} from "./stats_store.js";
 
 import {t} from "i18next";
 
@@ -90,8 +92,8 @@ let PRIVATE_DATA = {
     view:     "artists",
     detail:   null,     // {kind, name, tracks} while drilled in
     search:   "",
-    selected: 0,        // uid of the row whose details are open
     unsub:    null,
+    unsub_st: null,     // hearts and play counts, which rows show
     $chips:   null,
     $content: null,
     search_timer: 0,
@@ -139,6 +141,11 @@ function mt_start(gobj)
         }
     });
 
+    /*  A heart given from a row, or a play counted while this screen is
+        up, changes a chip on it — two numbers, not a list. Re-rendering
+        would throw away the button the finger is still on. */
+    priv.unsub_st = subscribe_stats(() => paint_counts(gobj));
+
     let shell = yui_shell_of(gobj);
     if(shell) {
         gobj_subscribe_event(shell, "EV_LANGUAGE_CHANGED", {}, gobj);
@@ -153,6 +160,10 @@ function mt_stop(gobj)
     if(priv.unsub) {
         priv.unsub();
         priv.unsub = null;
+    }
+    if(priv.unsub_st) {
+        priv.unsub_st();
+        priv.unsub_st = null;
     }
 }
 
@@ -475,26 +486,6 @@ function verb_buttons(gobj, get_tracks)
  *  list a Play starts the queue from. showNum swaps the cover
  *  for the track number in album/folder detail.
  ***************************************************************/
-/*  What else is known about a track, shown under it when selected. */
-function track_details(t_)
-{
-    let rows = [
-        ["album", t_.album],
-        ["genre", t_.genre],
-        ["year", t_.year],
-        ["track number", t_.track ? String(t_.track) : ""],
-        ["source", source_name(t_.source_id)],
-        ["path", t_.path]
-    ];
-    return ["dl", {class: "MUS_DETAILS"},
-        rows.filter((r) => r[1]).map(([key, value]) => [
-            "div", {class: "MUS_DETAIL"}, [
-                ["dt", {i18n: key}, t(key)],
-                ["dd", {}, UNKNOWN_KEYS[value] ? t(value) : value]
-            ]
-        ])];
-}
-
 function track_row(gobj, t_, list, showNum)
 {
     let left = showNum
@@ -503,33 +494,34 @@ function track_row(gobj, t_, list, showNum)
 
     let subtitle = t_.artist + (t_.album && !showNum ? " · " + t_.album : "");
 
-    /*  Tapping the row SELECTS it and shows the rest of what is known
-        about the track. Navigating a library must never take over what
-        is sounding, and it should not commit to anything either: this
-        is the one gesture in the app that only looks. */
-    let selected = (gobj.priv.selected === t_.uid);
+    /*  Tapping the NAME opens the track's card: the whole title, over
+        as many lines as it takes, and everything else known about it.
+        Navigating a library must never take over what is sounding, and
+        it should not commit to anything either — this is still the one
+        gesture in the app that only looks.
 
+        It used to unfold a block under the row instead. That block
+        could show the album and the path but never the thing that was
+        actually cut off, because the title above it stayed exactly as
+        truncated as before; and it existed on this screen and not on
+        the deck, so the same tap did different things depending on
+        where you were. */
     let children = [
         left,
         ["button", {
                 class: "MUS_ROWMAIN",
                 type: "button",
-                "aria-expanded": selected ? "true" : "false"
+                "aria-haspopup": "dialog"
             }, [
             ["span", {class: "MUS_T1"}, t_.title],
             ["span", {class: "MUS_T2"}, subtitle]
-        ], {click: () => {
-            gobj.priv.selected = selected ? 0 : t_.uid;
-            render(gobj);
-        }}],
+        ], {click: () => open_track(yui_shell_of(gobj), t_)}],
+        track_counts(t_),
         track_buttons(t_)
     ];
 
-    return ["div", {
-        class: "MUS_ROWWRAP" + (selected ? " is-selected" : "")
-    }, [
-        ["div", {class: "MUS_ROW", "data-tid": String(t_.uid)}, children],
-        selected ? track_details(t_) : ["span", {}]
+    return ["div", {class: "MUS_ROWWRAP"}, [
+        ["div", {class: "MUS_ROW", "data-tid": String(t_.uid)}, children]
     ]];
 }
 
@@ -695,6 +687,24 @@ function ordered_detail(d)
     return list.sort((a,b) => collator.compare(a.album, b.album) || byTrackNo(a,b));
 }
 
+
+/*  The counts on every row on screen, brought up to date in place. The
+    rows carry the uid, which is what the library indexes tracks by. */
+function paint_counts(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.$content) {
+        return;
+    }
+    let by_uid = new Map();
+    all_tracks_sorted().forEach((x) => by_uid.set(String(x.uid), x));
+    for(const $row of priv.$content.querySelectorAll(".MUS_ROW[data-tid]")) {
+        let track = by_uid.get($row.getAttribute("data-tid"));
+        if(track) {
+            refresh_counts($row.querySelector(".MUS_CNTS"), track);
+        }
+    }
+}
 
 /*  Toggle the "playing" tint on whichever row is the current track,
     without rebuilding the list. */

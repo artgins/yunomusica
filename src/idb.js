@@ -9,6 +9,8 @@
  *        - "playlists" the lists the user saved.
  *        - "prefs"     small app preferences (theme, locale, "don't show
  *                      the welcome again").
+ *        - "stats"     per track: how often it was listened to and how
+ *                      many hearts it was given.
  *
  *      Why IndexedDB and not localStorage: the two things worth keeping
  *      are NOT strings. A FileSystemDirectoryHandle and a File are
@@ -25,7 +27,7 @@
  ***********************************************************************/
 
 const DB_NAME = "yunomusica";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 const STORE_SOURCES   = "sources";
 const STORE_PLAYLISTS = "playlists";
@@ -38,6 +40,11 @@ const STORE_FILES     = "source_files";
     on every reload is minutes of work to reach a result we already had. */
 const STORE_TAGS      = "source_tags";
 const STORE_COVERS    = "covers";
+/*  How often a track was listened to, and how many hearts it was
+    given, by "<source id>|<path>". NOT a history: no times, no order,
+    nothing that reconstructs an evening — see stats_store.js, and see
+    the v4 note below for why that distinction is written down. */
+const STORE_STATS     = "stats";
 
 let db_promise = null;
 /*  The last open was blocked by another tab, rather than failing. The
@@ -109,6 +116,13 @@ function open_db()
             }
             if(!db.objectStoreNames.contains(STORE_COVERS)) {
                 db.createObjectStore(STORE_COVERS, {keyPath: "key"});
+            }
+            /*  v5: counts per track. A different thing from the "plays"
+                store dropped below — that one was the backing of a
+                history screen. This is a number shown ON the track, and
+                erasable from the same card that shows it. */
+            if(!db.objectStoreNames.contains(STORE_STATS)) {
+                db.createObjectStore(STORE_STATS, {keyPath: "key"});
             }
             /*  v4 dropped the listening history. The screen is gone, so
                 the record of behaviour goes with it: leaving it in the
@@ -329,6 +343,7 @@ export {
     STORE_FILES,
     STORE_TAGS,
     STORE_COVERS,
+    STORE_STATS,
     idb_all,
     idb_get,
     idb_put,

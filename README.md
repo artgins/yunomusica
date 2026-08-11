@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.11.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.12.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -103,9 +103,9 @@ it tells you what your browser can and cannot remember.
 
 Browsing never changes what is sounding. Every other rule follows from that one:
 
-- **Tapping a row** selects it and unfolds the rest of what is known about the
-  track (album, genre, year, number, source and path). It is the one gesture
-  that only looks.
+- **Tapping the name** opens the track's card: the whole title, everything else
+  known about it (album, genre, year, number, source and path), and its two
+  counts. It is the one gesture that only looks.
 - **▶ on a row** is a **preview**: it plays on its own audio element, pauses the
   queue, touches nothing, and offers the only decision worth offering — add it
   or drop it.
@@ -117,6 +117,48 @@ Browsing never changes what is sounding. Every other rule follows from that one:
 The queue survives a reload: which tracks, which list they came from, which one
 was playing and how many seconds in. It is restored **paused** — a page that
 starts making noise on its own is worse than one that restores nothing.
+
+## Two numbers on a track, and the card that shows them
+
+Beside every name, on both screens that list tracks, there are two counts:
+
+- **▶ how often it has been listened to.** A track counts once it has really
+  sounded — twenty seconds, or half of it when it is shorter than forty. What is
+  added up is the time that *actually played*: the store believes the difference
+  between two readings of the clock only when it is the size of a tick, so
+  skipping past a track adds nothing and neither does dragging the scrub bar
+  across it. A **preview** never counts, which is what a preview is for.
+- **♥ how many hearts you have given it.** A number, not a flag — loving one
+  song twice as much as another is a thing people mean, and a heart that only
+  toggles cannot say it. One tap on the row gives one. Taking them back is not
+  on the row, because a row is where fingers land by accident; that is on the
+  card, next to the number it changes.
+
+**Tapping the name opens the card.** It exists because of the title: a row gives
+a name one ellipsised line — about twenty characters on a phone — and there was
+nowhere to read the rest of it. On the card the title is the heading, it wraps,
+and it is the one string in the app with no ellipsis anywhere near it. Under it,
+everything the tags carried, then the counts: how many listens, how many of
+those went through to the end, the hearts, and the buttons that add one, take
+one back, or set them to zero.
+
+It replaced a fold-out that used to open under a selected library row. That
+fold-out could show the album and the path but never the thing that was
+actually cut off, and it existed on one of the two screens that list tracks, so
+the same tap did different things depending on where you were.
+
+### What these counts are not
+
+Version 4 of the database **deleted** a listening history, and the reason is
+worth keeping in view: the screen that showed it had gone, and holding a record
+of behaviour that the app no longer admits to holding is not a thing to do
+quietly.
+
+Nothing here is a history. There are no timestamps, no order, nothing that
+reconstructs an evening — a count per track, shown on the track itself, and
+erasable from the same card that shows it (**"forget these counts"**). Remove a
+source and its counts go with it, rather than becoming orphans that nothing can
+display and nothing can clear.
 
 ## What is stored, and what is not
 
@@ -269,6 +311,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `resume` | the track you come back to has no duration and does not sound |
 | `follow` | the banner scrolls away, or the queue stops following the music |
 | `viz` | the banner draws the wrong note — or tapping the audio silenced it |
+| `counts` | a skipped track counts as listened to, or the counts vanish on reload |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
 
 Two things they are strict about, both learned the hard way:
@@ -326,6 +369,8 @@ The vhost serves `.webmanifest` as `application/manifest+json` and revalidates
 | `src/install_dialog.js` | "do you want to install this?", asked once |
 | `src/analyser.js` | the Web Audio tap: spectrum, waveform, and the fold onto semitones |
 | `src/visualizer.js` | the four pictures and the envelope in the scrub bar |
+| `src/track_card.js` | the two counts beside a name, and the card the name opens |
+| `src/stats_store.js` | how often a track was listened to, and its hearts |
 | `src/music_store.js` | domain: ID3, library, queue, preview and playback |
 | `src/sources_store.js` | the authorised sources, their recursive walk and their diagnostics |
 | `src/playlists_store.js` | the saved lists and how they resolve |

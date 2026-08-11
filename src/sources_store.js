@@ -41,6 +41,7 @@ import {
 import {
     is_stale as update_stale, latest_version as update_latest,
 } from "./update_check.js";
+import {drop_source_stats} from "./stats_store.js";
 
 /*  Files are stored in batches. One record holding every File of a big
     folder exceeds the structured-clone limit and the write is refused,
@@ -968,6 +969,10 @@ async function remove_source(id)
     }
 
     drop_source_tracks(id);
+    /*  The counts go with the folder. Left behind they would be
+        orphans: nothing on screen could show them and nothing could
+        clear them, which is the one thing the counts must never be. */
+    drop_source_stats(id);
     await idb_del(STORE_SOURCES, id);
     await idb_del(STORE_TAGS, id);
     await idb_del_prefix(STORE_FILES, id + ":");

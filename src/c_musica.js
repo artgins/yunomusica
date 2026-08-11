@@ -54,6 +54,7 @@ import {
     stop_scan, is_stopping,
 } from "./sources_store.js";
 import {load_playlists} from "./playlists_store.js";
+import {load_stats} from "./stats_store.js";
 import {pref_get, pref_set} from "./idb.js";
 
 import {switch_locale, current_locale} from "./locales/locales.js";
@@ -263,6 +264,7 @@ async function boot(gobj)
     start_install_watch();
 
     await load_playlists();
+    await load_stats();
     await load_sources();
 
     /*  The deck as it was left: which list, which track, how far in. */
