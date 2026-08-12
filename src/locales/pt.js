@@ -166,6 +166,7 @@ const pt = {
         "folder":               "Pasta",
         "files":                "Ficheiros",
         "remove this source":   "Remover esta fonte",
+        "remove this source?":  "Remover esta fonte?",
         "diagnostics":         "Diagnóstico",
         "copy":                "Copiar",
         "new version":         "Há uma versão nova",

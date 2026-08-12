@@ -166,6 +166,7 @@ const ja = {
         "folder":               "フォルダー",
         "files":                "ファイル",
         "remove this source":   "このソースを取り除く",
+        "remove this source?":  "このソースを取り除きますか？",
         "diagnostics":         "診断情報",
         "copy":                "コピー",
         "new version":         "新しいバージョンがあります",

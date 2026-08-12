@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.19.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.19.1** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing

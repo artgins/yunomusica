@@ -170,6 +170,7 @@ const ar = {
         "folder":               "مجلد",
         "files":                "ملفات",
         "remove this source":   "إزالة هذا المصدر",
+        "remove this source?":  "هل تريد إزالة هذا المصدر؟",
         "diagnostics":         "تشخيص",
         "copy":                "نسخ",
         "new version":         "تتوفر نسخة جديدة",

@@ -166,6 +166,7 @@ const hi = {
         "folder":               "फ़ोल्डर",
         "files":                "फ़ाइलें",
         "remove this source":   "यह स्रोत हटाएँ",
+        "remove this source?":  "यह स्रोत हटाएँ?",
         "diagnostics":         "निदान",
         "copy":                "कॉपी करें",
         "new version":         "नया संस्करण उपलब्ध है",

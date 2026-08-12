@@ -166,6 +166,7 @@ const ru = {
         "folder":               "Папка",
         "files":                "Файлы",
         "remove this source":   "Убрать этот источник",
+        "remove this source?":  "Убрать этот источник?",
         "diagnostics":         "Диагностика",
         "copy":                "Копировать",
         "new version":         "Доступна новая версия",

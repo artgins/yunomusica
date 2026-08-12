@@ -166,6 +166,7 @@ const fr = {
         "folder":               "Dossier",
         "files":                "Fichiers",
         "remove this source":   "Retirer cette source",
+        "remove this source?":  "Retirer cette source ?",
         "diagnostics":         "Diagnostic",
         "copy":                "Copier",
         "new version":         "Une nouvelle version est disponible",

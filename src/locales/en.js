@@ -181,6 +181,7 @@ const en = {
         "folder":               "Folder",
         "files":                "Files",
         "remove this source":   "Remove this source",
+        "remove this source?":  "Remove this source?",
         "diagnostics":         "Diagnostics",
         "copy":                "Copy",
         "new version":         "A new version is available",

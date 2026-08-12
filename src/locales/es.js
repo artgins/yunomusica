@@ -171,6 +171,7 @@ const es = {
         "folder":               "Carpeta",
         "files":                "Ficheros",
         "remove this source":   "Quitar esta fuente",
+        "remove this source?":  "¿Quitar esta fuente?",
         "diagnostics":         "Diagnóstico",
         "copy":                "Copiar",
         "new version":         "Hay una versión nueva",

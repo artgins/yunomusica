@@ -87,6 +87,7 @@ let PRIVATE_DATA = {
     $content:      null,
     diag_open:     false,   // the diagnostics panel is unfolded
     diag_text:     "",      // its last readout, kept across re-renders
+    confirming:    "",      // id of the source awaiting a remove confirmation
 };
 
 let __gclass__ = null;
@@ -118,6 +119,10 @@ function mt_create(gobj)
 function mt_start(gobj)
 {
     let priv = gobj.priv;
+
+    /*  A question left hanging when the view was left is not still being
+        asked when it is come back to. */
+    priv.confirming = "";
 
     priv.unsub_sources = subscribe_sources(() => render(gobj));
     /*  A scan feeds the library, and the per-source track count comes
@@ -197,7 +202,7 @@ function render(gobj)
     } else {
         let $list = createElement2(["div", {class: "MUS_SRCLIST"}, []]);
         for(const s of sources) {
-            $list.appendChild(build_source_row(s));
+            $list.appendChild(build_source_row(gobj, s));
         }
         $c.appendChild($list);
     }
@@ -365,7 +370,7 @@ function build_explainer()
 }
 
 
-function build_source_row(s)
+function build_source_row(gobj, s)
 {
     let needs_auth = (s.permission !== "granted");
     let kind_key = (s.kind === "dir") ? "folder" : "files";
@@ -431,15 +436,34 @@ function build_source_row(s)
             [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
             {click: () => queue_add(tracks_of_source(s.id), "append")}]);
     }
-    actions.push(["button", {
-            class: "MUS_QBTN button is-ghost",
-            type: "button",
-            "aria-label": t("remove this source"),
-            "data-i18n-aria-label": "remove this source",
-            title: t("remove this source"),
-            "data-i18n-title": "remove this source"
-        }, [ico(P.trash, 15), ["span", {i18n: "remove"}, t("remove")]],
-        {click: () => remove_source(s.id)}]);
+    /*  ASK BEFORE REMOVING.
+     *
+     *  Removing a source drops its tracks, its tags and its play counts,
+     *  and re-authorising a folder is a browser dialog away — too much to
+     *  hang on one mistaken tap next to "add to queue". The question is
+     *  asked in the row itself, the same as the saved lists do it: no
+     *  modal to dismiss, and the answer is where the finger already is. */
+    if(gobj.priv.confirming === s.id) {
+        actions.push(["button", {class: "MUS_QBTN button is-danger", type: "button",
+                                 i18n: "remove this source?"}, t("remove this source?"),
+            {click: async () => {
+                gobj.priv.confirming = "";
+                await remove_source(s.id);
+            }}]);
+        actions.push(["button", {class: "MUS_QBTN button is-ghost", type: "button",
+                                 i18n: "cancel"}, t("cancel"),
+            {click: () => { gobj.priv.confirming = ""; render(gobj); }}]);
+    } else {
+        actions.push(["button", {
+                class: "MUS_QBTN button is-ghost",
+                type: "button",
+                "aria-label": t("remove this source"),
+                "data-i18n-aria-label": "remove this source",
+                title: t("remove this source"),
+                "data-i18n-title": "remove this source"
+            }, [ico(P.trash, 15), ["span", {i18n: "remove"}, t("remove")]],
+            {click: () => { gobj.priv.confirming = s.id; render(gobj); }}]);
+    }
 
     let children = [$meta];
     if($state) {

@@ -166,6 +166,7 @@ const zh = {
         "folder":               "文件夹",
         "files":                "文件",
         "remove this source":   "移除此来源",
+        "remove this source?":  "移除此来源？",
         "diagnostics":         "诊断信息",
         "copy":                "复制",
         "new version":         "有新版本可用",

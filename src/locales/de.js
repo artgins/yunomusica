@@ -166,6 +166,7 @@ const de = {
         "folder":               "Ordner",
         "files":                "Dateien",
         "remove this source":   "Diese Quelle entfernen",
+        "remove this source?":  "Diese Quelle entfernen?",
         "diagnostics":         "Diagnose",
         "copy":                "Kopieren",
         "new version":         "Eine neue Version ist verfügbar",
