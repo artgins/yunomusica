@@ -13,8 +13,8 @@
         "fixtures": "node tests/fixtures.mjs"
     },
     "dependencies": {
-        "@yuneta/gobj-js": "^7.10.0",
-        "@yuneta/gobj-ui": "^5.11.1",
+        "@yuneta/gobj-js": "^7.12.0",
+        "@yuneta/gobj-ui": "^5.14.2",
         "bulma": "^1.0.4",
         "i18next": "^26.3.6"
     },
