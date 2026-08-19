@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.20.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.21.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -695,3 +695,63 @@ a red line in the console that reads like a fault. A check that cannot succeed
 should not be made, so it is skipped when `navigator.onLine` is false — a flag
 worth trusting in exactly one direction. `true` promises nothing; `false` is
 definite.
+
+## Asking about a sleeve
+
+Most music on a phone is a folder of files with no picture inside them, and a
+wall of grey squares is a poor way to find a record you know by its cover.
+
+A name cannot *be* a picture. But a name is enough to **ask** about one, and
+that is the whole of this feature: artist and album go out as text, an image
+comes back. Which makes it the only thing in the app that reaches outside, so
+it is built to be unable to hurt the part that matters.
+
+**It is off until switched on.** The promise here is that nothing leaves the
+device; while the switch is off that stays literally true, and turning it on is
+the user saying they would rather have the sleeves. The switch lives in Sources,
+directly under the sentence it is the exception to. Leaving it on by default
+would make that sentence a half-truth — which this app has already been caught
+doing once, and once was enough.
+
+**It cannot get in the way.** Nothing awaits it, no view waits for it, and the
+queue plays whether it succeeds, fails or never runs. With no network it is not
+attempted at all. A request that hangs is aborted after eight seconds, because a
+captive portal that accepts connections and then answers nothing would otherwise
+hold the whole sweep open forever.
+
+**A cover found in the file always wins.** `add_cover()` refuses a key that
+already has one. The network is a guess — right most of the time, and still a
+guess — while the picture inside the file is what the owner of the music chose.
+
+**It never asks twice.** A hit is stored; so is a miss, as a row with no blob,
+so a library full of bootlegs does not re-ask the internet at every launch. A
+miss is retried after a month, because the archive gains covers over time.
+
+Two services, in order. **MusicBrainz** with the **Cover Art Archive** first —
+non-profit, no key, no advertising behind it — and it is also the one that goes
+down; `503 "currently busy"` is a normal answer from it, which is exactly why
+there is a second. **The iTunes Search API** answers when the first does not.
+
+### What the folder name is worth
+
+This is where the shelf numbering earns its keep, by being thrown away.
+
+A ripped folder is called `0060 - Yes Going For the One`, and no catalogue in
+the world has a record by that name: the `0060` is the shelf, not the title. So
+before anything is asked, a leading number and its separator go, `(Disc 2)` goes,
+and `(Remastered 2011)` / `(Deluxe Edition)` go — an edition is not a different
+record, and asking for one narrows a search that was going to succeed.
+
+That exact folder is the case this was built from, and it is worth following
+through because it shows both services doing their job. The tags are missing, so
+the album name comes from the folder and the artist is not known at all.
+MusicBrainz is asked `releasegroup:"Yes Going For the One"` with no artist to
+narrow it, and finds nothing — there is no release group by that name. iTunes is
+asked `Yes Going For the One` as free text, and answers with *Going for the One*
+by Yes. The sleeve appears.
+
+`tests/covers.mjs` answers all three services itself rather than going out to
+them, so the suite does not fail on a day MusicBrainz is busy. It holds the
+feature to its four promises: silence while off, questions only about albums with
+no cover of their own, the fall back to iTunes when the first service misses, and
+a picture painted when one comes back.

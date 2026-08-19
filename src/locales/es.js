@@ -131,6 +131,14 @@ const es = {
         "add loose files":      "Añadir ficheros sueltos",
         "folders are recursive":
             "Una carpeta se coge entera: esa y todas las que cuelgan de ella.",
+        "look for covers online":
+            "Buscar carátulas en internet",
+        "covers online explained":
+            "Apagado, de esta app no sale nada. Encendido, y solo para los discos sin carátula dentro del fichero, salen el artista y el álbum como texto — nada más: ni ficheros, ni listas, ni identificadores. Se pregunta primero a MusicBrainz y, si no contesta, a iTunes. Va por detrás y no estorba a la música: sin conexión ni se intenta.",
+        "covers online working":
+            "Buscando… quedan {{left}}.",
+        "covers online done":
+            "Encontradas {{found}}. Sin resultado: {{missed}} (no se vuelven a preguntar en un mes).",
         "nothing is copied":
             "No se copia nada ni se sube nada. Solo se guarda una referencia a lo que ya está en tu disco.",
         "allow on every visit":

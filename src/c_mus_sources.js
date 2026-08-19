@@ -37,6 +37,9 @@ import {
 } from "./sources_store.js";
 
 import {subscribe, tracks_of_source, queue_add, store_state} from "./music_store.js";
+import {
+    set_covers_online, covers_online_state, subscribe_covers
+} from "./covers_online.js";
 
 import {t} from "i18next";
 
@@ -84,6 +87,7 @@ SDATA_END()
 let PRIVATE_DATA = {
     unsub_sources: null,
     unsub_music:   null,
+    unsub_covers:  null,
     $content:      null,
     diag_open:     false,   // the diagnostics panel is unfolded
     diag_text:     "",      // its last readout, kept across re-renders
@@ -135,6 +139,10 @@ function mt_start(gobj)
         }
     });
 
+    /*  The cover hunt reports its own progress, and it runs long enough
+        that a line saying how far it has got is worth repainting for. */
+    priv.unsub_covers = subscribe_covers(() => render(gobj));
+
     let shell = yui_shell_of(gobj);
     if(shell) {
         gobj_subscribe_event(shell, "EV_LANGUAGE_CHANGED", {}, gobj);
@@ -153,6 +161,10 @@ function mt_stop(gobj)
     if(priv.unsub_music) {
         priv.unsub_music();
         priv.unsub_music = null;
+    }
+    if(priv.unsub_covers) {
+        priv.unsub_covers();
+        priv.unsub_covers = null;
     }
 }
 
@@ -193,6 +205,7 @@ function render(gobj)
 
     $c.appendChild(build_header());
     $c.appendChild(build_explainer());
+    $c.appendChild(build_covers_switch(gobj));
 
     let sources = all_sources();
     if(!sources.length) {
@@ -309,6 +322,50 @@ function build_header()
                     [ico(P.file, 16), ["span", {i18n: "add loose files"}, t("add loose files")]],
                     {click: () => add_files()}]
             ]]
+        ]]
+    );
+}
+
+
+/*  The one switch that lets something out of the device.
+ *
+ *  It lives here, next to the sentence that promises nothing is
+ *  uploaded, because that is where the promise is made and this is the
+ *  single exception to it. Off by default: leaving it on by default
+ *  would make that sentence a half-truth, which is a thing this app has
+ *  already been caught doing once.
+ *
+ *  What goes out is said plainly — artist and album, as text, and
+ *  nothing else. No file, no list, no identifier. */
+function build_covers_switch(gobj)
+{
+    const st = covers_online_state();
+
+    let note = t("covers online explained");
+    if(st.running) {
+        note = t("covers online working", {left: st.left});
+    } else if(st.on && (st.found || st.missed)) {
+        note = t("covers online done", {found: st.found, missed: st.missed});
+    }
+
+    /*  The attribute is ADDED or it is absent. Passing `checked:
+        undefined` writes the string "undefined" into the attribute, and
+        an attribute that is present at all means checked — which showed
+        the switch on while the feature was off. */
+    const attrs = {class: "MUS_COVOPT_CHECK", type: "checkbox"};
+    if(st.on) {
+        attrs.checked = "checked";
+    }
+
+    return createElement2(
+        ["section", {class: "MUS_COVOPT"}, [
+            ["label", {class: "MUS_COVOPT_ROW"}, [
+                ["input", attrs, null,
+                    {change: (ev) => set_covers_online(!!ev.target.checked)}],
+                ["span", {class: "MUS_COVOPT_TITLE", i18n: "look for covers online"},
+                    t("look for covers online")]
+            ]],
+            ["p", {class: "MUS_DIM MUS_COVOPT_NOTE"}, note]
         ]]
     );
 }

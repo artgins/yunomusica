@@ -707,6 +707,46 @@ function cover_url(key)
     return S.covers.get(key) || null;
 }
 
+/*  Put a cover on an album from outside the tag reader.
+ *
+ *  The only caller is covers_online.js, and the rule it obeys is here
+ *  rather than there: a cover that came off the file ALWAYS wins. The
+ *  network is a guess — right most of the time, and still a guess —
+ *  while the picture inside the file is what the owner of the music
+ *  chose. So a key that already has one is left alone. */
+function add_cover(key, blob)
+{
+    if(!key || !blob || S.cover_blobs.has(key)) {
+        return false;
+    }
+    S.cover_blobs.set(key, blob);
+    S.covers.set(key, URL.createObjectURL(blob));
+    emit("library");
+    return true;
+}
+
+/*  The albums nobody has a picture for, once each. `unknown album` is
+    left out on purpose: there is nothing to ask anyone about. */
+function albums_missing_cover()
+{
+    const out = new Map();
+    for(const t of S.tracks) {
+        if(S.covers.has(t.key) || out.has(t.key)) {
+            continue;
+        }
+        if(norm(t.album) === UNKNOWN_ALBUM) {
+            continue;
+        }
+        out.set(t.key, {
+            key: t.key,
+            album: t.album,
+            albumArtist: t.albumArtist,
+            folder: t.folder
+        });
+    }
+    return [...out.values()];
+}
+
 /*  Ordered the way a folder reads: by folder, then track number, then
     title. The browser hands entries over in whatever order it likes —
     reverse, as it turns out — and queueing a whole source backwards is
@@ -1416,6 +1456,8 @@ export {
     all_tracks_sorted,
     search,
     cover_url,
+    add_cover,
+    albums_missing_cover,
     tracks_of_source,
     find_track,
     /*  ingest progress (read S through getters) */
