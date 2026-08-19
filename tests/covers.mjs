@@ -3,11 +3,12 @@
  *
  *      The one feature that reaches outside, held to its promises.
  *
- *      Five of them, and each one is a way this could go wrong quietly:
+ *      Six of them, and each one is a way this could go wrong quietly:
  *
- *        1. OFF by default means no request. The app says nothing leaves
- *           the device; while the switch is off that has to be literally
- *           true, not nearly true.
+ *        1. ON by default, and the switch still means what it says: off
+ *           has to be silence, and an explicit off has to survive a
+ *           reload. A default that ignores a stored "no" is the worst
+ *           version of this feature.
  *        2. It asks about ONE record — the one sounding — and not about
  *           the library. The `music` fixture is built for this: Ramones
  *           with a cover inside, Bach without. Playing the Bach must ask
@@ -18,6 +19,10 @@
  *        4. It paints when it comes back.
  *        5. It is kept. Playing the same record again, even after a
  *           reload, asks nobody anything.
+ *        6. A blank can be argued with. When both services miss, Sources
+ *           says how many and offers a retry that really does ask again
+ *           — otherwise a day when MusicBrainz was down costs the user
+ *           that sleeve for a month.
  *
  *      The three services are answered here rather than over the real
  *      internet. MusicBrainz replies 503 "currently busy" often enough
@@ -73,9 +78,16 @@ const page = await new_page(browser, {no_fsa: true});
 /*  Everything the app asks the outside world, in order. */
 const asked = [];
 
+/*  The services are answered here rather than over the real internet,
+    and `mode` is what makes the retry testable: "miss" is the day
+    MusicBrainz is down and iTunes knows nothing, "hit" is the day after.
+    Nothing else in the app can tell the two days apart. */
+let mode = "miss";
+
 await page.route("**://musicbrainz.org/**", async (r) => {
     asked.push(r.request().url());
-    /*  Misses on purpose: the point is that iTunes then answers. */
+    /*  Misses either way: the point of the first service here is that
+        the second one gets its turn. */
     await r.fulfill({status: 200, contentType: "application/json",
                      body: JSON.stringify({"release-groups": []})});
 });
@@ -85,6 +97,11 @@ await page.route("**://coverartarchive.org/**", async (r) => {
 });
 await page.route("**://itunes.apple.com/**", async (r) => {
     asked.push(r.request().url());
+    if(mode === "miss") {
+        await r.fulfill({status: 200, contentType: "application/json",
+                         body: JSON.stringify({results: []})});
+        return;
+    }
     await r.fulfill({status: 200, contentType: "application/json",
                      body: JSON.stringify({results: [{
                          artistName: "Bach", collectionName: "Cello Suites",
@@ -135,78 +152,70 @@ await page.click(".MUS_TPLAY");
 await page.waitForTimeout(600);
 console.log("suena un disco sin carátula (Bach):", on_bach, "|", await playing_now());
 
-/*  1. off by default: a record is playing, time passes, nothing goes out */
-await page.waitForTimeout(6000);
-console.log("1. apagado -> peticiones al exterior:", asked.length);
+/*  1. on by default: nobody switched anything, and the record with no
+       sleeve of its own is asked about. Both services miss today. */
+await page.waitForTimeout(9000);
+const first_round = asked.length;
+console.log("1. de fábrica -> preguntas:", first_round);
+const mb1 = asked.filter((u) => u.includes("musicbrainz")).length;
+const it1 = asked.filter((u) => u.includes("itunes")).length;
+console.log("   MusicBrainz:", mb1, "| iTunes (respaldo):", it1);
+for(const u of asked) {
+    console.log("   pregunta:", decodeURIComponent(u).slice(0, 120));
+}
 
-/*  How many sleeves are on screen BEFORE anything is fetched. The
-    Ramones cover came out of the file and is already painted, so the
+/*  How many sleeves are on screen before anything comes back. The
+    Ramones cover came out of its own file and is already painted, so the
     count that means something is the difference, not the total. */
 await route(page, "#/library", 1000);
 const painted_before = await page.evaluate(() =>
     [...document.querySelectorAll("img")].filter((i) => i.src.startsWith("blob:")).length);
 console.log("   carátulas ya pintadas (del fichero):", painted_before);
 
-await route(page, "#/sources", 800);
+await route(page, "#/sources", 900);
 const box = page.locator(".MUS_COVOPT_CHECK");
-console.log("   interruptor presente:", await box.count(),
+console.log("   interruptor en Fuentes:", await box.count(),
             "| encendido:", await box.isChecked());
-await page.screenshot({path: `${OUT}/covers-switch-off.png`});
-const clean_start = asked.length === 0 && (await box.count()) === 1 &&
-                    (await box.isChecked()) === false;
+const on_by_default = (await box.count()) === 1 && (await box.isChecked()) === true;
+await page.screenshot({path: `${OUT}/covers-switch-on.png`});
 
-/*  1b. the offer is made where the missing sleeve is, not only in
-       Sources — which is the whole reason this bar exists. */
-await route(page, "#/player", 900);
-const offered = await page.locator(".MUS_COVBAR").count();
-console.log("1b. la oferta sale en el Reproductor:", offered > 0);
-await page.screenshot({path: `${OUT}/covers-offer.png`});
+/*  2. the blank is reported, and comes with a way to argue with it */
+const retry_btn = page.locator(".MUS_COVOPT_RETRY");
+const note = (await page.locator(".MUS_COVOPT_NOTE").textContent() || "").trim();
+const bar = await retry_btn.count();
+console.log("2. Fuentes dice:", note.slice(0, 70));
+console.log("   botón de reintento:", bar > 0);
+await page.screenshot({path: `${OUT}/covers-retry.png`});
 
-/*  2. answered from that bar, it goes to work on what is sounding */
-if(offered) {
-    await page.locator(".MUS_COVBAR .is-primary").click();
-} else {
-    await route(page, "#/sources", 600);
-    await box.check();
+/*  3. today the service answers; the retry has to actually ask again */
+mode = "hit";
+const before_retry = asked.length;
+if(bar) {
+    await retry_btn.click();
 }
-await page.waitForTimeout(12000);
+await page.waitForTimeout(9000);
+const retried = asked.length - before_retry;
+console.log("3. al reintentar -> preguntas nuevas:", retried);
 
-const hosts = asked.map((u) => new URL(u).host);
-console.log("2. encendido -> servicios consultados:",
-            [...new Set(hosts)].join(", ") || "ninguno");
+await route(page, "#/library", 1200);
+const painted = await page.evaluate(() =>
+    [...document.querySelectorAll("img")].filter((i) => i.src.startsWith("blob:")).length);
+console.log("   carátulas pintadas:", painted, "(antes", painted_before + ")");
+await route(page, "#/sources", 900);
+const gone = await page.locator(".MUS_COVOPT_RETRY").count();
+console.log("   el botón se va cuando no queda nada que reintentar:", gone === 0);
+await page.screenshot({path: `${OUT}/covers-found.png`});
 
-const mb = asked.filter((u) => u.includes("musicbrainz"));
-const it = asked.filter((u) => u.includes("itunes"));
-console.log("   MusicBrainz:", mb.length, "| iTunes (respaldo):", it.length);
-for(const u of mb.concat(it)) {
-    console.log("   pregunta:", decodeURIComponent(u).slice(0, 130));
-}
-
-/*  2b. answering it makes the bar go away for good */
-await route(page, "#/player", 900);
-const still_offering = await page.locator(".MUS_COVBAR").count();
-console.log("2b. la oferta desaparece tras contestarla:", still_offering === 0);
-
-/*  3. it asked about the album with no cover, and left the other alone */
+/*  4. it asked about the record with no cover, and never about the one
+       whose sleeve came out of its own file */
 const all = decodeURIComponent(asked.join(" | "));
 const asked_bach = /Cello Suites/i.test(all);
 const asked_ramones = /Rocket to Russia/i.test(all);
-console.log("3. pregunta por el disco sin carátula (Bach):", asked_bach);
+console.log("4. pregunta por el disco sin carátula (Bach):", asked_bach);
 console.log("   respeta la carátula del fichero (Ramones):", !asked_ramones);
 
-/*  4. and what came back is now painted */
-await route(page, "#/library", 1200);
-const painted = await page.evaluate(() => {
-    const imgs = [...document.querySelectorAll("img")];
-    return imgs.filter((i) => i.src.startsWith("blob:")).length;
-});
-console.log("4. carátulas pintadas en la biblioteca:", painted,
-            "(antes", painted_before + ")");
-await page.screenshot({path: `${OUT}/covers-found.png`, fullPage: true});
-
-/*  5. it is kept: the same record, sounding again after a reload, is not
-       asked about a second time. This is the point of storing it. */
-const before = asked.length;
+/*  5. it is kept: the same record after a reload asks nobody anything */
+const before_reload = asked.length;
 await page.reload({waitUntil: "networkidle"});
 await page.waitForTimeout(2500);
 await route(page, "#/player", 1200);
@@ -215,31 +224,53 @@ await page.waitForTimeout(1200);
 await walk_to("Bach");
 await page.click(".MUS_TPLAY");
 await page.waitForTimeout(7000);
-console.log("5. mismo disco tras recargar -> preguntas nuevas:", asked.length - before,
+console.log("5. mismo disco tras recargar -> preguntas nuevas:", asked.length - before_reload,
             "| suena:", await playing_now());
+
+/*  6. and off means off, across a reload */
+await route(page, "#/sources", 900);
+await page.locator(".MUS_COVOPT_CHECK").uncheck();
+await page.waitForTimeout(600);
+await page.reload({waitUntil: "networkidle"});
+await page.waitForTimeout(2500);
+await route(page, "#/sources", 1200);
+const still_off = (await page.locator(".MUS_COVOPT_CHECK").isChecked()) === false;
+console.log("6. apagado a mano, tras recargar sigue apagado:", still_off);
 
 let bad = report(page);
 if(!on_bach) {
     console.log(">>> el test no consiguió poner el disco sin carátula");
     bad = true;
 }
-if(!clean_start) {
-    console.log(">>> apagado no significa apagado");
+if(!on_by_default) {
+    console.log(">>> no busca carátulas de fábrica");
     bad = true;
 }
-if(!offered) {
-    console.log(">>> no se ofrece donde falta la carátula");
+if(!first_round) {
+    console.log(">>> de fábrica no pregunta por el disco que suena");
     bad = true;
 }
-if(still_offering) {
-    console.log(">>> la oferta sigue ahí después de contestarla");
+if(!bar) {
+    console.log(">>> un fallo no ofrece manera de reintentar");
+    bad = true;
+}
+if(!retried) {
+    console.log(">>> el botón de reintento no vuelve a preguntar");
+    bad = true;
+}
+if(gone) {
+    console.log(">>> sigue ofreciendo reintentar sin nada que reintentar");
+    bad = true;
+}
+if(!still_off) {
+    console.log(">>> apagarlo a mano no aguanta una recarga");
     bad = true;
 }
 if(!asked_bach || asked_ramones) {
     console.log(">>> pregunta por los discos equivocados");
     bad = true;
 }
-if(!it.length) {
+if(!it1) {
     console.log(">>> no cae al respaldo cuando MusicBrainz no contesta");
     bad = true;
 }
@@ -247,7 +278,7 @@ if(painted <= painted_before) {
     console.log(">>> la carátula encontrada no se pinta");
     bad = true;
 }
-if(asked.length - before !== 0) {
+if(asked.length - before_reload !== 0) {
     console.log(">>> vuelve a preguntar por lo que ya sabe");
     bad = true;
 }

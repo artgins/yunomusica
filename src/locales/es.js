@@ -56,6 +56,7 @@ const es = {
             "Añade una carpeta o unas pistas y caen aquí, en el plato.",
         "queue":                "Cola",
         "the queue is empty":   "La cola está vacía.",
+        "empty the queue?":   "¿Vaciar la cola?",
         "clear queue":          "Vaciar la cola",
         "follow playing":       "Seguir lo que suena",
         "save as list":         "Guardar como lista",
@@ -137,16 +138,24 @@ const es = {
             "Puedo buscarla en internet: salen artista y álbum, nada más.",
         "look for it":
             "Buscarla",
+        "retry the ones that failed":
+            "Reintentar las que no salieron",
+        "cover not found":
+            "No encontré la carátula",
+        "cover retry detail":
+            "Puede que el servicio estuviera caído. Puedes volver a intentarlo.",
+        "try again":
+            "Reintentar",
         "look for covers online":
             "Buscar carátulas en internet",
         "covers online explained":
-            "Apagado, de esta app no sale nada. Encendido, cuando suena un disco sin carátula dentro del fichero salen su artista y su álbum como texto — nada más: ni ficheros, ni listas, ni identificadores. Se pregunta solo por lo que estás escuchando, nunca por tu biblioteca entera, y lo que llega se guarda aquí: ese disco no se vuelve a preguntar nunca. Va por detrás y no estorba a la música: sin conexión ni se intenta.",
+            "Encendido, cuando suena un disco sin carátula dentro del fichero salen su artista y su álbum como texto — nada más: ni ficheros, ni listas, ni identificadores. Se pregunta solo por lo que estás escuchando, nunca por tu biblioteca entera, y lo que llega se guarda aquí: ese disco no se vuelve a preguntar nunca. Apágalo y de esta app no sale absolutamente nada.",
         "covers online working":
             "Buscando la carátula de «{{asking}}»…",
         "covers online done":
             "Encontradas {{found}}. Sin resultado: {{missed}} (no se vuelven a preguntar en un mes).",
         "nothing is copied":
-            "No se copia nada ni se sube nada. Solo se guarda una referencia a lo que ya está en tu disco.",
+            "Tus ficheros no se copian ni se suben: solo se guarda una referencia a lo que ya está en tu disco. Lo único que sale de aquí es el artista y el álbum del disco que estés escuchando, como texto, para buscar su carátula — y eso se apaga justo aquí debajo.",
         "allow on every visit":
             "La carpeta se recuerda, pero el permiso sobre ella lo gestiona el navegador. Chrome en Android lo vuelve a pedir en cada arranque, y ningún ajuste de esta app puede evitarlo — por eso autorizar es un toque en la pantalla del reproductor, donde caes al abrir. Si tu navegador ofrece «Permitir en cada visita», al elegirlo dejará de preguntar.",
         "folders need authorising":
@@ -208,7 +217,7 @@ const es = {
         /* ---- ayuda y créditos ---- */
         "your music your way":  "Tu música, como quieras verla.",
         "about lead":
-            "Yunomúsica lee la música que ya está en tu dispositivo y la ordena por artista, álbum, género y carpeta. Funciona entera en el navegador: sin cuenta, sin subir nada, sin rastreo.",
+            "Yunomúsica lee la música que ya está en tu dispositivo y la ordena por artista, álbum, género y carpeta. Funciona entera en el navegador: sin cuenta, sin rastreo y sin subir tus ficheros a ningún sitio.",
         "how it works":         "Cómo funciona",
         "help pick":
             "Autoriza una carpeta en Fuentes. Se lee entera, con sus subcarpetas, y las etiquetas ID3 de cada fichero dan el artista, el álbum y el género.",
@@ -217,7 +226,7 @@ const es = {
         "help lists":
             "Guarda una cola con un nombre y la recuperas luego — como referencias a tus ficheros, nunca como copias.",
         "help privacy":
-            "Tus ficheros no salen del dispositivo. No hay servidor al que mandarlos.",
+            "Tus ficheros no salen del dispositivo: no hay servidor al que mandarlos. Para buscar carátulas sí sale el artista y el álbum de lo que escuchas, y eso se apaga en Fuentes.",
         "do not show this again": "No volver a mostrar",
         "made by artgins":      "Hecho por ArtGins",
         "made with yuneta":     "Hecho con Yuneta",

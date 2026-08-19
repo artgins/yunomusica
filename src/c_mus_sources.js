@@ -6,7 +6,7 @@
  *      This is where the app is honest about what it does with your
  *      disk. It says, in the interface and not just in a README:
  *
- *        - nothing is copied and nothing is uploaded — only a reference
+ *        - no file is copied and no file is uploaded — only a reference
  *          to what is already on your disk is kept;
  *        - a folder is taken WHOLE, that folder and every folder below;
  *        - what this particular browser can and cannot remember.
@@ -38,7 +38,7 @@ import {
 
 import {subscribe, tracks_of_source, queue_add, store_state} from "./music_store.js";
 import {
-    set_covers_online, covers_online_state, subscribe_covers
+    set_covers_online, covers_online_state, subscribe_covers, retry_covers
 } from "./covers_online.js";
 
 import {t} from "i18next";
@@ -329,11 +329,13 @@ function build_header()
 
 /*  The one switch that lets something out of the device.
  *
- *  It lives here, next to the sentence that promises nothing is
- *  uploaded, because that is where the promise is made and this is the
- *  single exception to it. Off by default: leaving it on by default
- *  would make that sentence a half-truth, which is a thing this app has
- *  already been caught doing once.
+ *  It lives here, beside the paragraph about what is and is not sent,
+ *  because this is the single exception to it and that is where the
+ *  exception belongs. It ships ON — the owner of the app decided the
+ *  sleeves are worth having without being asked for — so the paragraph
+ *  above it says what goes out instead of promising nothing does. A
+ *  default that quietly makes a written sentence false is the trap this
+ *  app already fell into once, over the word "offline".
  *
  *  What goes out is said plainly — artist and album, as text, and
  *  nothing else. No file, no list, no identifier. */
@@ -357,17 +359,30 @@ function build_covers_switch(gobj)
         attrs.checked = "checked";
     }
 
-    return createElement2(
-        ["section", {class: "MUS_COVOPT"}, [
-            ["label", {class: "MUS_COVOPT_ROW"}, [
-                ["input", attrs, null,
-                    {change: (ev) => set_covers_online(!!ev.target.checked)}],
-                ["span", {class: "MUS_COVOPT_TITLE", i18n: "look for covers online"},
-                    t("look for covers online")]
-            ]],
-            ["p", {class: "MUS_DIM MUS_COVOPT_NOTE"}, note]
-        ]]
-    );
+    let children = [
+        ["label", {class: "MUS_COVOPT_ROW"}, [
+            ["input", attrs, null,
+                {change: (ev) => set_covers_online(!!ev.target.checked)}],
+            ["span", {class: "MUS_COVOPT_TITLE", i18n: "look for covers online"},
+                t("look for covers online")]
+        ]],
+        ["p", {class: "MUS_DIM MUS_COVOPT_NOTE"}, note]
+    ];
+
+    /*  A blank is remembered for a month so a library of bootlegs does
+        not re-ask the internet at every launch. That is right until the
+        day the archive gains the sleeve, or the day MusicBrainz was
+        simply down when we asked — so the memory has to be arguable
+        with, from the same place that reports it. */
+    if(st.on && st.missed) {
+        children.push(
+            ["button", {class: "MUS_QBTN MUS_COVOPT_RETRY button is-ghost",
+                        type: "button", i18n: "retry the ones that failed"},
+                t("retry the ones that failed"),
+                {click: () => retry_covers(true)}]);
+    }
+
+    return createElement2(["section", {class: "MUS_COVOPT"}, children]);
 }
 
 

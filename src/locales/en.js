@@ -66,6 +66,7 @@ const en = {
             "Add a folder or a few tracks, and they land here on the deck.",
         "queue":                "Queue",
         "the queue is empty":   "The queue is empty.",
+        "empty the queue?":   "Empty the queue?",
         "clear queue":          "Clear the queue",
         "follow playing":       "Follow what is playing",
         "save as list":         "Save as list",
@@ -147,16 +148,24 @@ const en = {
             "I can look for it online: artist and album go out, nothing else.",
         "look for it":
             "Look for it",
+        "retry the ones that failed":
+            "Try the ones that failed again",
+        "cover not found":
+            "No cover found",
+        "cover retry detail":
+            "The service may have been down. You can try again.",
+        "try again":
+            "Try again",
         "look for covers online":
             "Look for covers online",
         "covers online explained":
-            "Off, nothing leaves this app. On, when a record with no cover inside the file starts playing, its artist and album go out as text — nothing else: no files, no lists, no identifiers. Only what you are listening to is ever asked about, never your whole library, and what comes back is kept here: that record is never asked about again. It runs behind the music and never gets in its way: with no connection it is not even attempted.",
+            "On, when a record with no cover inside the file starts playing, its artist and album go out as text — nothing else: no files, no lists, no identifiers. Only what you are listening to is ever asked about, never your whole library, and what comes back is kept here: that record is never asked about again. Switch it off and absolutely nothing leaves this app.",
         "covers online working":
             "Looking for the cover of “{{asking}}”…",
         "covers online done":
             "Found {{found}}. No luck with {{missed}} (not asked again for a month).",
         "nothing is copied":
-            "Nothing is copied and nothing is uploaded. Only a reference to what is already on your disk is stored.",
+            "Your files are neither copied nor uploaded: only a reference to what is already on your disk is stored. The one thing that leaves here is the artist and album of the record you are listening to, as text, to look for its cover — and that is switched off just below.",
         "allow on every visit":
             "A folder is remembered, but the permission on it is the browser's to keep. Chrome on Android asks again at every launch, and no setting in this app can change that — so authorising is one tap on the player screen, where you land. If your browser offers “Allow on every visit”, choosing it means it will not ask again.",
         "folders need authorising":
@@ -218,7 +227,7 @@ const en = {
         /* ---- help and credits ---- */
         "your music your way":  "Your music, the way you want to see it.",
         "about lead":
-            "Yunomúsica reads the music already on your device and organises it by artist, album, genre and folder. It runs entirely in the browser: no account, no upload, no tracking.",
+            "Yunomúsica reads the music already on your device and sorts it by artist, album, genre and folder. It runs entirely in the browser: no account, no tracking, and your files are never uploaded anywhere.",
         "how it works":         "How it works",
         "help pick":
             "Authorise a folder in Sources. It is read whole, subfolders included, and the ID3 tags of every file give the artist, album and genre.",
@@ -227,7 +236,7 @@ const en = {
         "help lists":
             "Save a queue with a name and it comes back next time — as references to your files, never as copies.",
         "help privacy":
-            "Your files never leave the device. There is no server to send them to.",
+            "Your files do not leave the device: there is no server to send them to. To look for covers, the artist and album of what you play do go out, and that is switched off in Sources.",
         "do not show this again": "Do not show this again",
         "made by artgins":      "Made by ArtGins",
         "made with yuneta":     "Made with Yuneta",

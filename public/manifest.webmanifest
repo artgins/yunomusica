@@ -1,7 +1,7 @@
 {
     "name": "Yunomúsica",
     "short_name": "Yunomúsica",
-    "description": "Tu música, como quieras verla. Se lee en el dispositivo: nada se copia y nada se sube.",
+    "description": "Tu música, como quieras verla. Se lee en el dispositivo: tus ficheros no se copian ni se suben.",
     "id": "/",
     "start_url": "./",
     "scope": "./",

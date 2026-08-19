@@ -53,6 +53,7 @@ const de = {
             "Füge einen Ordner oder ein paar Titel hinzu — sie landen hier auf dem Deck.",
         "queue":                "Warteschlange",
         "the queue is empty":   "Die Warteschlange ist leer.",
+        "empty the queue?":   "Warteschlange leeren?",
         "clear queue":          "Warteschlange leeren",
         "follow playing":       "Dem Laufenden folgen",
         "save as list":         "Als Liste speichern",
@@ -132,16 +133,24 @@ const de = {
             "Ich kann online danach suchen: Künstler und Album gehen hinaus, sonst nichts.",
         "look for it":
             "Suchen",
+        "retry the ones that failed":
+            "Fehlgeschlagene erneut versuchen",
+        "cover not found":
+            "Kein Cover gefunden",
+        "cover retry detail":
+            "Der Dienst war vielleicht nicht erreichbar. Du kannst es erneut versuchen.",
+        "try again":
+            "Erneut versuchen",
         "look for covers online":
             "Cover online suchen",
         "covers online explained":
-            "Aus verlässt nichts diese App. An gehen, sobald ein Album ohne Cover in der Datei läuft, dessen Künstler und Album als Text hinaus — sonst nichts: keine Dateien, keine Listen, keine Kennungen. Gefragt wird nur nach dem, was du gerade hörst, nie nach deiner ganzen Sammlung, und was ankommt, bleibt hier: nach diesem Album wird nie wieder gefragt. Es läuft im Hintergrund und stört die Musik nie: ohne Verbindung wird es gar nicht erst versucht.",
+            "An gehen, sobald ein Album ohne Cover in der Datei läuft, dessen Künstler und Album als Text hinaus — sonst nichts: keine Dateien, keine Listen, keine Kennungen. Gefragt wird nur nach dem, was du gerade hörst, nie nach deiner ganzen Sammlung, und was ankommt, bleibt hier: nach diesem Album wird nie wieder gefragt. Schalte es ab, und es verlässt überhaupt nichts diese App.",
         "covers online working":
             "Suche das Cover von „{{asking}}“…",
         "covers online done":
             "{{found}} gefunden. Ohne Treffer: {{missed}} (wird einen Monat lang nicht erneut gefragt).",
         "nothing is copied":
-            "Es wird nichts kopiert und nichts hochgeladen. Gespeichert wird nur ein Verweis auf das, was ohnehin auf deiner Festplatte liegt.",
+            "Deine Dateien werden weder kopiert noch hochgeladen: gespeichert wird nur ein Verweis auf das, was ohnehin auf deiner Festplatte liegt. Das Einzige, was von hier hinausgeht, sind Künstler und Album des Albums, das du gerade hörst, als Text, um sein Cover zu suchen — und das schaltest du direkt darunter ab.",
         "allow on every visit":
             "Der Ordner wird gemerkt, die Freigabe darauf verwaltet aber der Browser. Chrome unter Android fragt bei jedem Start erneut, und keine Einstellung dieser App ändert das — Freigeben ist deshalb ein Tippen auf dem Player-Bildschirm, auf dem du landest. Bietet dein Browser „Bei jedem Besuch zulassen“ an, fragt er danach nicht mehr.",
         "folders need authorising":
@@ -201,7 +210,7 @@ const de = {
 
         "your music your way":  "Deine Musik, so wie du sie sehen willst.",
         "about lead":
-            "Yunomúsica liest die Musik, die schon auf deinem Gerät liegt, und ordnet sie nach Interpret, Album, Genre und Ordner. Es läuft vollständig im Browser: kein Konto, kein Upload, kein Tracking.",
+            "Yunomúsica liest die Musik, die schon auf deinem Gerät liegt, und ordnet sie nach Künstler, Album, Genre und Ordner. Alles läuft im Browser: kein Konto, kein Tracking, und deine Dateien werden nirgendwohin hochgeladen.",
         "how it works":         "So funktioniert es",
         "help pick":
             "Gib unter Quellen einen Ordner frei. Er wird ganz gelesen, samt Unterordnern, und die ID3-Tags jeder Datei liefern Interpret, Album und Genre.",
@@ -210,7 +219,7 @@ const de = {
         "help lists":
             "Speichere eine Warteschlange unter einem Namen, und sie ist beim nächsten Mal wieder da — als Verweise auf deine Dateien, nie als Kopien.",
         "help privacy":
-            "Deine Dateien verlassen das Gerät nicht. Es gibt keinen Server, an den sie gehen könnten.",
+            "Deine Dateien verlassen das Gerät nicht: es gibt keinen Server, an den sie gingen. Für die Cover-Suche gehen Künstler und Album des Gehörten hinaus, und das schaltest du in Quellen ab.",
         "do not show this again": "Nicht mehr anzeigen",
         "made by artgins":      "Gemacht von ArtGins",
         "made with yuneta":     "Gemacht mit Yuneta",

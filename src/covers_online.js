@@ -12,10 +12,11 @@
  *      Everything about this file is arranged so that it cannot hurt the
  *      thing the app is actually for:
  *
- *        - It is OFF until switched on. The app's promise is that
- *          nothing leaves the device; while this is off that stays
- *          literally true, and turning it on is the user saying they
- *          would rather have the sleeves.
+ *        - It can be switched OFF, and an explicit no is kept for good.
+ *          It ships on, so the sentence in Sources says what goes out
+ *          rather than promising nothing does — a default that makes a
+ *          written promise false is the exact trap this app already fell
+ *          into once, over the word "offline".
  *        - It asks about ONE record: the one that is sounding. Sweeping
  *          the whole library would send the catalogue of somebody's
  *          disk to two companies to fill in squares nobody is looking
@@ -42,16 +43,23 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
-import {STORE_COVERS, idb_all, idb_put, pref_get, pref_set} from "./idb.js";
+import {STORE_COVERS, idb_all, idb_put, idb_del, pref_get, pref_set} from "./idb.js";
 import {
     subscribe, albums_missing_cover, add_cover, current_track, cover_url
 } from "./music_store.js";
 
+/*  ON unless the user turned it off.
+ *
+ *  It shipped off, with a bar on the player offering it. The owner of
+ *  the app decided the sleeves are worth having by default, so the
+ *  default moved — and the sentence in Sources that used to promise
+ *  nothing ever leaves moved with it, because a default that quietly
+ *  makes a written promise false is the exact failure this app was
+ *  caught in over the word "offline".
+ *
+ *  An explicit NO still wins: pref_get falls back to true only when
+ *  there is no stored answer, so anyone who switched it off stays off. */
 const PREF_ON = "covers_online";
-/*  Whether the offer has been made. Separate from PREF_ON because "off
-    because nobody was ever asked" and "off because the answer was no"
-    are different states, and only the first one deserves a bar. */
-const PREF_ASKED = "covers_online_asked";
 
 /*  MusicBrainz asks for no more than one request a second. Nothing here
     has to be paced to obey that any more — one record at a time, when a
@@ -68,14 +76,13 @@ const RETRY_MISS_AFTER = 30 * 24 * 3600 * 1000;
 const listeners = new Set();
 
 const S = {
-    on:      false,
-    asked:   false,     // the offer has been made, whatever the answer
+    on:      true,
     ready:   false,     // the preference has been read
     running: false,
     found:   0,
-    missed:  0,
     asking:  "",        // the record being asked about right now
     misses:  new Map(), // album key -> when we last drew a blank
+    hidden:  new Set(), // …and the ones whose retry bar was waved away
     stop:    false,
 };
 
@@ -104,29 +111,65 @@ function covers_online_on()
     return S.on;
 }
 
-/*  Is there a reason to offer this, and has the user not answered yet?
+/*  The record sounding right now was asked about and nothing came back.
  *
- *  The switch went into Sources, under the sentence it is the exception
- *  to, which is the right place to EXPLAIN it and the wrong place to
- *  find it: the person who wants a sleeve is looking at the sleeve that
- *  is missing. So the offer is made on the player, once, and the answer
- *  is remembered either way — the same bargain the install bar strikes. */
-function covers_offer_due()
+ *  Which is the moment a retry is worth offering: the user is looking at
+ *  the empty square, and the two services disagree often enough — and go
+ *  down often enough — that a second ask minutes later genuinely finds
+ *  what the first one missed. Without this a blank is remembered for a
+ *  month with no way to argue with it. */
+function cover_missed_now()
 {
-    return S.ready && !S.on && !S.asked && albums_missing_cover().length > 0;
+    if(!S.ready || !S.on || S.running) {
+        return false;
+    }
+    const track = current_track();
+    if(!track || !track.key || cover_url(track.key)) {
+        return false;
+    }
+    if(S.hidden.has(track.key)) {
+        return false;
+    }
+    return S.misses.has(track.key);
 }
 
-async function dismiss_covers_offer()
+/*  Not now. For this record, for as long as the app stays open — a bar
+    that cannot be got rid of is worse than a missing sleeve. */
+function hide_cover_retry()
 {
-    S.asked = true;
-    await pref_set(PREF_ASKED, true);
+    const track = current_track();
+    if(track && track.key) {
+        S.hidden.add(track.key);
+    }
     emit();
+}
+
+/*  Forget one blank, or all of them, and ask again straight away. */
+async function retry_covers(all)
+{
+    if(all) {
+        for(const key of [...S.misses.keys()]) {
+            await idb_del(STORE_COVERS, key);
+        }
+        S.misses.clear();
+        S.hidden.clear();
+    } else {
+        const track = current_track();
+        if(!track || !track.key) {
+            return;
+        }
+        S.misses.delete(track.key);
+        S.hidden.delete(track.key);
+        await idb_del(STORE_COVERS, track.key);
+    }
+    emit();
+    await hunt_current();
 }
 
 function covers_online_state()
 {
     return {on: S.on, running: S.running, found: S.found,
-            missed: S.missed, asking: S.asking};
+            missed: S.misses.size, asking: S.asking};
 }
 
 
@@ -250,7 +293,6 @@ async function from_itunes(artist, album)
 async function remember_miss(key)
 {
     S.misses.set(key, Date.now());
-    S.missed++;
     /*  Stored in the covers store beside the real ones, with no blob.
         prime_covers() skips a null blob, so this costs the painting
         nothing and saves the internet a question it already answered. */
@@ -353,10 +395,7 @@ function schedule()
 async function set_covers_online(on)
 {
     S.on = !!on;
-    /*  Turning it on or off IS an answer, so the bar has no more to ask. */
-    S.asked = true;
     await pref_set(PREF_ON, S.on);
-    await pref_set(PREF_ASKED, true);
     if(S.on) {
         schedule();
     } else {
@@ -369,8 +408,7 @@ async function set_covers_online(on)
     the library from then on. Called once, from main(). */
 async function start_covers_online()
 {
-    S.on = !!(await pref_get(PREF_ON, false));
-    S.asked = !!(await pref_get(PREF_ASKED, false));
+    S.on = !!(await pref_get(PREF_ON, true));
     S.ready = true;
 
     const rows = await idb_all(STORE_COVERS);
@@ -402,8 +440,9 @@ async function start_covers_online()
 export {
     start_covers_online,
     set_covers_online,
-    covers_offer_due,
-    dismiss_covers_offer,
+    cover_missed_now,
+    hide_cover_retry,
+    retry_covers,
     covers_online_on,
     covers_online_state,
     subscribe_covers,

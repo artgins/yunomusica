@@ -52,9 +52,7 @@ import {open_track, track_counts, refresh_counts} from "./track_card.js";
 import {subscribe_stats} from "./stats_store.js";
 import {save_queue_as} from "./playlists_store.js";
 import {subscribe_update, is_stale, latest_version} from "./update_check.js";
-import {
-    covers_offer_due, dismiss_covers_offer, set_covers_online, subscribe_covers
-} from "./covers_online.js";
+import {subscribe_covers} from "./covers_online.js";
 import {
     subscribe_install, install_bar_due, dismiss_install_bar,
 } from "./install_prompt.js";
@@ -151,6 +149,7 @@ let PRIVATE_DATA = {
     unsub_src:  null,   // sources channel, for the authorisation banner
     unsub_upd:  null,   // a newer build was deployed
     unsub_cov:  null,   // the cover hunt: its offer, and what it finds
+    confirm_clear: false,   // "empty the queue?" is standing
     unsub_ins:  null,   // the browser will let us offer an install
     unsub_st:   null,   // hearts and play counts, which the rows show
     $now:       null,   // the transport card and the bars under it
@@ -249,11 +248,16 @@ function mt_start(gobj)
     priv.unsub_ins = subscribe_install(() => paint_now(gobj));
     priv.unsub_cov = subscribe_covers(() => paint_now(gobj));
 
+    /*  A question left hanging when the deck was left is not still being
+        asked when it is come back to. */
+    priv.confirm_clear = false;
+
     /*  A language switch re-renders everything this view composed with
         t() at build time — see the gobj-ui i18n contract. */
     let shell = yui_shell_of(gobj);
     if(shell) {
         gobj_subscribe_event(shell, "EV_LANGUAGE_CHANGED", {}, gobj);
+        gobj_subscribe_event(shell, "EV_ROUTE_CHANGED", {}, gobj);
     }
 
     paint_now(gobj);
@@ -946,30 +950,6 @@ function paint_bars(gobj)
             ]]));
     }
 
-    /*  The sleeve is missing and the user is looking straight at the
-        space where it should be. That is the moment to offer, and the
-        switch in Sources is not the place to find it — same reasoning as
-        the authorise bar above: put it where the user already is.
-
-        Once. Whichever way it is answered, it does not come back. */
-    if(covers_offer_due()) {
-        $now.appendChild(createElement2(
-            ["div", {class: "MUS_AUTHBAR MUS_COVBAR", role: "status"}, [
-                ["div", {class: "MUS_AUTHBAR_TXT"}, [
-                    ["span", {i18n: "no cover for this"}, t("no cover for this")],
-                    ["span", {class: "MUS_AUTHBAR_WHICH", i18n: "covers offer detail"},
-                        t("covers offer detail")]
-                ]],
-                ["button", {class: "MUS_QBTN button is-primary", type: "button",
-                            i18n: "look for it"},
-                    t("look for it"), {click: () => set_covers_online(true)}],
-                ["button", {class: "MUS_NOTICE_X", type: "button",
-                            "aria-label": t("close"),
-                            "data-i18n-aria-label": "close"},
-                    svg(P.cross, 14), {click: () => dismiss_covers_offer()}]
-            ]]));
-    }
-
     /*  A file that vanished, or a pick with nothing playable in it. */
     if(store_state.notice) {
         $now.appendChild(createElement2(
@@ -1118,10 +1098,33 @@ function paint_queue(gobj)
                     },
                     [ico(P.save, 16), ["span", {i18n: "save as list"}, t("save as list")]],
                     {click: () => open_naming(gobj)}],
-                ["button", {class: "MUS_QBTN button is-ghost", type: "button",
-                            ...disabled_if(!queue.length)},
-                    [ico(P.trash, 16), ["span", {i18n: "clear queue"}, t("clear queue")]],
-                    {click: () => queue_clear()}],
+                /*  Emptying the deck asks first.
+                 *
+                 *  It is one tap next to "save as list", it throws away
+                 *  an order that can represent real work, and unlike
+                 *  taking one track out there is nothing to undo it
+                 *  with. The question is asked in the button itself,
+                 *  the way removing a source asks — a dialog for this
+                 *  would be ceremony, but no question at all is how an
+                 *  evening's queue disappears on a misplaced thumb. */
+                priv.confirm_clear
+                    ? ["button", {class: "MUS_QBTN MUS_QCLEAR_YES button is-danger",
+                                  type: "button", i18n: "empty the queue?"},
+                        t("empty the queue?"),
+                        {click: () => {
+                            priv.confirm_clear = false;
+                            queue_clear();
+                        }}]
+                    : ["button", {class: "MUS_QBTN MUS_QCLEAR button is-ghost",
+                                  type: "button", ...disabled_if(!queue.length)},
+                        [ico(P.trash, 16), ["span", {i18n: "clear queue"}, t("clear queue")]],
+                        {click: () => { priv.confirm_clear = true; paint_queue(gobj); }}],
+                priv.confirm_clear
+                    ? ["button", {class: "MUS_QBTN MUS_QCLEAR_NO button is-ghost",
+                                  type: "button", i18n: "cancel"},
+                        t("cancel"),
+                        {click: () => { priv.confirm_clear = false; paint_queue(gobj); }}]
+                    : ["span", {}],
                 /*  Last, and never disabled: it is a setting, not an
                     action on the queue. Anything before it would also
                     move the two buttons above, which the suite finds
@@ -1509,6 +1512,22 @@ function build_naming(gobj)
 
 
 
+/*  Leaving the deck answers nothing.
+ *
+ *  "¿Vaciar la cola?" is asked in the button itself, and the view is not
+ *  torn down when the user navigates away — mt_start does not run again
+ *  on the way back. So a question left standing would still be standing
+ *  minutes later, in the spot where the plain button used to be, and the
+ *  next tap there would empty a queue nobody asked about. */
+function ac_route_changed(gobj, event, kw, src)
+{
+    if(gobj.priv.confirm_clear) {
+        gobj.priv.confirm_clear = false;
+        paint_queue(gobj);
+    }
+    return 0;
+}
+
 function ac_language_changed(gobj, event, kw, src)
 {
     /*  The subtitle composes artist and album into ONE string, and a
@@ -1543,11 +1562,13 @@ function create_gclass(gclass_name)
 
     const states = [
         ["ST_IDLE", [
-            ["EV_LANGUAGE_CHANGED", ac_language_changed, null]
+            ["EV_LANGUAGE_CHANGED", ac_language_changed, null],
+            ["EV_ROUTE_CHANGED",    ac_route_changed,    null]
         ]]
     ];
     const event_types = [
-        ["EV_LANGUAGE_CHANGED", 0]
+        ["EV_LANGUAGE_CHANGED", 0],
+        ["EV_ROUTE_CHANGED", 0]
     ];
 
     __gclass__ = gclass_create(

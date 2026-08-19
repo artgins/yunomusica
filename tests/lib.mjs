@@ -47,6 +47,25 @@ async function new_page(browser, opts = {})
     });
     let page = await ctx.newPage();
 
+    /*  No test reaches the real internet.
+     *
+     *  Covers are looked up by default now, so without this every test
+     *  that loads the fixtures would quietly ask MusicBrainz and Apple
+     *  about "Cello Suites" — slower, noisier, and dependent on two
+     *  services being up to test things that have nothing to do with
+     *  them. Playwright runs the LAST matching handler first, so
+     *  covers.mjs registers its own answers after this and wins.
+     *
+     *  Answered "nothing found" rather than aborted: an abort is a
+     *  failed request, and a failed request is a console error, and
+     *  every test in here treats console errors as a failure. */
+    await page.route(/(musicbrainz\.org|coverartarchive\.org)/, (r) =>
+        r.fulfill({status: 200, contentType: "application/json",
+                   body: '{"release-groups": []}'}));
+    await page.route(/(itunes\.apple\.com|mzstatic\.com)/, (r) =>
+        r.fulfill({status: 200, contentType: "application/json",
+                   body: '{"results": []}'}));
+
     let errors = [];
     page.on("pageerror", (e) => errors.push("PAGEERROR: " + (e && e.message)));
     page.on("console", (m) => { if(m.type() === "error") { errors.push(m.text()); } });

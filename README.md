@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.22.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.23.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -720,20 +720,30 @@ no blob — so a library full of bootlegs does not re-ask the internet at every
 launch. Misses are retried after a month, because the archive gains covers over
 time.
 
-**It is off until switched on.** The promise here is that nothing leaves the
-device; while the switch is off that stays literally true, and turning it on is
-the user saying they would rather have the sleeves. Leaving it on by default
-would make that sentence a half-truth — which this app has already been caught
-doing once, and once was enough.
+**It is on, and it can be switched off.** It shipped off, behind a bar on the
+player that offered it. That lasted a day: the owner of the app decided the
+sleeves are worth having without being asked for, so the default moved — and the
+paragraph in Sources moved with it. It used to promise that nothing ever leaves;
+it now says what does. A default that quietly makes a written sentence false is
+the exact trap this app fell into over the word "offline", and it was not going
+to be walked into twice in the same week. An explicit **no** still wins: the
+default applies only where there is no stored answer, so anyone who switched it
+off stays off across reloads.
 
-**And the offer is made where the gap is.** The switch lives in Sources, under
-the sentence it is the exception to, which is the right place to *explain* it
-and the wrong place to *find* it: the person who wants a sleeve is looking at
-the sleeve that is missing. So a bar on the player offers it once, next to the
-empty square, and remembers the answer whichever way it goes — the same bargain
-the install bar strikes, and for the same reason. This was not the first design.
-It became the design about ninety seconds after the first user opened Sources,
-did not find anything, and said the covers still were not showing.
+What that paragraph says now, in full: your files are neither copied nor
+uploaded, and the one thing that leaves is the artist and album of the record
+you are listening to, as text, to look for its cover — switched off just below.
+The same correction was made to the manifest, the page description and the help
+dialog, because a promise is not kept by being true in only one of the four
+places it is written.
+
+**A blank can be argued with.** Both services miss, and MusicBrainz in
+particular is often simply down when asked. Without a way back, one bad minute
+costs that sleeve for a month. So Sources reports how many drew a blank and
+offers "retry the ones that failed", which forgets those misses and asks again
+about what is playing. There is deliberately **no** bar on the player for this:
+a record with no sleeve anywhere is common, and a bar that appears for every one
+of them is an app nagging about something it cannot fix.
 
 **It cannot get in the way.** Nothing awaits it, no view waits for it, and the
 queue plays whether it succeeds, fails or never runs. With no network it is not
@@ -769,14 +779,43 @@ asked `Yes Going For the One` as free text, and answers with *Going for the One*
 by Yes. The sleeve appears.
 
 `tests/covers.mjs` answers all three services itself, so the suite does not fail
-on a day MusicBrainz is busy. It holds the feature to five promises: silence
-while off, an offer made on the player and not only in Sources, one question
-about the record that is sounding and nothing said about the one whose cover
-came out of its own file, a picture painted when it comes back, and not one
-further question about that record ever again — checked across a reload.
+on a day MusicBrainz is busy, and a `mode` flag lets it play the day the service
+is down and the day after — which is the only way to test a retry. It holds the
+feature to six promises: on by default, one question about the record that is
+sounding, nothing said about the one whose cover came out of its own file, a
+blank reported with a retry that really does ask again, a picture painted when
+it comes back, and never another question about that record — checked across a
+reload. Plus the one that matters most: switched off by hand, it stays off, and
+nothing goes out at all.
+
+The rest of the suite is sealed off from the internet in `lib.mjs`. With covers
+looked up by default, every test that loads the fixtures would otherwise ask
+MusicBrainz and Apple about "Cello Suites" — slower, noisier, and dependent on
+two services being up to test things that have nothing to do with them. They are
+answered "nothing found" rather than aborted, because an aborted request is a
+console error and every test here treats console errors as failure.
 
 Its own trap is worth writing down: the fixture tracks are five seconds long, so
 a test that presses play and then goes looking for a switch is asking about
 whichever record the queue drifted onto. It steps to the album it means with the
 next button and **pauses** there. A paused record is still the record you are
 looking at, which is the whole idea.
+
+## Emptying the deck asks
+
+"Vaciar la cola" sits one tap away from "Guardar como lista". It throws away an
+order that can represent an evening's work, and unlike taking a single track out
+there is nothing to undo it with.
+
+So it asks — in the button itself, which turns into **¿Vaciar la cola?** plus
+**Cancelar**, the same way removing a source asks. A modal for this would be
+ceremony; no question at all is how a queue disappears under a misplaced thumb.
+
+The part that is easy to get wrong is what happens when the screen is left with
+the question standing. The deck is **not** torn down on navigation — `mt_start`
+does not run again on the way back — so a confirmation left up would still be up
+minutes later, in the spot where the plain button used to be, and the next tap
+there would empty a queue nobody was asking about. The deck now listens for
+`EV_ROUTE_CHANGED` and takes the question down on the way out. `tests/emptyq.mjs`
+checks that specifically, along with the obvious three: one tap asks and removes
+nothing, cancelling leaves the queue exactly as it was, confirming empties it.
