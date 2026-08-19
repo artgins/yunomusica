@@ -77,6 +77,15 @@ async function check_for_update(force)
     if(!force && (now - S.checked) < CHECK_EVERY) {
         return false;
     }
+    /*  A check that cannot succeed should not be made. `navigator.onLine`
+        is only trustworthy in one direction — true does not promise a
+        working internet — but false is definite, and this app is meant to
+        be used exactly there. Skipping keeps a doomed request out of the
+        console on a plane, where a red line reads like a fault. */
+    if(navigator.onLine === false) {
+        return false;
+    }
+
     S.checked = now;
 
     let data;

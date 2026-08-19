@@ -35,6 +35,7 @@ import {register_c_mus_sources} from "./c_mus_sources.js";
 import {register_c_mus_lists}   from "./c_mus_lists.js";
 
 import {setup_locale} from "./locales/locales.js";
+import {start_offline} from "./offline.js";
 
 import "bulma/css/bulma.css";
 import "@yuneta/gobj-ui/src/c_yui_shell.css";
@@ -102,4 +103,7 @@ function main()
  ***************************************************************/
 window.addEventListener("load", function() {
     main();
+    /*  After main(), never before: the offline cache is what the NEXT
+        launch boots from, so it must not compete with this one. */
+    start_offline();
 });

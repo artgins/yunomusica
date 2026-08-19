@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.19.1** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.20.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -638,3 +638,60 @@ again, which it does on a later visit.
 Browsers that do not implement this (Firefox, Safari) never fire the event, so
 `can_install()` is false and nothing is ever offered — no dialog promising an
 install that cannot happen.
+
+## Offline had to mean the plane
+
+The word was doing two jobs and only one of them was true.
+
+"Offline" was written here to mean **nothing you play ever leaves the device**,
+which it never did. It was read — reasonably, by the person who wrote it — as
+"it works with no network", which it did not. There was no service worker at
+all. A manifest makes an app *installable*: icon, own window, and the folder
+permissions Chrome only keeps for installed apps. It caches nothing. So an
+installed yunomúsica, on a phone full of music, opened to a blank screen at
+30,000 feet, and the one thing it needed the network for was the thing nobody
+counts as a download: itself.
+
+So the shell is precached now, and the list cannot be written by hand — the JS
+and the CSS carry a content hash. `vite.config.js` takes it from the bundle
+Rollup just emitted plus whatever `public/` contributed, and writes
+`sw_template.js` out as `dist/sw.js` with the names filled in.
+
+- The **core** (`index.html`, the JS, the CSS) is an `addAll`: if any of it
+  cannot be stored the install fails on purpose, because half a shell boots to
+  a broken screen instead of falling back to the network. It is retried on the
+  next visit.
+- The icons and the manifest are added individually and are allowed to fail. An
+  app without its favicon is still an app.
+- **Cache first**, not network first. The case this exists for is the one with
+  no network, and a network-first worker spends its timeout on every asset
+  before falling back — a slow boot instead of no boot. A stale answer is not a
+  risk when a new build has new file names.
+- `version.json` is never served from the cache. It is the app asking whether a
+  newer build is deployed, and answering that from a cache is answering "no"
+  forever.
+- Anything cross-origin is passed straight through, untouched.
+
+`tests/offline.mjs` is the flight: visit once with the network, cut it, reload,
+and the app must come up **and still play a local file**. Painting its own shell
+while unable to reach the music would be no use on a plane.
+
+### The afternoon this cost
+
+The shell precached correctly and was then not found, which looks exactly like
+having no worker at all.
+
+`caches.match(request)` — matching by Request rather than by URL — compares the
+headers named in the stored response's `Vary`. Vite's preview server answers
+`Vary: Origin`, and plenty of real servers vary on something. The request the
+worker itself made through `cache.add()` carries no `Origin`; the browser's own
+request for a module script does. Same URL, same bytes, and the lookup misses.
+The fix is `ignoreVary: true`, which is right *here* and would not be
+everywhere: these entries are content-hashed, so the URL alone identifies the
+file. There is no second variant of `index-<hash>.js` to confuse it with.
+
+The other half was quieter. The version check fired on a plane, failed, and left
+a red line in the console that reads like a fault. A check that cannot succeed
+should not be made, so it is skipped when `navigator.onLine` is false — a flag
+worth trusting in exactly one direction. `true` promises nothing; `false` is
+definite.

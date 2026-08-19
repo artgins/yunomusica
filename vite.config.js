@@ -16,7 +16,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import { defineConfig } from "vite";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 
 /*  The version, and the moment this bundle was built, baked in as
     constants. Both are shown in the help dialog and in the Sources
@@ -40,8 +40,46 @@ const version_file = {
     },
 };
 
+/*  The service worker, without which "offline" was only ever half true.
+ *
+ *  The app never uploaded anything, which is what the word was meant to
+ *  say — but with no worker, LAUNCHING it was a plain request for
+ *  index.html and the bundle. On a plane that is a blank screen, and the
+ *  music sitting on the device cannot be reached by an app that will not
+ *  open. So the shell is precached at install time.
+ *
+ *  The list cannot be written by hand: the JS and the CSS carry a
+ *  content hash. It is taken from the bundle Rollup just produced, plus
+ *  whatever `public/` contributed (Vite copies those, so they never
+ *  appear in `bundle`). version.json is excluded on purpose — see the
+ *  worker itself. */
+const service_worker = {
+    name: "yunomusica-service-worker",
+    generateBundle(options, bundle) {
+        const hashed = Object.keys(bundle)
+            .filter((f) => f !== "version.json" && f !== "index.html")
+            .map((f) => "./" + f);
+
+        /*  index.html is listed by hand: Vite emits it from its own
+            generateBundle hook, so depending on plugin order it may not
+            be in `bundle` yet when we look. It is always there in the
+            output, and it is the one file the boot cannot do without. */
+        const core = ["./index.html"].concat(hashed);
+
+        const extra = readdirSync(new URL("./public", import.meta.url))
+            .map((f) => "./" + f);
+
+        const src = readFileSync(new URL("./sw_template.js", import.meta.url), "utf8")
+            .replace("__CACHE_NAME__", "yunomusica-" + pkg.version + "-" + stamp)
+            .replace("__CORE__", JSON.stringify(core, null, 4))
+            .replace("__EXTRA__", JSON.stringify(extra, null, 4));
+
+        this.emitFile({type: "asset", fileName: "sw.js", source: src});
+    },
+};
+
 export default defineConfig({
-    plugins: [version_file],
+    plugins: [version_file, service_worker],
     define: {
         __APP_VERSION__: JSON.stringify(pkg.version),
         __BUILD_STAMP__: JSON.stringify(stamp),

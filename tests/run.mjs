@@ -41,6 +41,7 @@ const TESTS = [
     {name: "select",    what: "navegar no cambia lo que suena"},
     {name: "confirm",   what: "aviso antes de sustituir la cola"},
     {name: "install",   what: "la app pregunta ella misma si instalarse"},
+    {name: "offline",   what: "sin red arranca y sigue tocando lo del dispositivo"},
     {name: "storage",   what: "otra pestaña no deja sin almacenamiento"},
     {name: "firefox",   what: "Firefox lee la música sin contestar al permiso"},
     {name: "fitmobile", what: "nada se sale del ancho del móvil"},
