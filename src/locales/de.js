@@ -126,12 +126,18 @@ const de = {
         "add loose files":      "Einzelne Dateien hinzufügen",
         "folders are recursive":
             "Ein Ordner wird ganz genommen: er und alle Ordner darunter.",
+        "no cover for this":
+            "Dieses Album hat kein Cover",
+        "covers offer detail":
+            "Ich kann online danach suchen: Künstler und Album gehen hinaus, sonst nichts.",
+        "look for it":
+            "Suchen",
         "look for covers online":
             "Cover online suchen",
         "covers online explained":
-            "Aus verlässt nichts diese App. An gehen — und nur für Alben ohne Cover in der Datei — Künstler und Album als Text hinaus, sonst nichts: keine Dateien, keine Listen, keine Kennungen. Zuerst wird MusicBrainz gefragt, wenn es nicht antwortet, iTunes. Es läuft im Hintergrund und stört die Musik nie: ohne Verbindung wird es gar nicht erst versucht.",
+            "Aus verlässt nichts diese App. An gehen, sobald ein Album ohne Cover in der Datei läuft, dessen Künstler und Album als Text hinaus — sonst nichts: keine Dateien, keine Listen, keine Kennungen. Gefragt wird nur nach dem, was du gerade hörst, nie nach deiner ganzen Sammlung, und was ankommt, bleibt hier: nach diesem Album wird nie wieder gefragt. Es läuft im Hintergrund und stört die Musik nie: ohne Verbindung wird es gar nicht erst versucht.",
         "covers online working":
-            "Suche läuft… noch {{left}}.",
+            "Suche das Cover von „{{asking}}“…",
         "covers online done":
             "{{found}} gefunden. Ohne Treffer: {{missed}} (wird einen Monat lang nicht erneut gefragt).",
         "nothing is copied":

@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.21.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.22.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -703,29 +703,47 @@ wall of grey squares is a poor way to find a record you know by its cover.
 
 A name cannot *be* a picture. But a name is enough to **ask** about one, and
 that is the whole of this feature: artist and album go out as text, an image
-comes back. Which makes it the only thing in the app that reaches outside, so
-it is built to be unable to hurt the part that matters.
+comes back. Which makes it the only thing in the app that reaches outside, so it
+is built to be unable to hurt the part that matters.
+
+**It asks about one record: the one that is sounding.** This began as a sweep
+over every album with no cover, and that was wrong twice over. It handed two
+companies a list of everything on somebody's disk in order to fill in squares
+nobody was looking at, and it made the user wait in a queue for the one sleeve
+they actually wanted to see. What you are listening to is a far smaller thing to
+give away than what you own, and it arrives where the eyes already are.
+
+**Once, and then never again.** What comes back is stored in IndexedDB beside
+the covers read out of files, so the second time that record plays the sleeve is
+painted from disk with no network at all. A miss is stored too — as a row with
+no blob — so a library full of bootlegs does not re-ask the internet at every
+launch. Misses are retried after a month, because the archive gains covers over
+time.
 
 **It is off until switched on.** The promise here is that nothing leaves the
 device; while the switch is off that stays literally true, and turning it on is
-the user saying they would rather have the sleeves. The switch lives in Sources,
-directly under the sentence it is the exception to. Leaving it on by default
+the user saying they would rather have the sleeves. Leaving it on by default
 would make that sentence a half-truth — which this app has already been caught
 doing once, and once was enough.
 
+**And the offer is made where the gap is.** The switch lives in Sources, under
+the sentence it is the exception to, which is the right place to *explain* it
+and the wrong place to *find* it: the person who wants a sleeve is looking at
+the sleeve that is missing. So a bar on the player offers it once, next to the
+empty square, and remembers the answer whichever way it goes — the same bargain
+the install bar strikes, and for the same reason. This was not the first design.
+It became the design about ninety seconds after the first user opened Sources,
+did not find anything, and said the covers still were not showing.
+
 **It cannot get in the way.** Nothing awaits it, no view waits for it, and the
 queue plays whether it succeeds, fails or never runs. With no network it is not
-attempted at all. A request that hangs is aborted after eight seconds, because a
+attempted. A request that hangs is aborted after eight seconds, because a
 captive portal that accepts connections and then answers nothing would otherwise
-hold the whole sweep open forever.
+hold it open forever.
 
 **A cover found in the file always wins.** `add_cover()` refuses a key that
 already has one. The network is a guess — right most of the time, and still a
 guess — while the picture inside the file is what the owner of the music chose.
-
-**It never asks twice.** A hit is stored; so is a miss, as a row with no blob,
-so a library full of bootlegs does not re-ask the internet at every launch. A
-miss is retried after a month, because the archive gains covers over time.
 
 Two services, in order. **MusicBrainz** with the **Cover Art Archive** first —
 non-profit, no key, no advertising behind it — and it is also the one that goes
@@ -750,8 +768,15 @@ narrow it, and finds nothing — there is no release group by that name. iTunes 
 asked `Yes Going For the One` as free text, and answers with *Going for the One*
 by Yes. The sleeve appears.
 
-`tests/covers.mjs` answers all three services itself rather than going out to
-them, so the suite does not fail on a day MusicBrainz is busy. It holds the
-feature to its four promises: silence while off, questions only about albums with
-no cover of their own, the fall back to iTunes when the first service misses, and
-a picture painted when one comes back.
+`tests/covers.mjs` answers all three services itself, so the suite does not fail
+on a day MusicBrainz is busy. It holds the feature to five promises: silence
+while off, an offer made on the player and not only in Sources, one question
+about the record that is sounding and nothing said about the one whose cover
+came out of its own file, a picture painted when it comes back, and not one
+further question about that record ever again — checked across a reload.
+
+Its own trap is worth writing down: the fixture tracks are five seconds long, so
+a test that presses play and then goes looking for a switch is asking about
+whichever record the queue drifted onto. It steps to the album it means with the
+next button and **pauses** there. A paused record is still the record you are
+looking at, which is the whole idea.

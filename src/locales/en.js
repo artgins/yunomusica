@@ -141,12 +141,18 @@ const en = {
         "add loose files":      "Add loose files",
         "folders are recursive":
             "A folder is taken whole: that folder and every folder below it.",
+        "no cover for this":
+            "This record has no cover",
+        "covers offer detail":
+            "I can look for it online: artist and album go out, nothing else.",
+        "look for it":
+            "Look for it",
         "look for covers online":
             "Look for covers online",
         "covers online explained":
-            "Off, nothing leaves this app. On, and only for albums with no cover inside the file, the artist and album go out as text — nothing else: no files, no lists, no identifiers. MusicBrainz is asked first, iTunes if it does not answer. It runs behind the music and never gets in its way: with no connection it is not even attempted.",
+            "Off, nothing leaves this app. On, when a record with no cover inside the file starts playing, its artist and album go out as text — nothing else: no files, no lists, no identifiers. Only what you are listening to is ever asked about, never your whole library, and what comes back is kept here: that record is never asked about again. It runs behind the music and never gets in its way: with no connection it is not even attempted.",
         "covers online working":
-            "Looking… {{left}} to go.",
+            "Looking for the cover of “{{asking}}”…",
         "covers online done":
             "Found {{found}}. No luck with {{missed}} (not asked again for a month).",
         "nothing is copied":

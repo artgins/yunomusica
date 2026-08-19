@@ -16,6 +16,14 @@
  *          nothing leaves the device; while this is off that stays
  *          literally true, and turning it on is the user saying they
  *          would rather have the sleeves.
+ *        - It asks about ONE record: the one that is sounding. Sweeping
+ *          the whole library would send the catalogue of somebody's
+ *          disk to two companies to fill in squares nobody is looking
+ *          at. What you actually listen to is a far smaller thing to
+ *          give away, and it arrives where the eyes already are.
+ *        - Once asked, never again: the picture is stored, so the
+ *          second time that record plays it is painted from disk with
+ *          no network at all.
  *        - It never blocks. Nothing awaits it, no view waits for it, and
  *          the queue plays whether it succeeds, fails, or never runs.
  *        - It never asks twice. A hit is stored; so is a miss, so a
@@ -35,14 +43,21 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {STORE_COVERS, idb_all, idb_put, pref_get, pref_set} from "./idb.js";
-import {subscribe, albums_missing_cover, add_cover} from "./music_store.js";
+import {
+    subscribe, albums_missing_cover, add_cover, current_track, cover_url
+} from "./music_store.js";
 
 const PREF_ON = "covers_online";
+/*  Whether the offer has been made. Separate from PREF_ON because "off
+    because nobody was ever asked" and "off because the answer was no"
+    are different states, and only the first one deserves a bar. */
+const PREF_ASKED = "covers_online_asked";
 
-/*  MusicBrainz asks for no more than one request a second and answers
-    503 when it means it. The archive and iTunes are easier, but there is
-    no reason to hurry any of this: it is decoration arriving late. */
-const MB_GAP   = 1200;
+/*  MusicBrainz asks for no more than one request a second. Nothing here
+    has to be paced to obey that any more — one record at a time, when a
+    person presses play, is already slower than any limit — but the gap
+    between the first service and the fallback stays: two requests fired
+    back to back for the same record is the one burst left. */
 const NEXT_GAP = 400;
 const TIMEOUT  = 8000;
 
@@ -54,11 +69,12 @@ const listeners = new Set();
 
 const S = {
     on:      false,
+    asked:   false,     // the offer has been made, whatever the answer
     ready:   false,     // the preference has been read
     running: false,
     found:   0,
     missed:  0,
-    left:    0,
+    asking:  "",        // the record being asked about right now
     misses:  new Map(), // album key -> when we last drew a blank
     stop:    false,
 };
@@ -88,10 +104,29 @@ function covers_online_on()
     return S.on;
 }
 
+/*  Is there a reason to offer this, and has the user not answered yet?
+ *
+ *  The switch went into Sources, under the sentence it is the exception
+ *  to, which is the right place to EXPLAIN it and the wrong place to
+ *  find it: the person who wants a sleeve is looking at the sleeve that
+ *  is missing. So the offer is made on the player, once, and the answer
+ *  is remembered either way — the same bargain the install bar strikes. */
+function covers_offer_due()
+{
+    return S.ready && !S.on && !S.asked && albums_missing_cover().length > 0;
+}
+
+async function dismiss_covers_offer()
+{
+    S.asked = true;
+    await pref_set(PREF_ASKED, true);
+    emit();
+}
+
 function covers_online_state()
 {
     return {on: S.on, running: S.running, found: S.found,
-            missed: S.missed, left: S.left};
+            missed: S.missed, asking: S.asking};
 }
 
 
@@ -133,7 +168,7 @@ function clean_artist(s)
 /*  Every request out of this app goes through here: with a timeout,
     and never throwing. A captive portal that accepts connections and
     answers nothing is the case this exists for — without the abort, one
-    album would hold the whole sweep open forever. */
+    album would hold this open forever. */
 async function get(url, as)
 {
     const ctl = new AbortController();
@@ -210,7 +245,7 @@ async function from_itunes(artist, album)
 
 
 /***************************************************************
- *      The sweep
+ *      Asking about what is sounding
  ***************************************************************/
 async function remember_miss(key)
 {
@@ -236,58 +271,62 @@ function skip_miss(key)
     return !!when && (Date.now() - when) < RETRY_MISS_AFTER;
 }
 
-async function sweep()
+/*  The record that is sounding, and nothing else.
+ *
+ *  This started life as a sweep over every album with no cover, which
+ *  was wrong twice: it handed two companies a list of everything on the
+ *  disk in order to fill in squares nobody was looking at, and it made
+ *  the user wait through a queue for the one sleeve they actually wanted
+ *  to see. Asking for what is playing is smaller, more private, and
+ *  arrives where the eyes already are. */
+async function hunt_current()
 {
     if(S.running || !S.on) {
         return;
     }
     /*  Offline is the normal state of this app, and it is not a failure.
-        Nothing is attempted; the next launch with a network picks it up. */
+        Nothing is attempted; playing it again with a network picks it up. */
     if(navigator.onLine === false) {
         return;
     }
 
-    const todo = albums_missing_cover().filter((a) => !skip_miss(a.key));
-    if(!todo.length) {
+    const track = current_track();
+    if(!track || !track.key) {
+        return;
+    }
+    /*  The file had one, or an earlier play already fetched one. Either
+        way this record is done, for good. */
+    if(cover_url(track.key)) {
+        return;
+    }
+    if(skip_miss(track.key)) {
+        return;
+    }
+
+    const artist = clean_artist(track.albumArtist);
+    const title  = clean_album(track.album);
+    if(!title) {
         return;
     }
 
     S.running = true;
-    S.stop = false;
-    S.left = todo.length;
+    S.asking = title;
     emit();
 
-    for(const album of todo) {
-        if(S.stop || !S.on || navigator.onLine === false) {
-            break;
-        }
+    let blob = await from_musicbrainz(artist, title);
+    if(!blob && S.on) {
+        await new Promise((r) => setTimeout(r, NEXT_GAP));
+        blob = await from_itunes(artist, title);
+    }
 
-        const artist = clean_artist(album.albumArtist);
-        const title  = clean_album(album.album);
-        if(!title) {
-            S.left--;
-            continue;
-        }
-
-        let blob = await from_musicbrainz(artist, title);
-        if(!blob) {
-            await new Promise((r) => setTimeout(r, NEXT_GAP));
-            blob = await from_itunes(artist, title);
-        }
-
-        if(blob) {
-            await keep(album.key, blob);
-        } else {
-            await remember_miss(album.key);
-        }
-
-        S.left--;
-        emit();
-        await new Promise((r) => setTimeout(r, MB_GAP));
+    if(blob) {
+        await keep(track.key, blob);
+    } else {
+        await remember_miss(track.key);
     }
 
     S.running = false;
-    S.left = 0;
+    S.asking = "";
     emit();
 }
 
@@ -303,18 +342,21 @@ function schedule()
         return;
     }
     clearTimeout(debounce);
-    /*  A scan emits "library" per batch of files. Waiting lets a folder
-        of eight thousand tracks finish arriving before we ask about a
-        single album, and keeps this off the critical path of a load. */
+    /*  Short, but not zero. Skipping through five tracks to find one
+        should ask about the record you stopped on, not about the four
+        you passed through. */
     debounce = setTimeout(function() {
-        sweep().catch((e) => console.warn("covers_online:", e && e.message));
-    }, 4000);
+        hunt_current().catch((e) => console.warn("covers_online:", e && e.message));
+    }, 1500);
 }
 
 async function set_covers_online(on)
 {
     S.on = !!on;
+    /*  Turning it on or off IS an answer, so the bar has no more to ask. */
+    S.asked = true;
     await pref_set(PREF_ON, S.on);
+    await pref_set(PREF_ASKED, true);
     if(S.on) {
         schedule();
     } else {
@@ -328,6 +370,7 @@ async function set_covers_online(on)
 async function start_covers_online()
 {
     S.on = !!(await pref_get(PREF_ON, false));
+    S.asked = !!(await pref_get(PREF_ASKED, false));
     S.ready = true;
 
     const rows = await idb_all(STORE_COVERS);
@@ -337,13 +380,17 @@ async function start_covers_online()
         }
     }
 
+    /*  "playing" carries a change of track, which is the only moment
+        this has anything to do. "library" matters too, but only because
+        a restored library is what makes current_track() answerable
+        again after a reload. */
     subscribe(function(channel) {
-        if(channel === "library") {
+        if(channel === "playing" || channel === "library") {
             schedule();
         }
     });
 
-    /*  Coming back onto a network is exactly when the covers that were
+    /*  Coming back onto a network is exactly when the cover that was
         skipped on a plane can be fetched. */
     window.addEventListener("online", schedule);
 
@@ -355,6 +402,8 @@ async function start_covers_online()
 export {
     start_covers_online,
     set_covers_online,
+    covers_offer_due,
+    dismiss_covers_offer,
     covers_online_on,
     covers_online_state,
     subscribe_covers,

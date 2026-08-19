@@ -53,6 +53,9 @@ import {subscribe_stats} from "./stats_store.js";
 import {save_queue_as} from "./playlists_store.js";
 import {subscribe_update, is_stale, latest_version} from "./update_check.js";
 import {
+    covers_offer_due, dismiss_covers_offer, set_covers_online, subscribe_covers
+} from "./covers_online.js";
+import {
     subscribe_install, install_bar_due, dismiss_install_bar,
 } from "./install_prompt.js";
 import {open_install} from "./install_dialog.js";
@@ -147,6 +150,7 @@ let PRIVATE_DATA = {
     unsub:      null,
     unsub_src:  null,   // sources channel, for the authorisation banner
     unsub_upd:  null,   // a newer build was deployed
+    unsub_cov:  null,   // the cover hunt: its offer, and what it finds
     unsub_ins:  null,   // the browser will let us offer an install
     unsub_st:   null,   // hearts and play counts, which the rows show
     $now:       null,   // the transport card and the bars under it
@@ -243,6 +247,7 @@ function mt_start(gobj)
     priv.unsub_src = subscribe_sources(() => paint_now(gobj));
     priv.unsub_upd = subscribe_update(() => paint_now(gobj));
     priv.unsub_ins = subscribe_install(() => paint_now(gobj));
+    priv.unsub_cov = subscribe_covers(() => paint_now(gobj));
 
     /*  A language switch re-renders everything this view composed with
         t() at build time — see the gobj-ui i18n contract. */
@@ -264,6 +269,10 @@ function mt_stop(gobj)
     if(priv.unsub) {
         priv.unsub();
         priv.unsub = null;
+    }
+    if(priv.unsub_cov) {
+        priv.unsub_cov();
+        priv.unsub_cov = null;
     }
     if(priv.unsub_src) {
         priv.unsub_src();
@@ -934,6 +943,30 @@ function paint_bars(gobj)
                             "aria-label": t("close"),
                             "data-i18n-aria-label": "close"},
                     svg(P.cross, 14), {click: () => dismiss_install_bar()}]
+            ]]));
+    }
+
+    /*  The sleeve is missing and the user is looking straight at the
+        space where it should be. That is the moment to offer, and the
+        switch in Sources is not the place to find it — same reasoning as
+        the authorise bar above: put it where the user already is.
+
+        Once. Whichever way it is answered, it does not come back. */
+    if(covers_offer_due()) {
+        $now.appendChild(createElement2(
+            ["div", {class: "MUS_AUTHBAR MUS_COVBAR", role: "status"}, [
+                ["div", {class: "MUS_AUTHBAR_TXT"}, [
+                    ["span", {i18n: "no cover for this"}, t("no cover for this")],
+                    ["span", {class: "MUS_AUTHBAR_WHICH", i18n: "covers offer detail"},
+                        t("covers offer detail")]
+                ]],
+                ["button", {class: "MUS_QBTN button is-primary", type: "button",
+                            i18n: "look for it"},
+                    t("look for it"), {click: () => set_covers_online(true)}],
+                ["button", {class: "MUS_NOTICE_X", type: "button",
+                            "aria-label": t("close"),
+                            "data-i18n-aria-label": "close"},
+                    svg(P.cross, 14), {click: () => dismiss_covers_offer()}]
             ]]));
     }
 

@@ -343,7 +343,7 @@ function build_covers_switch(gobj)
 
     let note = t("covers online explained");
     if(st.running) {
-        note = t("covers online working", {left: st.left});
+        note = t("covers online working", {asking: st.asking});
     } else if(st.on && (st.found || st.missed)) {
         note = t("covers online done", {found: st.found, missed: st.missed});
     }
