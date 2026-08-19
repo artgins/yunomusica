@@ -44,6 +44,7 @@ const TESTS = [
     {name: "offline",   what: "sin red arranca y sigue tocando lo del dispositivo"},
     {name: "covers",    what: "car\u00e1tulas de internet: solo del disco que suena, y con reintento"},
     {name: "emptyq",    what: "vaciar la cola pregunta antes"},
+    {name: "deckq",     what: "la cola no repite pistas, y puede ocupar la pantalla"},
     {name: "storage",   what: "otra pestaña no deja sin almacenamiento"},
     {name: "firefox",   what: "Firefox lee la música sin contestar al permiso"},
     {name: "fitmobile", what: "nada se sale del ancho del móvil"},

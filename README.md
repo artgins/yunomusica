@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.23.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.24.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -819,3 +819,43 @@ there would empty a queue nobody was asking about. The deck now listens for
 `EV_ROUTE_CHANGED` and takes the question down on the way out. `tests/emptyq.mjs`
 checks that specifically, along with the obvious three: one tap asks and removes
 nothing, cancelling leaves the queue exactly as it was, confirming empties it.
+
+## The deck does not repeat itself
+
+Adding an album that was already on the deck used to append it again. The damage
+is quiet, which is why it lasted: the queue reads as longer than it is, the same
+song comes round again mid-evening, and a list saved from that queue carries the
+repeat for good.
+
+`queue_add` now drops what is already there, so pressing "add" twice does
+nothing the second time — and adding a list that had repeats inside it takes
+them out on the way in. When every track handed over is already on the deck,
+nothing happens at all: in particular the queue is **not** marked edited, or a
+no-op would quietly un-save a saved list.
+
+Identity is the **track**, not the song. Two files of the same tune — in
+different albums, or in a folder that was authorised twice — are two records,
+and the app has no business deciding they are one. What it refuses is the same
+file appearing twice over.
+
+## Giving the queue the screen
+
+The deck leads with the sleeve, the transport and the seek bar. That is right
+when you are listening and wrong when you are working *on* the queue: on a phone
+that card is most of the screen, and reordering forty tracks through the slot
+underneath it is a chore.
+
+So there is a toggle at the end of the queue's action row: **Ver la cola
+entera**. It folds the card away and leaves the list with the whole screen, and
+the button then offers the way back. Session only — it is a way of looking at
+the deck for a minute, not a setting anyone should have to go and find again to
+undo.
+
+The class goes on the deck root and hides `.MUS_DECKCARD` alone. The bars below
+it — a folder waiting to be authorised, a new build deployed — are not the
+player and must not fold away with it; `tests/deckq.mjs` checks that they
+survive, along with the queue itself.
+
+It is added **after** the "follow playing" toggle on purpose. Both are settings
+rather than actions on the queue, and anything inserted before them moves the
+save and clear buttons, which the suite finds by position.

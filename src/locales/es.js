@@ -58,6 +58,8 @@ const es = {
         "the queue is empty":   "La cola está vacía.",
         "empty the queue?":   "¿Vaciar la cola?",
         "clear queue":          "Vaciar la cola",
+        "maximise the queue": "Ver la cola entera",
+        "show the player":    "Ver el reproductor",
         "follow playing":       "Seguir lo que suena",
         "save as list":         "Guardar como lista",
         "already saved":        "Ya guardada, y sin cambios",

@@ -68,6 +68,8 @@ const en = {
         "the queue is empty":   "The queue is empty.",
         "empty the queue?":   "Empty the queue?",
         "clear queue":          "Clear the queue",
+        "maximise the queue": "Maximise the queue",
+        "show the player":    "Show the player",
         "follow playing":       "Follow what is playing",
         "save as list":         "Save as list",
         "already saved":        "Already saved, and unchanged",

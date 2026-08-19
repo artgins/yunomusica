@@ -400,6 +400,15 @@
     line-height: 1.45;
 }
 
+/*  The queue, given the whole screen.
+ *
+ *  Only the card folds. The bars under it — a folder waiting to be
+ *  authorised, a new build deployed — are not the player and have to
+ *  stay whatever the queue is doing. */
+.MUS_DECK.is-maxq .MUS_DECKCARD {
+    display: none;
+}
+
 /*  Said when a pick had nothing playable in it, or a file went missing. */
 .MUS_NOTICE {
     display: flex;

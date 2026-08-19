@@ -105,6 +105,8 @@ const P = {
     file:    "M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zm0 7V3.5L18.5 9z",
     save:    "M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10z",
     trash:   "M9 3h6l1 2h4v2H4V5h4zM6 9h12l-1 12H7z",
+    expand:  "M12 3l5 6H7zM7 15h10l-5 6z",
+    collapse: "M7 3h10l-5 6zM12 15l5 6H7z",
     follow:  "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A9 9 0 0 0 13 3.06V1h-2v2.06A9 9 0 0 0 3.06 11H1v2h2.06A9 9 0 0 0 11 20.94V23h2v-2.06A9 9 0 0 0 20.94 13H23v-2zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z",
 };
 
@@ -150,6 +152,7 @@ let PRIVATE_DATA = {
     unsub_upd:  null,   // a newer build was deployed
     unsub_cov:  null,   // the cover hunt: its offer, and what it finds
     confirm_clear: false,   // "empty the queue?" is standing
+    maxq:       false,      // the queue, given the whole screen
     unsub_ins:  null,   // the browser will let us offer an install
     unsub_st:   null,   // hearts and play counts, which the rows show
     $now:       null,   // the transport card and the bars under it
@@ -1125,10 +1128,10 @@ function paint_queue(gobj)
                         t("cancel"),
                         {click: () => { priv.confirm_clear = false; paint_queue(gobj); }}]
                     : ["span", {}],
-                /*  Last, and never disabled: it is a setting, not an
-                    action on the queue. Anything before it would also
-                    move the two buttons above, which the suite finds
-                    by position. */
+                /*  These two last, and never disabled: they are
+                    settings, not actions on the queue. Anything before
+                    them would also move the two buttons above, which the
+                    suite finds by position. */
                 ["button", {
                         class: "MUS_QBTN MUS_TOG button is-ghost" +
                             (follow_on() ? " is-on" : ""),
@@ -1137,7 +1140,27 @@ function paint_queue(gobj)
                     },
                     [ico(P.follow, 16),
                      ["span", {i18n: "follow playing"}, t("follow playing")]],
-                    {click: () => toggle_follow(gobj)}]
+                    {click: () => toggle_follow(gobj)}],
+                /*  The queue, given the whole screen.
+                 *
+                 *  The deck leads with the sleeve, the transport and the
+                 *  seek bar, which is right when you are listening and
+                 *  wrong when you are working ON the queue: on a phone
+                 *  that card is most of the screen and you reorder forty
+                 *  tracks through a slot. This folds it away and leaves
+                 *  the list. Nothing is hidden that is not one tap back,
+                 *  and what is sounding still says so — the rows keep
+                 *  their playing mark. */
+                ["button", {
+                        class: "MUS_QBTN MUS_TOG MUS_MAXQ button is-ghost" +
+                            (priv.maxq ? " is-on" : ""),
+                        type: "button",
+                        "aria-pressed": priv.maxq ? "true" : "false"
+                    },
+                    [ico(priv.maxq ? P.collapse : P.expand, 16),
+                     ["span", {i18n: priv.maxq ? "show the player" : "maximise the queue"},
+                        t(priv.maxq ? "show the player" : "maximise the queue")]],
+                    {click: () => toggle_maxq(gobj)}]
             ]]
         ]]
     );
@@ -1432,6 +1455,23 @@ function follow_now(gobj, from_timer)
     let smooth = !(window.matchMedia &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     $s.scrollBy({top: delta, left: 0, behavior: smooth ? "smooth" : "auto"});
+}
+
+/*  Fold the sleeve and the transport away, or bring them back. Session
+    only: it is a way of looking at the deck for a minute, not a setting
+    somebody should have to find again to undo. */
+function toggle_maxq(gobj)
+{
+    let priv = gobj.priv;
+    priv.maxq = !priv.maxq;
+    let $c = gobj_read_attr(gobj, "$container");
+    if($c) {
+        /*  The class goes on the deck root, not on the card: the bars
+            below it — authorise a folder, a new build is out — are not
+            part of the player and must not fold away with it. */
+        $c.classList.toggle("is-maxq", priv.maxq);
+    }
+    paint_queue(gobj);
 }
 
 function toggle_follow(gobj)

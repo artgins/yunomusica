@@ -55,6 +55,8 @@ const de = {
         "the queue is empty":   "Die Warteschlange ist leer.",
         "empty the queue?":   "Warteschlange leeren?",
         "clear queue":          "Warteschlange leeren",
+        "maximise the queue": "Warteschlange groß",
+        "show the player":    "Player zeigen",
         "follow playing":       "Dem Laufenden folgen",
         "save as list":         "Als Liste speichern",
         "already saved":        "Bereits gespeichert und unverändert",

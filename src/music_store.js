@@ -808,20 +808,63 @@ function queue_length()
 }
 
 /*  mode: "append" (default) | "next" | "replace" */
+/*  The same track, twice on the deck, is not something anyone asks for.
+ *
+ *  It is what a second tap on "add album" used to produce, and the
+ *  damage is quiet: the queue reads as longer than it is, the same song
+ *  comes round again mid-evening, and a list saved from it carries the
+ *  repeat for good. Adding what is already there is now a no-op for
+ *  that track and a normal add for the rest — press twice and nothing
+ *  bad happens, which is the whole point.
+ *
+ *  Identity is the track, not the song: two files of the same tune, in
+ *  different albums or in a folder kept twice, are two records and the
+ *  app has no business deciding they are one. What it refuses is the
+ *  SAME file appearing twice over.
+ */
+function dedupe(list, against)
+{
+    const seen = new Set();
+    for(const t of (against || [])) {
+        seen.add(t.uid);
+    }
+    const out = [];
+    for(const t of list) {
+        if(!t || seen.has(t.uid)) {
+            continue;
+        }
+        seen.add(t.uid);
+        out.push(t);
+    }
+    return out;
+}
+
 function queue_add(list, mode)
 {
     if(!list || !list.length) {
         return 0;
     }
     if(mode === "replace") {
-        S.queue = [...list];
+        /*  Nothing to compare against — the deck is being thrown away —
+            but a list handed in with repeats inside it still gets them
+            taken out. */
+        S.queue = dedupe([...list], null);
         S.qi = -1;
         S.origin = null;
         S.edited = false;
         emit("queue");
         queue_play_at(0);
-        return list.length;
+        return S.queue.length;
     }
+
+    list = dedupe(list, S.queue);
+    if(!list.length) {
+        /*  Every one of them was already on the deck. Not an error, and
+            not a change either: say nothing, touch nothing. Marking the
+            queue edited here would falsely un-save a saved list. */
+        return 0;
+    }
+
     mark_edited();
     let at;
     if(mode === "next" && S.qi >= 0) {
