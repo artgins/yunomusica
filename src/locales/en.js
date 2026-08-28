@@ -100,6 +100,8 @@ const en = {
             "already on the deck",
         "preview":              "Preview",
         "previewing":           "Previewing",
+        "temporary list":      "Temporary list",
+        "back to the deck":    "Back to the deck",
         "temporary queue":      "Queue put together by hand",
         "playing list":         "List",
         "edited":               "edited",

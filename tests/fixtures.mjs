@@ -281,6 +281,53 @@ function build_tones()
 }
 
 
+/*  `messy`: one library, tagged the way real ones are tagged.
+ *
+ *  Nothing here is invented for the sake of a test. Every one of these
+ *  is a shape that a folder full of music actually has:
+ *
+ *    - the SAME album spelled three ways — "Aqualung", "aqualung" and
+ *      "Aqualung " with a trailing space. Grouped on the raw string
+ *      they were three albums with, to the eye, one name, sitting next
+ *      to each other because the sort put them there.
+ *    - two DIFFERENT albums with the same title, "Greatest Hits", by two
+ *      artists. Grouped on the title they collapsed into one album by
+ *      nobody in particular.
+ *    - an artist spelled two ways, "Camel" and "camel".
+ *    - a genre spelled two ways, "Prog" and "prog".
+ *
+ *  Five real albums by four real artists. Anything that reports more is
+ *  reporting the tags, not the music. */
+function build_messy()
+{
+    const audio = silence(1);
+    const sets = [
+        {dir: "Jethro Tull/Aqualung",      artist: "Jethro Tull", album: "Aqualung",
+         genre: "Prog", titles: ["Aqualung", "Cross-Eyed Mary"]},
+        {dir: "Jethro Tull/aqualung ripped", artist: "Jethro Tull", album: "aqualung",
+         genre: "prog", titles: ["Mother Goose"]},
+        {dir: "Jethro Tull/Aqualung extra", artist: "Jethro Tull", album: "Aqualung ",
+         genre: "Prog", titles: ["Locomotive Breath"]},
+        {dir: "Jethro Tull/Best of",       artist: "Jethro Tull", album: "Greatest Hits",
+         genre: "prog", titles: ["Living in the Past"]},
+        {dir: "Camel/Best of",             artist: "Camel",       album: "Greatest Hits",
+         genre: "prog", titles: ["Lady Fantasy"]},
+        {dir: "Camel/Moonmadness",         artist: "Camel",       album: "Moonmadness",
+         genre: "Prog", titles: ["Song Within a Song", "Air Born"]},
+        {dir: "camel/Mirage",              artist: "camel",       album: "Mirage",
+         genre: "prog", titles: ["Lady Fantasy (live)"]}
+    ];
+    sets.forEach(function(g) {
+        g.titles.forEach(function(title, i) {
+            let n = String(i + 1).padStart(2, "0");
+            write_track(join(ROOT, "messy", g.dir, `${n} - ${title}.mp3`),
+                audio, {title, artist: g.artist, album: g.album,
+                        genre: g.genre, year: 1971, track: i + 1}, null);
+        });
+    });
+}
+
+
 /***************************************************************
  *  Cheap when they already exist, so every test can just call
  *  it. `force` rebuilds from scratch.
@@ -297,6 +344,7 @@ function ensure_fixtures(force)
     if(!existsSync(join(ROOT, "longtracks"))) { build_longtracks(); built.push("longtracks"); }
     if(!existsSync(join(ROOT, "mimusica")))   { build_mimusica();   built.push("mimusica"); }
     if(!existsSync(join(ROOT, "tones")))      { build_tones();      built.push("tones"); }
+    if(!existsSync(join(ROOT, "messy")))      { build_messy();      built.push("messy"); }
 
     return {
         root:       ROOT,
@@ -304,6 +352,7 @@ function ensure_fixtures(force)
         longtracks: join(ROOT, "longtracks"),
         mimusica:   join(ROOT, "mimusica"),
         tones:      join(ROOT, "tones"),
+        messy:      join(ROOT, "messy"),
         built:      built
     };
 }

@@ -83,6 +83,8 @@ const ru = {
             "уже на деке",
         "preview":              "Послушать",
         "previewing":           "Прослушивание",
+        "temporary list":      "Временный список",
+        "back to the deck":    "Вернуться к очереди",
         "temporary queue":      "Очередь, собранная вручную",
         "playing list":         "Список",
         "edited":               "изменён",

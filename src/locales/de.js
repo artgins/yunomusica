@@ -86,6 +86,8 @@ const de = {
             "bereits auf dem Deck",
         "preview":              "Anhören",
         "previewing":           "Wird angehört",
+        "temporary list":      "Vorläufige Liste",
+        "back to the deck":    "Zurück zur Warteschlange",
         "temporary queue":      "Von Hand zusammengestellte Warteschlange",
         "playing list":         "Liste",
         "edited":               "geändert",

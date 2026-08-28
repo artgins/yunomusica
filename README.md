@@ -436,7 +436,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `navink` | nav and primary buttons disagree about black-or-white ink |
 | `minink` | the mini-player's button, the one accent surface `navink` cannot see |
 | `select` | browsing changes what is sounding |
-| `confirm` | "Play all" eats a queue without asking |
+| `confirm` | a saved list eats the deck without asking — or the library asks when it takes nothing |
 | `install` | the app stops asking about installing itself |
 | `storage` | a second tab costs the first one its storage |
 | `firefox` | Firefox reads no music at all |
@@ -447,6 +447,8 @@ if it is missing, generates the fixtures if they are missing, starts
 | `viz` | the banner draws the wrong note — or tapping the audio silenced it |
 | `counts` | a skipped track counts as listened to, or the counts vanish on reload |
 | `addsrc` | a folder added twice doubles the library, or two folders are read at once |
+| `templist` | playing from the library asks, stops after one track, or eats the deck |
+| `grouping` | one album tagged two ways shows as two, or two albums as one |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
 
 Two things they are strict about, both learned the hard way:
@@ -953,3 +955,84 @@ truth.
 is what separates the two reads: starting over when the folder changes is
 correct, going backwards without it is the bug. A bare counter cannot tell them
 apart.
+
+## Two lists, and only one of them is yours
+
+The deck is the official list: curated, saved, persistent, the thing the
+Reproductor screen is about. What the library shows you — a genre, an album, a
+folder, one artist's records — is the other kind: **temporary**, unsaved,
+exactly as long as the screen you are on.
+
+Pressing play on a row starts the temporary one. The deck **pauses** and keeps
+its place; nothing of it is replaced, appended to or reordered. And because
+nothing is at risk, nothing is asked: the three-way "add / replace and play /
+cancel" dialog that used to stand between the user and the sound is gone from
+the library entirely. It survives in **Listas**, where play means "make this
+saved list my deck", which really does throw the current one away.
+
+It runs **on**, through the list on the screen, to the end of it. Sounding one
+track and stopping dead was the old behaviour and it was the wrong shape:
+nobody presses play on an album to hear its first song. Before that it replaced
+the whole deck for one row, which cost the user everything they had built to
+hear one track. Both are gone.
+
+The way back lives on the strip along the bottom, which is the one piece of
+screen the two lists share — and while the temporary one is sounding, that strip
+is the **only** sign that what you hear is not the deck. So it shows on every
+route, the deck included, in the accent colour, saying which list it is and how
+far through it has got. It carries pause, next, a ＋ to keep what you are
+hearing, and, in words rather than a glyph, **Volver a la cola**. Returning
+gives the deck back playing, if it was playing when it was interrupted — and
+silent if it was not, because starting music nobody asked for would be the app
+deciding something on its own.
+
+Reaching the end of the temporary list does the same thing as pressing that
+button. Falling silent with no account of what had just ended would leave the
+user staring at a strip that had stopped meaning anything.
+
+## Group by the music, not by the typing
+
+Every grouping in the library keyed a `Map` on the raw tag string, and real tags
+are not consistent. One album tagged `Aqualung` in three files and `aqualung` in
+the fourth came out as **two albums with, on the screen, the same name** — and
+the collator sorted them next to each other, so it read less like a bug than
+like the library being wrong about itself.
+
+The same line of code had the opposite fault. An album is a title **and** an
+artist, so grouping on the title alone folded every `Greatest Hits` in a library
+into one record by nobody in particular.
+
+Both are one fix: group on the normalised `(album artist, album)` pair — which
+is `track.key`, the key the covers are already filed under, so a group and its
+sleeve cannot disagree. Artists and genres group on their normalised name the
+same way. Each group is then **labelled with the spelling most of its tracks
+carry**, so the screen shows `Camel` rather than whichever of `Camel` and
+`camel` happened to be read first.
+
+How an artist is spelled is decided **once, over the whole library**, and album
+cards borrow that answer. Deciding it per album gave a different one for a
+record whose only track carried the minority spelling: `Mirage` was filed under
+`camel` while the artist itself was listed as `Camel`. A name belongs to the
+artist, not to one of their records.
+
+A drill-down holds the group's **id**, never its name — two albums may
+legitimately share a title, and re-resolving one by name landed on the other
+one's tracks after any repaint.
+
+### An artist is their records
+
+Opening an artist used to give a run of songs with faint grey words over it.
+Each section is now the record itself: sleeve, name, how many tracks, and the
+same two verbs every other row carries — so "see the albums by author" is
+answered where it is asked, inside the artist, rather than by a sixth chip.
+
+Those sections split on the raw title too, which is why an artist whose record
+was tagged two ways showed it as two headings directly under one another —
+inside the very screen that exists to show their records. They go through
+`albums_of()` now, the same rule the Albums view uses. One rule, one place.
+
+The fixture that proves all of this is `messy`, and nothing in it is invented
+for the sake of a test: an album spelled three ways, two different records
+called `Greatest Hits`, an artist spelled two ways, a genre spelled two ways.
+Five real albums by four real artists. Anything that reports more is reporting
+the tags, not the music.

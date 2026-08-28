@@ -9,9 +9,11 @@
  *      drills one level down; a search filters the whole library into a
  *      flat result list.
  *
- *      Every row offers the same two verbs, and the distinction matters:
- *      PLAY replaces the queue and starts, ADD appends to whatever the
- *      user has already built on the deck without interrupting it.
+ *      Every row offers the same two verbs, and the distinction is the
+ *      whole design: PLAY sounds it NOW, on the temporary list, leaving
+ *      the deck paused and intact; ADD puts it on the deck, which is the
+ *      official, persistent list. Nothing here ever throws the deck
+ *      away, so nothing here has to ask permission first.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
@@ -30,14 +32,13 @@ import {yui_shell_of} from "@yuneta/gobj-ui/src/c_yui_shell.js";
 import {
     subscribe,
     has_library, store_state,
-    groups_for, albums, all_tracks_sorted, search, cover_url,
-    queue_add, current_track, preview_track,
+    groups_for, albums, albums_of, all_tracks_sorted, search, cover_url,
+    queue_add, current_track, play_temp,
 } from "./music_store.js";
 
 import {
     add_dir, add_files, subscribe_sources, source_notice, dismiss_notice,
 } from "./sources_store.js";
-import {confirm_replace} from "./confirm_replace.js";
 import {open_track, track_counts, refresh_counts} from "./track_card.js";
 import {subscribe_stats} from "./stats_store.js";
 
@@ -289,12 +290,20 @@ function revalidate_detail(gobj)
         return;
     }
     let groups = (d.kind === "albums") ? albums() : groups_for(d.kind);
-    let g = groups.find((x) => x.name === d.name);
+    /*  By id, not by name. Two albums can carry the same title — that
+        is the whole reason an album is an (artist, album) pair here —
+        and re-finding one by its name would land on the other one's
+        tracks after any repaint. */
+    let g = groups.find((x) => x.id === d.id);
     if(!g) {
         priv.detail = null;
         return;
     }
     d.tracks = g.tracks;
+    d.name = g.name;
+    if(g.artist) {
+        d.artist = g.artist;
+    }
 }
 
 function render(gobj)
@@ -446,25 +455,38 @@ function cover_spec(key, cls, fallback)
 }
 
 
-/*  A single track offers LISTEN and ADD — not play.
+/*  PLAY, on a track, means this list from here.
  *
- *  Play used to replace the whole queue for one row, which threw away
- *  whatever the user had built to hear one song. Listening costs
- *  nothing and commits to nothing; adding puts it on the deck. To play a
- *  whole album outright there is "Play all" on the album itself, which
- *  is a deliberate act on a deliberate thing. */
-function track_buttons(t_)
+ *  The rows on the screen are a list — the user can see that they are —
+ *  so playing one of them starts there and runs on through the rest,
+ *  the way pressing play on a record plays the record. It used to sound
+ *  that one track and stop dead, which is not what anyone means by
+ *  play; before that it replaced the whole deck for one row, which cost
+ *  the user everything they had built to hear one song.
+ *
+ *  Neither happens now. It sounds on the temporary list, the deck waits
+ *  paused exactly where it was, and the strip carries the way back. */
+function track_buttons(t_, list)
 {
+    const context = () => {
+        const l = (list && list.length) ? list : [t_];
+        const i = l.indexOf(t_);
+        return {l: l, i: i < 0 ? 0 : i};
+    };
     return ["div", {class: "MUS_ROWCTL"}, [
         ["button", {
                 class: "MUS_IBTN",
                 type: "button",
-                "aria-label": t("preview"),
-                "data-i18n-aria-label": "preview",
-                title: t("preview"),
-                "data-i18n-title": "preview"
+                "aria-label": t("play"),
+                "data-i18n-aria-label": "play",
+                title: t("play"),
+                "data-i18n-title": "play"
             }, svg(P.play, 16),
-            {click: (ev) => { ev.stopPropagation(); preview_track(t_); }}],
+            {click: (ev) => {
+                ev.stopPropagation();
+                const c = context();
+                play_temp(c.l, c.i);
+            }}],
         ["button", {
                 class: "MUS_IBTN",
                 type: "button",
@@ -477,20 +499,11 @@ function track_buttons(t_)
     ]];
 }
 
-/*  Replacing the deck is destructive, so it asks first — and offers to
-    ADD instead, which is what the user usually meant when they did not
-    want the queue thrown away. With an empty deck nothing is asked. */
-async function play_all(gobj, get_tracks)
-{
-    let answer = await confirm_replace(yui_shell_of(gobj));
-    if(!answer) {
-        return;
-    }
-    queue_add(get_tracks(), answer);
-}
-
-/*  The pair of verbs a GROUP carries: play all (replace the queue) and
-    add all. Deliberate, and about a whole album or artist. */
+/*  The pair of verbs a GROUP carries: play it now, and put it on the
+    deck. Playing an album used to throw the deck away, so it had to ask
+    first, with a three-way dialog standing between the user and the
+    sound. Nothing is thrown away any more, so nothing is asked: the
+    album sounds on the temporary list and the deck waits. */
 function verb_buttons(gobj, get_tracks)
 {
     return ["div", {class: "MUS_ROWCTL"}, [
@@ -502,7 +515,7 @@ function verb_buttons(gobj, get_tracks)
                 title: t("play"),
                 "data-i18n-title": "play"
             }, svg(P.play, 16),
-            {click: (ev) => { ev.stopPropagation(); play_all(gobj, get_tracks); }}],
+            {click: (ev) => { ev.stopPropagation(); play_temp(get_tracks(), 0); }}],
         ["button", {
                 class: "MUS_IBTN",
                 type: "button",
@@ -552,7 +565,7 @@ function track_row(gobj, t_, list, showNum)
             ["span", {class: "MUS_T2"}, subtitle]
         ], {click: () => open_track(yui_shell_of(gobj), t_)}],
         track_counts(t_),
-        track_buttons(t_)
+        track_buttons(t_, list)
     ];
 
     return ["div", {class: "MUS_ROWWRAP"}, [
@@ -586,7 +599,11 @@ function render_groups(gobj, $content, view)
             ["span", {i18n: "tracks"}, t("tracks")]
         ];
         if(view === "artists") {
-            let n = new Set(g.tracks.map((x) => x.album)).size;
+            /*  By the album KEY, the same thing the Albums view groups
+                on. Counting distinct titles said "12 albums" for an
+                artist with nine, because three of them were tagged two
+                ways. */
+            let n = new Set(g.tracks.map((x) => x.key)).size;
             sub.push(["span", {class: "MUS_SEP"}, "·"]);
             /*  "n albums" is the count noun; "albums" is the chip label,
                 which is capitalised in the languages that capitalise. */
@@ -600,7 +617,7 @@ function render_groups(gobj, $content, view)
                 ["span", {class: "MUS_T2"}, sub]
             ], {
                 click: () => {
-                    priv.detail = {kind: view, name: g.name, tracks: g.tracks};
+                    priv.detail = {kind: view, id: g.id, name: g.name, tracks: g.tracks};
                     scroll_top(gobj);
                     render(gobj);
                 }
@@ -621,10 +638,11 @@ function render_albums(gobj, $content)
             ["button", {class: "MUS_CARDMAIN", type: "button"}, [
                 cover_spec(a.tracks[0].key, "MUS_COVER", "♪"),
                 ["span", {class: "MUS_T1"}, display_name(a.name)],
-                ["span", {class: "MUS_T2"}, display_name(a.tracks[0].albumArtist)]
+                ["span", {class: "MUS_T2"}, display_name(a.artist)]
             ], {
                 click: () => {
-                    priv.detail = {kind: "albums", name: a.name, tracks: a.tracks};
+                    priv.detail = {kind: "albums", id: a.id, name: a.name,
+                                   artist: a.artist, tracks: a.tracks};
                     scroll_top(gobj);
                     render(gobj);
                 }
@@ -659,7 +677,7 @@ function render_detail(gobj, $content)
     ];
     if(d.kind === "albums") {
         meta.push(["span", {class: "MUS_SEP"}, "·"]);
-        meta.push(["span", {}, display_name(d.tracks[0].albumArtist)]);
+        meta.push(["span", {}, display_name(d.artist || d.tracks[0].albumArtist)]);
         if(year) {
             meta.push(["span", {class: "MUS_SEP"}, "·"]);
             meta.push(["span", {}, year]);
@@ -676,7 +694,7 @@ function render_detail(gobj, $content)
                 ["div", {class: "MUS_QACTIONS"}, [
                     ["button", {class: "MUS_QBTN button is-primary", type: "button"},
                         [ico(P.play, 15), ["span", {i18n: "play all"}, t("play all")]],
-                        {click: () => play_all(gobj, () => ordered)}],
+                        {click: () => play_temp(ordered, 0)}],
                     ["button", {class: "MUS_QBTN button", type: "button"},
                         [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
                         {click: () => queue_add(ordered, "append")}]
@@ -691,20 +709,42 @@ function render_detail(gobj, $content)
         return;
     }
 
-    /*  Artist / genre: one section per album. */
-    let sections = new Map();
-    for(const x of ordered) {
-        if(!sections.has(x.album)) {
-            sections.set(x.album, []);
-        }
-        sections.get(x.album).push(x);
-    }
+    /*  Artist / genre: ONE SECTION PER RECORD.
+     *
+     *  This is what "I need to see the albums by author" asks for, and
+     *  the answer belongs here rather than in a sixth chip: an artist
+     *  IS their records, so opening one should show records, not a
+     *  run of songs with faint headings over it.
+     *
+     *  So each section carries what an album row carries — its sleeve,
+     *  how many tracks, and the two verbs — and the tracks sit under
+     *  it. Grouped through albums_of(), the same rule the Albums view
+     *  uses: splitting on the raw title here showed one record tagged
+     *  two ways as two headings, one directly under the other. */
     let $wrap = createElement2(["div", {class: "MUS_ROWS"}, []]);
-    for(const [album, tracks] of sections.entries()) {
+    for(const a of albums_of(ordered)) {
+        const tracks = ordered_detail({kind: "albums", tracks: a.tracks});
         $wrap.appendChild(createElement2(
-            ["div", {class: "MUS_SECTION_H"}, display_name(album)]));
+            ["div", {class: "MUS_SECTION_H MUS_ALBHEAD"}, [
+                cover_spec(a.tracks[0].key, "MUS_ART MUS_ALBHEAD_ART", "♪"),
+                ["button", {class: "MUS_ROWMAIN", type: "button"}, [
+                    ["span", {class: "MUS_T1"}, display_name(a.name)],
+                    ["span", {class: "MUS_T2"}, [
+                        ["span", {}, String(tracks.length)],
+                        ["span", {i18n: "tracks"}, t("tracks")]
+                    ]]
+                ], {
+                    click: () => {
+                        priv.detail = {kind: "albums", id: a.id, name: a.name,
+                                       tracks: a.tracks};
+                        scroll_top(gobj);
+                        render(gobj);
+                    }
+                }],
+                verb_buttons(gobj, () => tracks)
+            ]]));
         for(const x of tracks) {
-            $wrap.appendChild(createElement2(track_row(gobj, x, ordered, true)));
+            $wrap.appendChild(createElement2(track_row(gobj, x, tracks, true)));
         }
     }
     $content.appendChild($wrap);

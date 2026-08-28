@@ -37,7 +37,7 @@ import {
     cover_url,
     queue_tracks, queue_index, queue_remove_at, queue_move, queue_clear,
     queue_play_at, queue_add, tracks_of_source, queue_origin,
-    preview_track, stop_preview, previewing,
+    temp_track,
     current_track, is_playing, toggle, step, prev,
     seek_fraction, set_shuffle, get_shuffle, set_repeat, get_repeat,
     progress, fmt_time, queue_position,
@@ -612,7 +612,7 @@ function run_viz(gobj)
         here rather than only at the tap that changed it. */
     priv.viz.sync();
 
-    if(is_playing() || previewing()) {
+    if(is_playing() || temp_track()) {
         priv.viz.start();
     } else {
         priv.viz.stop();

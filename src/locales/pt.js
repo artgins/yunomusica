@@ -83,6 +83,8 @@ const pt = {
             "já no prato",
         "preview":              "Ouvir",
         "previewing":           "A ouvir",
+        "temporary list":      "Lista temporária",
+        "back to the deck":    "Voltar à fila",
         "temporary queue":      "Fila montada à mão",
         "playing list":         "Lista",
         "edited":               "alterada",

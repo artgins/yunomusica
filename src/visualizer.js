@@ -58,7 +58,7 @@ import {createElement2} from "@yuneta/gobj-js";
 import {t} from "i18next";
 
 import {frame, set_smoothing, SEMITONES} from "./analyser.js";
-import {progress, is_playing, previewing, current_track} from "./music_store.js";
+import {progress, is_playing, temp_track, current_track} from "./music_store.js";
 
 
 /***************************************************************
@@ -407,7 +407,7 @@ function apply_mode(V, announce)
          *  The tests never saw it because they cycled the modes with
          *  the music PAUSED, where a blank canvas is the right
          *  answer. */
-        if(is_playing() || previewing()) {
+        if(is_playing() || temp_track()) {
             start(V);
         }
         if(V.running) {

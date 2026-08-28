@@ -83,6 +83,8 @@ const zh = {
             "已在播放台上",
         "preview":              "试听",
         "previewing":           "试听中",
+        "temporary list":      "临时列表",
+        "back to the deck":    "回到队列",
         "temporary queue":      "手动编排的队列",
         "playing list":         "列表",
         "edited":               "已修改",

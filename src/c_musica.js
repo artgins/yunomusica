@@ -44,8 +44,9 @@ import {
     seek_fraction, progress, cover_url, setup_media_session,
     cancel_ingest, fmt_time,
     queue_snapshot, restore_queue,
-    previewing, stop_preview, queue_add,
-    preview_progress, seek_preview_fraction,
+    temp_track, temp_playing, temp_toggle, temp_position,
+    back_to_deck, temp_next, queue_add,
+    temp_progress, seek_temp_fraction,
 } from "./music_store.js";
 
 import {
@@ -82,6 +83,7 @@ const P = {
     next:  "M16 6h2v12h-2zM6 6l9 6-9 6z",
     play:  "M8 5v14l11-7z",
     pause: "M6 5h4v14H6zm8 0h4v14h-4z",
+    plus:  "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z",
 };
 
 
@@ -187,7 +189,7 @@ function mt_start(gobj)
             paint_time(gobj);
         } else if(channel === "loading") {
             paint_scan(gobj);
-        } else if(channel === "preview") {
+        } else if(channel === "temp") {
             paint_player(gobj);
         }
         if(channel === "queue" || channel === "playing") {
@@ -427,7 +429,7 @@ function build_player(gobj)
      *  thing the strip is for — the tap that takes you to the deck.
      *
      *  It goes in FIRST, so everything built above sits over it, and
-     *  outside .MUS_PBAR, which paint_preview rebuilds. */
+     *  outside .MUS_PBAR, which paint_temp rebuilds. */
     priv.viz = create_visualizer({tap: false, cls: "MUS_VIZ_MINI"});
     $player.insertBefore(priv.viz.$el, $player.firstChild);
 
@@ -526,8 +528,8 @@ function seek_at(ev, node)
     f = r.width ? f : 0;
     /*  Seek what is sounding. During a preview that is the preview, not
         the queue track paused behind it. */
-    if(previewing()) {
-        seek_preview_fraction(f);
+    if(temp_track()) {
+        seek_temp_fraction(f);
     } else {
         seek_fraction(f);
     }
@@ -543,14 +545,15 @@ function paint_player(gobj)
     if(!priv.$player) {
         return;
     }
-    /*  A preview takes over this strip. It is a different thing from the
-        queue — it changed nothing and committed to nothing — so it says
-        so, and offers the one decision worth offering: keep it or drop
-        it. It shows on every route, including the deck, because it is
-        the only sign that the sound you hear is not the queue. */
-    let prev_track = previewing();
-    if(prev_track) {
-        paint_preview(gobj, prev_track);
+    /*  The temporary list takes this strip over.
+     *
+     *  The strip is the one piece of screen the two lists share, and
+     *  while the temporary one is sounding it is the ONLY sign that
+     *  what you hear is not the deck — so it shows on every route, the
+     *  deck included, and it carries the way back. */
+    let temp = temp_track();
+    if(temp) {
+        paint_temp(gobj, temp);
         run_viz(gobj, true);
         return;
     }
@@ -710,40 +713,70 @@ function run_viz(gobj, visible)
     if(!priv.viz) {
         return;
     }
-    if(visible && (is_playing() || previewing())) {
+    if(visible && (is_playing() || temp_track())) {
         priv.viz.start();
     } else {
         priv.viz.stop();
     }
 }
 
-function paint_preview(gobj, track)
+/*  The strip while the TEMPORARY list is sounding.
+ *
+ *  It has to answer three questions at a glance, because this strip is
+ *  the only place they can be answered: what is sounding, that it is
+ *  not the deck, and how to get the deck back.
+ *
+ *  The transport is icons, the way back is words. A list you cannot
+ *  pause or step through is not a list, so pause and next are here; but
+ *  the ONE thing a user needs to be told in a language they read is
+ *  that the deck is still there and this button returns to it. */
+function paint_temp(gobj, track)
 {
     let priv = gobj.priv;
 
     priv.$root.classList.add("has-player");
     priv.$player.classList.add("is-on", "is-preview");
 
+    let at = temp_position();
+    let where = (at.length > 1) ? `${at.index + 1} / ${at.length}` : "";
+
     set_text(priv.$player, ".MUS_PTITLE", track.title);
-    set_text(priv.$player, ".MUS_PARTIST", t("previewing") + " · " + track.artist);
+    set_text(priv.$player, ".MUS_PARTIST",
+        [t("temporary list"), where, track.artist].filter(Boolean).join(" · "));
     paint_art(priv.$player.querySelector(".MUS_PART"), cover_url(track.key));
 
     let $ctl = priv.$player.querySelector(".MUS_PCTL");
     if(!$ctl) {
         return;
     }
+    const sounding = temp_playing();
     $ctl.innerHTML = "";
+
+    const ibtn = (key, path, on_click, extra) => createElement2(
+        ["button", {
+            class: "MUS_IBTN MUS_TEMPBTN" + (extra || ""),
+            type: "button",
+            "aria-label": t(key),
+            "data-i18n-aria-label": key,
+            title: t(key),
+            "data-i18n-title": key
+        }, svg(path, 18), {click: on_click}]);
+
+    $ctl.appendChild(ibtn(sounding ? "pause" : "play",
+        sounding ? P.pause : P.play, () => temp_toggle()));
+    if(at.length > 1) {
+        $ctl.appendChild(ibtn("next", P.next, () => temp_next()));
+    }
+    /*  Keeping what you are hearing is the whole reason the temporary
+        list exists: hear it first, decide after. */
+    $ctl.appendChild(ibtn("add to queue", P.plus, () => queue_add([track], "append")));
+
+    /*  The way back, in words. The deck did not go anywhere. */
     $ctl.appendChild(createElement2(
-        ["button", {class: "MUS_QBTN button is-primary", type: "button",
-                    i18n: "add to queue"},
-            t("add to queue"), {click: () => {
-                queue_add([track], "append");
-                stop_preview();
-            }}]));
-    $ctl.appendChild(createElement2(
-        ["button", {class: "MUS_QBTN button is-ghost", type: "button",
-                    i18n: "stop"},
-            t("stop"), {click: () => stop_preview()}]));
+        ["button", {class: "MUS_QBTN MUS_BACKDECK button is-ghost", type: "button",
+                    i18n: "back to the deck"},
+            t("back to the deck"), {click: () => back_to_deck()}]));
+
     refresh_language(priv.$player, t);
     paint_time(gobj);
 }
@@ -791,7 +824,7 @@ function paint_time(gobj)
     }
     let $fill = priv.$player.querySelector(".MUS_SEEK_FILL");
     if($fill) {
-        let p = previewing() ? preview_progress() : progress();
+        let p = temp_track() ? temp_progress() : progress();
         $fill.style.width = (p.fraction * 100) + "%";
     }
 }

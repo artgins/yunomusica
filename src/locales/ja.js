@@ -83,6 +83,8 @@ const ja = {
             "すでにデッキにあります",
         "preview":              "試聴",
         "previewing":           "試聴中",
+        "temporary list":      "一時リスト",
+        "back to the deck":    "キューに戻る",
         "temporary queue":      "手作業で組んだキュー",
         "playing list":         "リスト",
         "edited":               "変更あり",

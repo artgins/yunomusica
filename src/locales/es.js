@@ -90,6 +90,8 @@ const es = {
             "ya en el plato",
         "preview":              "Escuchar",
         "previewing":           "Escuchando",
+        "temporary list":      "Lista temporal",
+        "back to the deck":    "Volver a la cola",
         "temporary queue":      "Cola montada a mano",
         "playing list":         "Lista",
         "edited":               "modificada",

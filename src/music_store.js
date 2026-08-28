@@ -324,10 +324,25 @@ const S = {
         threw together?" is not a question the user should have to guess. */
     origin:  null,      // {list_id, name} while it is a saved list
     edited:  false,     // …and whether it has been changed since
-    /*  A separate element for previews. Clicking a row must never take
-        over the queue, so a preview cannot share the queue's player. */
-    preview_audio: null,
-    preview:  null,     // the track being previewed
+    /*  THE TEMPORARY LIST.
+     *
+     *  What the user is looking at in the library is already a list —
+     *  an album, a genre, a folder, the tracks of one artist — and
+     *  pressing play on it must not cost them the deck. So it plays
+     *  here: its own element, its own list, its own position, running
+     *  beside the deck while the deck waits exactly where it was.
+     *
+     *  It runs ON, to the end of what is on the screen, because that is
+     *  what a list means. Stopping dead after one track was the old
+     *  behaviour and it was the wrong shape: nobody presses play on an
+     *  album to hear its first song.
+     *
+     *  The way back is one button on the strip the two of them share. */
+    temp_audio: null,
+    temp:    null,      // the track sounding out of it
+    temp_list: [],      // the list as it is on the screen, in that order
+    temp_i:  -1,        // where in it
+    temp_resume: false, // the deck was playing when this took over
     shuffle: false,
     repeat:  false,
     url:     null,
@@ -678,31 +693,106 @@ function clear_notice()
 /***************************************************************
  *      4. Groupings and search
  ***************************************************************/
-function group_by(fn)
+/*  Grouped on a NORMALISED key, and labelled with the spelling most of
+ *  the tracks in the group actually carry.
+ *
+ *  Tags in a real library are not consistent, and the Map above keys on
+ *  the raw string: "Aqualung", "aqualung" and "Aqualung " went into
+ *  three buckets and came out as three rows with, to the eye, the same
+ *  name. The sort then put them next to each other, which made it read
+ *  less like a bug and more like the library being wrong about itself.
+ *
+ *  `id` is the normalised key and is what a drill-down must hold on to.
+ *  The name cannot be: two albums may legitimately share one. */
+/*  The spelling most of these tracks carry, and on a tie the one that
+    came first. Anything is better than picking at random and having a
+    name change between repaints. */
+function most_common(tracks, of)
+{
+    const counts = new Map();
+    for(const t of tracks) {
+        const v = of(t);
+        counts.set(v, (counts.get(v) || 0) + 1);
+    }
+    let best = "";
+    let n = -1;
+    for(const [v, c] of counts) {
+        if(c > n) {
+            n = c;
+            best = v;
+        }
+    }
+    return best;
+}
+
+function group_by_norm(tracks, id_of, label_of)
 {
     const m = new Map();
-    for(const t of S.tracks) {
-        const k = fn(t);
-        if(!m.has(k)) {
-            m.set(k, []);
+    for(const t of tracks) {
+        const k = id_of(t);
+        let g = m.get(k);
+        if(!g) {
+            g = {id: k, tracks: []};
+            m.set(k, g);
         }
-        m.get(k).push(t);
+        g.tracks.push(t);
     }
-    return [...m.entries()].sort((a,b) => collator.compare(a[0], b[0]));
+    const out = [];
+    for(const g of m.values()) {
+        out.push({id: g.id, name: most_common(g.tracks, label_of), tracks: g.tracks});
+    }
+    return out.sort((a, b) => collator.compare(a.name, b.name));
 }
 
-/*  view: "artists" | "genres" | "folders" -> [{name, tracks}]  */
+/*  view: "artists" | "genres" | "folders" -> [{id, name, tracks}]  */
 function groups_for(view)
 {
-    const fn = view === "artists" ? (t => t.albumArtist)
-             : view === "genres"  ? (t => t.genre)
-             : (t => t.folder);
-    return group_by(fn).map(([name, tracks]) => ({name, tracks}));
+    if(view === "artists") {
+        return group_by_norm(S.tracks, (t) => norm(t.albumArtist), (t) => t.albumArtist);
+    }
+    if(view === "genres") {
+        return group_by_norm(S.tracks, (t) => norm(t.genre), (t) => t.genre);
+    }
+    /*  A folder is a path, and a path is already exact — there is no
+        spelling of it to disagree about. */
+    return group_by_norm(S.tracks, (t) => t.folder, (t) => t.folder);
 }
 
+/*  An album is an (artist, album) PAIR, never a title on its own.
+ *
+ *  Grouped by title alone, every "Greatest Hits" in a library collapsed
+ *  into one album by nobody in particular, and one album tagged two ways
+ *  split into two. `key` is already exactly the right thing — the
+ *  normalised album artist and the normalised album — and it is what the
+ *  covers are filed under, so a group and its sleeve cannot disagree. */
 function albums()
 {
-    return group_by(t => t.album).map(([name, tracks]) => ({name, tracks}));
+    /*  How each artist is spelled is decided ONCE, over the whole
+        library, and album cards then borrow that answer. Deciding it
+        per album gives a different one for a record whose only track
+        carries the minority spelling: "Mirage" was filed under "camel"
+        while the artist itself was listed as "Camel". The name of an
+        artist belongs to the artist, not to one of their records. */
+    const spelling = new Map();
+    for(const g of groups_for("artists")) {
+        spelling.set(g.id, g.name);
+    }
+    return albums_of(S.tracks).map(function(a) {
+        const raw = a.tracks[0].albumArtist;
+        return {...a, artist: spelling.get(norm(raw)) || raw};
+    });
+}
+
+/*  The albums inside a given set of tracks — one artist's, one genre's.
+ *
+ *  The same grouping as albums(), and it has to be: the artist screen
+ *  split its sections on the raw title, so an artist whose record was
+ *  tagged two ways showed it as two headings, one under the other,
+ *  which is the very thing the Albums view was just stopped from
+ *  doing. One rule, one place. */
+function albums_of(tracks)
+{
+    return group_by_norm(tracks || [], (t) => t.key, (t) => t.album);
 }
 
 function all_tracks_sorted()
@@ -968,86 +1058,211 @@ function queue_play_at(i)
 
 
 /***************************************************************
- *      Preview — listening without committing
+ *      The temporary list — listening without committing
  *
- *  Clicking a row must not hijack what is playing. A preview
- *  runs on its own element, pauses the queue while it sounds,
- *  and leaves the queue exactly where it was. From it the track
- *  can be added to the queue, which is the whole point: hear it
- *  first, decide after.
+ *  Two lists exist at once, and they are not the same kind of
+ *  thing. The DECK is the official one: persistent, curated,
+ *  saved, survives a reload. What the user is looking at in the
+ *  library is the other one — temporary, unsaved, exactly as
+ *  long as the screen they are on.
+ *
+ *  Pressing play on a row starts the temporary one. The deck
+ *  PAUSES and keeps its place; nothing of it is lost, nothing is
+ *  asked, and no dialog stands between the user and the sound
+ *  they asked for. It plays on through the list on screen to its
+ *  end, and one button on the shared strip gives the deck back —
+ *  playing again if it was playing when it was interrupted.
  ***************************************************************/
-function get_preview_audio()
+function get_temp_audio()
 {
-    if(!S.preview_audio) {
-        S.preview_audio = new Audio();
-        /*  Same channel as the queue's clock: whoever is painting a
+    if(!S.temp_audio) {
+        S.temp_audio = new Audio();
+        /*  Same channel as the deck's clock: whoever is painting a
             position repaints, and each asks for the one it owns. */
-        /*  A preview is also something that is sounding, so the
-            visualizer follows it too. */
-        S.preview_audio.addEventListener("play", () => attach_analyser(S.preview_audio));
-        S.preview_audio.addEventListener("timeupdate", () => {
-            attach_analyser(S.preview_audio);
+        /*  What comes out of here is also something that is sounding,
+            so the visualizer follows it too. */
+        S.temp_audio.addEventListener("play", () => attach_analyser(S.temp_audio));
+        S.temp_audio.addEventListener("timeupdate", () => {
+            attach_analyser(S.temp_audio);
             emit("time");
         });
-        S.preview_audio.addEventListener("ended", () => stop_preview());
-        S.preview_audio.addEventListener("error", () => {
-            let err = S.preview_audio.error;
-            if(!S.preview_audio.src || (err && err.code === 1)) {
+        /*  ON to the next one. A list that stopped after its first
+            track was not a list. */
+        S.temp_audio.addEventListener("ended", () => temp_next());
+        S.temp_audio.addEventListener("error", () => {
+            let err = S.temp_audio.error;
+            if(!S.temp_audio.src || (err && err.code === 1)) {
                 return;                             // an abort, not a failure
             }
             S.notice = "that file could not be read";
-            stop_preview();
             emit("library");
+            /*  One unreadable file must not end the listening. Step
+                over it, the same as a scan steps over a file it cannot
+                open. */
+            temp_next();
         });
     }
-    return S.preview_audio;
+    return S.temp_audio;
 }
 
-async function preview_track(t)
+/*  Start the list the user can see, at the row they pressed.
+
+    `list` is taken as given: the order on the screen is the order it
+    plays, because that is the promise the screen is making. */
+async function play_temp(list, index)
 {
-    if(!t) {
+    const items = (list || []).filter(Boolean);
+    if(!items.length) {
         return;
     }
-    /*  Two things sounding at once helps nobody. */
+    /*  Remember whether the deck was SOUNDING, not merely loaded: it is
+        what the way back has to restore, and pausing it below destroys
+        the evidence. Only on the way IN — starting a second list from
+        inside a temporary one must not overwrite it with false. */
+    if(!S.temp) {
+        S.temp_resume = is_playing();
+    }
     if(S.audio && !S.audio.paused) {
         S.audio.pause();
     }
+    S.temp_list = items;
+    await temp_go(Math.max(0, Math.min(items.length - 1, index | 0)));
+}
+
+async function temp_go(i)
+{
+    const t = S.temp_list[i];
+    if(!t) {
+        back_to_deck();
+        return;
+    }
+    S.temp_i = i;
     const file = await resolve_file(t);
     if(!file) {
         S.notice = "that file could not be read";
         emit("library");
+        /*  Do not sit on a track that cannot sound. */
+        if(i + 1 < S.temp_list.length) {
+            await temp_go(i + 1);
+        } else {
+            back_to_deck();
+        }
         return;
     }
-    const a = get_preview_audio();
-    const stale_preview = S.preview_url;
-    S.preview_url = URL.createObjectURL(file);
-    S.preview = t;
-    a.src = S.preview_url;
-    if(stale_preview) {
-        setTimeout(() => URL.revokeObjectURL(stale_preview), 1000);
+    const a = get_temp_audio();
+    const stale = S.temp_url;
+    S.temp_url = URL.createObjectURL(file);
+    S.temp = t;
+    a.src = S.temp_url;
+    if(stale) {
+        setTimeout(() => URL.revokeObjectURL(stale), 1000);
     }
     a.play().catch(() => {});
-    emit("preview");
+    emit("temp");
 }
 
-function stop_preview()
+function temp_next()
 {
-    if(S.preview_audio) {
-        S.preview_audio.pause();
-        S.preview_audio.removeAttribute("src");
-        S.preview_audio.load();
+    if(!S.temp) {
+        return;
     }
-    if(S.preview_url) {
-        URL.revokeObjectURL(S.preview_url);
-        S.preview_url = null;
+    if(S.temp_i + 1 >= S.temp_list.length) {
+        /*  The end of what was on the screen. The deck gets its turn
+            back rather than the app falling silent with no explanation
+            of what just ended. */
+        back_to_deck();
+        return;
     }
-    S.preview = null;
-    emit("preview");
+    temp_go(S.temp_i + 1);
 }
 
-function previewing()
+function temp_prev()
 {
-    return S.preview;
+    if(!S.temp) {
+        return;
+    }
+    temp_go(Math.max(0, S.temp_i - 1));
+}
+
+/*  Silence the temporary list and forget it. Does NOT touch the deck —
+    back_to_deck is the one that decides what happens to that. */
+function temp_clear()
+{
+    if(S.temp_audio) {
+        S.temp_audio.pause();
+        S.temp_audio.removeAttribute("src");
+        S.temp_audio.load();
+    }
+    if(S.temp_url) {
+        URL.revokeObjectURL(S.temp_url);
+        S.temp_url = null;
+    }
+    S.temp = null;
+    S.temp_list = [];
+    S.temp_i = -1;
+}
+
+/*  The way back, and the only way back.
+ *
+ *  The deck was interrupted mid-track and kept its position, so it
+ *  resumes where it stood — and only if it was actually sounding when
+ *  the temporary list took over. Coming back to music that starts
+ *  playing on its own, when nothing was playing before, would be the
+ *  app deciding something nobody asked it to. */
+function back_to_deck()
+{
+    const resume = S.temp_resume;
+    S.temp_resume = false;
+    temp_clear();
+    emit("temp");
+    if(!resume) {
+        return;
+    }
+    if(S.audio && S.audio.src) {
+        S.audio.play().catch(() => {});
+        emit("playing");
+    } else {
+        toggle();
+    }
+}
+
+/*  The track sounding out of the temporary list, or null. */
+function temp_track()
+{
+    return S.temp;
+}
+
+function temp_playing()
+{
+    return !!S.temp && !!S.temp_audio && !S.temp_audio.paused;
+}
+
+/*  Pause and resume the temporary list. A list you cannot stop mid-song
+    is not something anyone would call a player. */
+function temp_toggle()
+{
+    if(!S.temp || !S.temp_audio) {
+        return;
+    }
+    if(S.temp_audio.paused) {
+        S.temp_audio.play().catch(() => {});
+    } else {
+        S.temp_audio.pause();
+    }
+    emit("temp");
+}
+
+/*  Where it has got to, for the strip to say "3 / 12". */
+function temp_position()
+{
+    return {index: S.temp_i, length: S.temp_list.length};
+}
+
+/*  Everything still ahead of it, plus what is sounding — what "add all
+    of this to the deck" means from inside a temporary list. */
+function temp_tracks()
+{
+    return [...S.temp_list];
 }
 
 
@@ -1263,8 +1478,13 @@ async function load_current(autoplay)
         S.resume_at = 0;
         S.resume_uid = 0;
     }
-    if(S.preview) {
-        stop_preview();
+    /*  The deck is loading a track of its own, so the temporary list is
+        over — but silently: back_to_deck would try to resume the deck
+        underneath the very load that is happening here. */
+    if(S.temp) {
+        S.temp_resume = false;
+        temp_clear();
+        emit("temp");
     }
 
     const file = await resolve_file(t);
@@ -1425,18 +1645,18 @@ function progress()
     };
 }
 
-/*  A preview sounds on its own element, so it has its own clock — and
-    the strip that shows it must read THAT one. Asking `progress()` gave
-    the position of the queue track, which is paused underneath: the bar
-    sat frozen wherever the queue was left, and a click on it seeked
-    music nobody was listening to.
+/*  The temporary list sounds on its own element, so it has its own
+    clock, and the strip showing it must read THAT one. Asking
+    `progress()` gave the position of the deck's track, which is paused
+    underneath: the bar sat frozen wherever the deck was left, and a
+    click on it seeked music nobody was listening to.
 
     The deck keeps reading `progress()` on purpose. Down there the
     transport still belongs to the queue, and it should go on showing
     where the queue is waiting. */
-function preview_progress()
+function temp_progress()
 {
-    const audio = S.preview_audio;
+    const audio = S.temp_audio;
     const dur = (audio && audio.duration) || 0;
     return {
         current: (audio && audio.currentTime) || 0,
@@ -1445,9 +1665,9 @@ function preview_progress()
     };
 }
 
-function seek_preview_fraction(fraction)
+function seek_temp_fraction(fraction)
 {
-    const audio = S.preview_audio;
+    const audio = S.temp_audio;
     if(!audio || !audio.duration) {
         return;
     }
@@ -1516,6 +1736,7 @@ export {
     clear_notice,
     groups_for,
     albums,
+    albums_of,
     all_tracks_sorted,
     search,
     cover_url,
@@ -1552,12 +1773,18 @@ export {
     queue_position,
     setup_media_session,
     fmt_time,
-    /*  preview */
-    preview_track,
-    stop_preview,
-    previewing,
-    preview_progress,
-    seek_preview_fraction,
+    /*  the temporary list */
+    play_temp,
+    temp_next,
+    temp_prev,
+    back_to_deck,
+    temp_track,
+    temp_playing,
+    temp_toggle,
+    temp_position,
+    temp_tracks,
+    temp_progress,
+    seek_temp_fraction,
     /*  the deck across a reload */
     queue_snapshot,
     restore_queue,

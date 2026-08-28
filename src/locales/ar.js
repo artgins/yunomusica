@@ -87,6 +87,8 @@ const ar = {
             "على المنصة بالفعل",
         "preview":              "استماع",
         "previewing":           "جارٍ الاستماع",
+        "temporary list":      "قائمة مؤقتة",
+        "back to the deck":    "العودة إلى القائمة",
         "temporary queue":      "قائمة أُعدّت يدويًا",
         "playing list":         "قائمة",
         "edited":               "معدَّلة",

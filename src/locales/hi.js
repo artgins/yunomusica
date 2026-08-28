@@ -83,6 +83,8 @@ const hi = {
             "पहले से डेक पर",
         "preview":              "सुनें",
         "previewing":           "सुना जा रहा है",
+        "temporary list":      "अस्थायी सूची",
+        "back to the deck":    "कतार पर लौटें",
         "temporary queue":      "हाथ से बनाई कतार",
         "playing list":         "सूची",
         "edited":               "बदली गई",

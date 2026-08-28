@@ -1180,6 +1180,27 @@ img.MUS_ART { object-fit: cover; }
     padding: 1rem 0.5rem 0.25rem;
 }
 
+/*  Inside an artist, a section heading IS a record — sleeve, name, how
+ *  many tracks, and the two verbs — not a faint word over a run of
+ *  songs. An artist is their records, so this is the row that has to
+ *  read like something, and the tracks under it are the detail. */
+.MUS_ALBHEAD {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.6rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.35rem;
+    border-radius: 12px;
+    background: var(--bulma-scheme-main-bis, #f7f7f7);
+    color: inherit;
+}
+.MUS_ALBHEAD:first-child { margin-top: 0; }
+.MUS_ALBHEAD .MUS_ROWMAIN { flex: 1; min-width: 0; text-align: start; }
+.MUS_ALBHEAD .MUS_T1 { font-weight: 700; }
+.MUS_ALBHEAD .MUS_T2 { font-weight: 400; font-size: 0.78rem; }
+.MUS_ALBHEAD .MUS_T2 > span + span { margin-inline-start: 0.3rem; }
+.MUS_ALBHEAD_ART { width: 42px; height: 42px; flex: none; border-radius: 8px; }
+
 .MUS_GRID {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1546,19 +1567,24 @@ img.MUS_ART { object-fit: cover; }
 }
 .MUS_PCTL { display: flex; align-items: center; gap: 0.15rem; flex: none; }
 
-/*  Preview mode: the same strip, unmistakably not the queue. */
+/*  The temporary list on the strip: the same strip, unmistakably not
+    the deck. */
 .MUS_PLAYER.is-preview {
     background: var(--mus-accent-soft);
     border-top-color: var(--mus-accent);
 }
 .MUS_PLAYER.is-preview .MUS_PARTIST { color: var(--mus-accent); font-weight: 600; }
-.MUS_PLAYER.is-preview .MUS_PCTL { gap: 0.4rem; }
+.MUS_PLAYER.is-preview .MUS_PCTL { gap: 0.25rem; }
 
-/*  The two preview verbs are TEXT buttons, not transport glyphs. Left to
-    themselves they took the 40px circle `.MUS_PCTL button` sets below —
-    a label in an icon's width, spilling over its neighbour and over the
-    title, which is why the strip read as one run-on line. */
-.MUS_PLAYER.is-preview .MUS_PCTL button {
+/*  The way back is a TEXT button, not a transport glyph. Left to itself
+    it took the 40px circle `.MUS_PCTL button` sets below — a label in an
+    icon's width, spilling over its neighbour and over the title, which
+    is why the strip read as one run-on line.
+
+    Scoped to .MUS_QBTN, not to every button: the transport beside it
+    (pause, next, add) are glyphs and must keep that circle. Widening
+    those was what made the row too long to fit a phone. */
+.MUS_PLAYER.is-preview .MUS_PCTL .MUS_QBTN {
     width: auto;
     height: auto;
     display: inline-flex;
@@ -1566,12 +1592,21 @@ img.MUS_ART { object-fit: cover; }
     justify-content: center;
     border-radius: 10px;
     white-space: nowrap;
-}
-/*  And the ghost one is a button here, not a link in a paragraph. */
-.MUS_PLAYER.is-preview .MUS_PCTL .is-ghost {
     color: inherit;
     text-decoration: none;
     border: 1px solid color-mix(in srgb, var(--mus-accent) 55%, transparent);
+}
+/*  The transport glyphs carry the accent, like everything else that
+    belongs to the temporary list. */
+.MUS_PLAYER.is-preview .MUS_TEMPBTN { color: var(--mus-accent); flex: none; }
+
+/*  On a phone the way back keeps its words and the title gives up the
+    space: "what is sounding" is guessable from the art, "how do I get
+    my queue back" is not. */
+@media (max-width: 460px) {
+    .MUS_PLAYER.is-preview .MUS_PMETA { min-width: 0; }
+    .MUS_PLAYER.is-preview .MUS_PCTL .MUS_QBTN { padding-inline: 0.5rem; }
+    .MUS_PLAYER.is-preview .MUS_TEMPBTN { width: 34px; height: 34px; }
 }
 
 /*  On a phone the cover and the two labels leave the title a few pixels

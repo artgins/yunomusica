@@ -83,6 +83,8 @@ const fr = {
             "déjà sur la platine",
         "preview":              "Écouter",
         "previewing":           "Écoute",
+        "temporary list":      "Liste temporaire",
+        "back to the deck":    "Revenir à la file",
         "temporary queue":      "File composée à la main",
         "playing list":         "Liste",
         "edited":               "modifiée",
