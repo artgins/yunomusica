@@ -433,6 +433,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | Test | What breaks if it goes red |
 |---|---|
 | `fallback` | a visitor lands in a language nobody chose |
+| `locales` | a language quietly falls back to English, or loses a `{{placeholder}}` |
 | `plural` | "1 pistas" — a count that does not agree with its noun |
 | `navink` | nav and primary buttons disagree about black-or-white ink |
 | `minink` | the mini-player's button, the one accent surface `navink` cannot see |
@@ -1174,6 +1175,42 @@ numbers, so a single key could only ever have agreed with one of them. It is two
 keys now, `covers found` and `covers missed`, rendered side by side — which is
 why "Sin resultado: 1 (no se **vuelven** a preguntar)" was on the screen at all.
 
-Worth knowing while reading those catalogues: the whole covers section is
-translated only in English, Spanish and German. The other seven fall back to
-English there, as they did before — a translation gap, not a plural one.
+That gap is closed too — see below.
+
+## Ten languages, and no quiet English
+
+`fallbackLng: "en"` is a safety net, not a plan. A key nobody has translated
+renders in English and never changes, on a screen where everything around it is
+Russian — and nothing anywhere goes red about it. That is how the **whole covers
+section** — the switch, its buttons, and the paragraph explaining exactly what
+leaves the device — sat in English in **seven of the ten languages**. The one
+paragraph in this app whose entire job is to be believed, in a language the
+reader may not have.
+
+Fifteen keys were missing from Chinese, Arabic, Russian, Hindi, Portuguese,
+French and Japanese. They are written now, and `tests/locales.mjs` will not let
+it happen again. It checks three things, and none of them needs anyone to read
+the languages:
+
+**Coverage.** Every key English has, every catalogue has — and nothing extra,
+which is either a typo or something the code stopped asking for.
+
+**Placeholders.** A translation that drops `{{other}}` still renders, still
+reads like a sentence, and has silently lost the name of the folder it is
+talking about. One had: the Arabic zero form of "some were already in".
+
+`{{count}}` is the deliberate exception. A plural form may name its own number
+rather than print it — Arabic says *"one was found"*, not *"1 one was found"* —
+so `count` is optional and every other placeholder is not.
+
+**Nothing empty, and nothing still equal to its key.** i18next answers an unknown
+key with the key itself, so a value that *is* its key looks on screen exactly
+like a translation nobody wrote. English is exempt from that second half and
+only that: the keys are lower-case English, so `"edited"` being the word
+"edited" is the catalogue working.
+
+What the test cannot check is whether a translation is any *good*. Quote marks
+follow each language's own convention — 「」 in Japanese, «» in Russian and
+Arabic, « » in French, “” in the rest — and the Arabic plural forms follow the
+usual rule: dual for two, the broken plural for three to ten, the singular from
+eleven up.

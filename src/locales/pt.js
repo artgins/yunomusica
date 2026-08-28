@@ -64,6 +64,9 @@ const pt = {
         "load something to start":
             "Adiciona uma pasta ou algumas faixas e aparecem aqui, no prato.",
         "queue":                "Fila",
+        "empty the queue?":     "Esvaziar a fila?",
+        "maximise the queue":   "Ver a fila inteira",
+        "show the player":      "Ver o reprodutor",
         "the queue is empty":   "A fila está vazia.",
         "clear queue":          "Esvaziar a fila",
         "follow playing":       "Acompanhar o que toca",
@@ -138,6 +141,28 @@ const pt = {
         "reset hearts":         "Pôr os corações a zero",
         "forget these counts":  "Esquecer estas contagens",
 
+        "no cover for this":    "Este disco não traz capa",
+        "covers offer detail":
+            "Posso procurá-la na internet: saem o artista e o álbum, mais nada.",
+        "look for it":          "Procurar",
+        "retry the ones that failed": "Tentar de novo as que falharam",
+        "cover not found":      "Capa não encontrada",
+        "cover retry detail":
+            "O serviço pode ter estado em baixo. Pode tentar outra vez.",
+        "try again":            "Tentar outra vez",
+        "look for covers online": "Procurar capas na internet",
+        "covers online explained":
+            "Ligado, quando toca um disco sem capa dentro do ficheiro, saem o seu artista e o seu álbum como texto — mais nada: nem ficheiros, nem listas, nem identificadores. Só se pergunta pelo que está a ouvir, nunca pela sua biblioteca inteira, e o que chega fica guardado aqui: esse disco nunca mais é perguntado. Desligue e não sai absolutamente nada desta aplicação.",
+        "covers online working": "À procura da capa de “{{asking}}”…",
+        "covers found_one":     "Encontrada {{count}}.",
+        "covers found_many":    "Encontradas {{count}}.",
+        "covers found_other":   "Encontradas {{count}}.",
+        "covers missed_one":
+            "Sem resultado: {{count}} (não se volta a perguntar durante um mês).",
+        "covers missed_many":
+            "Sem resultado: {{count}} (não se voltam a perguntar durante um mês).",
+        "covers missed_other":
+            "Sem resultado: {{count}} (não se voltam a perguntar durante um mês).",
         "authorised sources":   "Pastas autorizadas",
         "add a folder":         "Adicionar uma pasta",
         "add loose files":      "Adicionar ficheiros soltos",

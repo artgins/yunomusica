@@ -54,6 +54,9 @@ const ja = {
         "load something to start":
             "フォルダーか数曲を追加すると、ここのデッキに並びます。",
         "queue":                "キュー",
+        "empty the queue?":     "キューを空にしますか？",
+        "maximise the queue":   "キュー全体を見る",
+        "show the player":      "プレーヤーを表示",
         "the queue is empty":   "キューは空です。",
         "clear queue":          "キューを空にする",
         "follow playing":       "再生中の曲を追う",
@@ -128,6 +131,20 @@ const ja = {
         "reset hearts":         "ハートをゼロに",
         "forget these counts":  "この記録を忘れる",
 
+        "no cover for this":    "このアルバムにはジャケットがありません",
+        "covers offer detail":
+            "インターネットで探せます。出ていくのはアーティスト名とアルバム名だけで、ほかには何もありません。",
+        "look for it":          "探す",
+        "retry the ones that failed": "見つからなかったものをもう一度",
+        "cover not found":      "ジャケットが見つかりません",
+        "cover retry detail":   "サービスが止まっていたのかもしれません。もう一度試せます。",
+        "try again":            "もう一度試す",
+        "look for covers online": "ジャケットをインターネットで探す",
+        "covers online explained":
+            "オンにすると、ファイルの中にジャケットがないアルバムが鳴りはじめたとき、そのアーティスト名とアルバム名だけがテキストとして出ていきます。ほかには何も——ファイルも、リストも、識別子も出ていきません。たずねるのは今聴いている 1 枚だけで、ライブラリ全体をたずねることはありません。返ってきたものはここに保存され、そのアルバムを二度とたずねることはありません。オフにすれば、このアプリから外に出るものは何ひとつありません。",
+        "covers online working": "「{{asking}}」のジャケットを探しています…",
+        "covers found_other":   "{{count}} 枚見つかりました。",
+        "covers missed_other":  "{{count}} 枚は見つかりませんでした（1 か月は再度たずねません）。",
         "authorised sources":   "許可したフォルダー",
         "add a folder":         "フォルダーを追加",
         "add loose files":      "単体のファイルを追加",

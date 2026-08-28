@@ -83,6 +83,9 @@ const ar = {
         "load something to start":
             "أضف مجلدًا أو بعض المقطوعات، وستظهر هنا على المنصة.",
         "queue":                "قائمة التشغيل",
+        "empty the queue?":     "هل تريد إفراغ القائمة؟",
+        "maximise the queue":   "عرض القائمة كاملة",
+        "show the player":      "عرض المشغل",
         "the queue is empty":   "قائمة التشغيل فارغة.",
         "clear queue":          "إفراغ القائمة",
         "follow playing":       "تتبّع ما يُشغَّل",
@@ -157,6 +160,32 @@ const ar = {
         "reset hearts":         "تصفير القلوب",
         "forget these counts":  "انسَ هذه الأعداد",
 
+        "no cover for this":    "هذا الألبوم بلا غلاف",
+        "covers offer detail":
+            "يمكنني البحث عنه على الإنترنت: يخرج اسم الفنان واسم الألبوم فقط، لا شيء غير ذلك.",
+        "look for it":          "ابحث عنه",
+        "retry the ones that failed": "أعد المحاولة لما لم يُعثر عليه",
+        "cover not found":      "لم يُعثر على غلاف",
+        "cover retry detail":
+            "ربما كانت الخدمة متوقفة. يمكنك المحاولة مرة أخرى.",
+        "try again":            "حاول مرة أخرى",
+        "look for covers online": "ابحث عن الأغلفة على الإنترنت",
+        "covers online explained":
+            "عند تشغيله، حين يبدأ ألبوم لا غلاف له داخل الملف، يخرج اسم فنانه واسم الألبوم كنص فقط — لا شيء غير ذلك: لا ملفات ولا قوائم ولا معرّفات. لا يُسأل إلا عمّا تستمع إليه الآن، ولا تُرسل مكتبتك كاملة أبدًا، وما يعود يُحفظ هنا: لن يُسأل عن ذلك الألبوم مرة أخرى. أطفئه فلا يخرج من هذا التطبيق أي شيء على الإطلاق.",
+        "covers online working": "جارٍ البحث عن غلاف «{{asking}}»…",
+        "covers found_zero":    "لم يُعثر على شيء.",
+        "covers found_one":     "عُثر على واحدة.",
+        "covers found_two":     "عُثر على اثنتين.",
+        "covers found_few":     "عُثر على {{count}}.",
+        "covers found_many":    "عُثر على {{count}}.",
+        "covers found_other":   "عُثر على {{count}}.",
+        "covers missed_zero":
+            "{{count}} بلا نتيجة (لن يُسأل عنها لمدة شهر).",
+        "covers missed_one":    "واحدة بلا نتيجة (لن يُسأل عنها لمدة شهر).",
+        "covers missed_two":    "اثنتان بلا نتيجة (لن يُسأل عنهما لمدة شهر).",
+        "covers missed_few":    "{{count}} بلا نتيجة (لن يُسأل عنها لمدة شهر).",
+        "covers missed_many":   "{{count}} بلا نتيجة (لن يُسأل عنها لمدة شهر).",
+        "covers missed_other":  "{{count}} بلا نتيجة (لن يُسأل عنها لمدة شهر).",
         "authorised sources":   "المجلدات المصرَّح بها",
         "add a folder":         "إضافة مجلد",
         "add loose files":      "إضافة ملفات مفردة",
@@ -213,7 +242,7 @@ const ar = {
         "files already added":
             "هذه الملفات موجودة بالفعل، في: {{other}}. لم يُضَف شيء مرتين.",
         "some were already in_zero":
-            "لم يكن أي منها موجودًا.",
+            "{{count}} منها كانت موجودة بالفعل، في: {{other}}. تُركت تلك، وأُضيف الباقي.",
         "some were already in_one":
             "واحد منها كان موجودًا بالفعل، في: {{other}}. تُرك ذاك، وأُضيف الباقي.",
         "some were already in_two":

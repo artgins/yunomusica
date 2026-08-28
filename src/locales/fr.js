@@ -64,6 +64,9 @@ const fr = {
         "load something to start":
             "Ajoutez un dossier ou quelques morceaux : ils arrivent ici, sur la platine.",
         "queue":                "File",
+        "empty the queue?":     "Vider la file ?",
+        "maximise the queue":   "Voir toute la file",
+        "show the player":      "Voir le lecteur",
         "the queue is empty":   "La file est vide.",
         "clear queue":          "Vider la file",
         "follow playing":       "Suivre ce qui joue",
@@ -138,6 +141,28 @@ const fr = {
         "reset hearts":         "Remettre les cœurs à zéro",
         "forget these counts":  "Oublier ces compteurs",
 
+        "no cover for this":    "Ce disque n’a pas de pochette",
+        "covers offer detail":
+            "Je peux la chercher en ligne : seuls l’artiste et l’album sortent, rien d’autre.",
+        "look for it":          "La chercher",
+        "retry the ones that failed": "Réessayer celles qui ont échoué",
+        "cover not found":      "Pochette introuvable",
+        "cover retry detail":
+            "Le service était peut-être hors service. Vous pouvez réessayer.",
+        "try again":            "Réessayer",
+        "look for covers online": "Chercher les pochettes en ligne",
+        "covers online explained":
+            "Activé, quand démarre un disque dont le fichier ne contient pas de pochette, son artiste et son album sortent sous forme de texte — rien d’autre : aucun fichier, aucune liste, aucun identifiant. On ne demande que pour ce que vous écoutez, jamais pour toute votre bibliothèque, et ce qui revient reste ici : ce disque ne fera plus jamais l’objet d’une demande. Désactivez-le et absolument rien ne sort de cette application.",
+        "covers online working": "Recherche de la pochette de « {{asking}} »…",
+        "covers found_one":     "{{count}} trouvée.",
+        "covers found_many":    "{{count}} trouvées.",
+        "covers found_other":   "{{count}} trouvées.",
+        "covers missed_one":
+            "Sans résultat : {{count}} (on ne redemande pas avant un mois).",
+        "covers missed_many":
+            "Sans résultat : {{count}} (on ne redemande pas avant un mois).",
+        "covers missed_other":
+            "Sans résultat : {{count}} (on ne redemande pas avant un mois).",
         "authorised sources":   "Dossiers autorisés",
         "add a folder":         "Ajouter un dossier",
         "add loose files":      "Ajouter des fichiers isolés",
