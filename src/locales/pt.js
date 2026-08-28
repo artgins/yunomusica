@@ -41,11 +41,23 @@ const pt = {
         "delete":               "Eliminar",
         "remove":               "Remover",
         "add to queue":         "Adicionar à fila",
-        "tracks":               "faixas",
-        "n albums":             "álbuns",
+        /*  ---- counts ---- */
+        "n tracks_one": "faixa",
+        "n tracks_many": "faixas",
+        "n tracks_other": "faixas",
+        "n albums_one": "álbum",
+        "n albums_many": "álbuns",
+        "n albums_other": "álbuns",
+        "n entries_one": "entrada",
+        "n entries_many": "entradas",
+        "n entries_other": "entradas",
+        "n missing_one": "em falta",
+        "n missing_many": "em falta",
+        "n missing_other": "em falta",
+        "n folders inside_one": "pasta dentro",
+        "n folders inside_many": "pastas dentro",
+        "n folders inside_other": "pastas dentro",
         "albums":               "Álbuns",
-        "entries":              "entradas",
-        "missing":              "em falta",
         "reading tags":         "A ler etiquetas…",
 
         "nothing cued":         "Nada carregado",
@@ -87,7 +99,6 @@ const pt = {
         "back to the deck":    "Voltar à fila",
         "to the deck":        "Para a fila",
         "look inside":       "Ver dentro",
-        "folders inside":    "pastas dentro",
         "already on the deck": "Já na fila",
         "temporary queue":      "Fila montada à mão",
         "playing list":         "Lista",
@@ -182,8 +193,12 @@ const pt = {
             "“{{name}}” está dentro de “{{other}}”, que já está — e uma pasta é tomada inteira, por isso as faixas dela já estão na sua biblioteca.",
         "files already added":
             "Esses ficheiros já estão. Tem-nos: {{other}}. Nada foi acrescentado duas vezes.",
-        "some were already in":
-            "{{skipped}} deles já estavam. Tem-nos: {{other}}. Esses ficaram de fora; os restantes foram acrescentados.",
+        "some were already in_one":
+            "{{count}} deles já estava, em: {{other}}. Esse ficou de fora; os restantes foram acrescentados.",
+        "some were already in_many":
+            "{{count}} deles já estavam, em: {{other}}. Esses ficaram de fora; os restantes foram acrescentados.",
+        "some were already in_other":
+            "{{count}} deles já estavam, em: {{other}}. Esses ficaram de fora; os restantes foram acrescentados.",
         "folder contains others":
             "Dentro de “{{name}}” já está acrescentado: {{other}}. Para levar a pasta inteira sem que essas faixas apareçam duas vezes, isso tem de sair primeiro — e as suas escutas e os seus corações vão com ele.",
         "remove it and add this":

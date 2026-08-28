@@ -41,11 +41,18 @@ const de = {
         "delete":               "Löschen",
         "remove":               "Entfernen",
         "add to queue":         "Zur Warteschlange",
-        "tracks":               "Titel",
-        "n albums":             "Alben",
+        /*  ---- counts ---- */
+        "n tracks_one": "Titel",
+        "n tracks_other": "Titel",
+        "n albums_one": "Album",
+        "n albums_other": "Alben",
+        "n entries_one": "Eintrag",
+        "n entries_other": "Einträge",
+        "n missing_one": "fehlt",
+        "n missing_other": "fehlen",
+        "n folders inside_one": "Ordner darin",
+        "n folders inside_other": "Ordner darin",
         "albums":               "Alben",
-        "entries":              "Einträge",
-        "missing":              "fehlen",
         "reading tags":         "Tags werden gelesen…",
 
         "nothing cued":         "Nichts geladen",
@@ -90,7 +97,6 @@ const de = {
         "back to the deck":    "Zurück zur Warteschlange",
         "to the deck":        "In die Warteschlange",
         "look inside":       "Hineinsehen",
-        "folders inside":    "Ordner darin",
         "already on the deck": "Schon in der Warteschlange",
         "temporary queue":      "Von Hand zusammengestellte Warteschlange",
         "playing list":         "Liste",
@@ -155,8 +161,14 @@ const de = {
             "An gehen, sobald ein Album ohne Cover in der Datei läuft, dessen Künstler und Album als Text hinaus — sonst nichts: keine Dateien, keine Listen, keine Kennungen. Gefragt wird nur nach dem, was du gerade hörst, nie nach deiner ganzen Sammlung, und was ankommt, bleibt hier: nach diesem Album wird nie wieder gefragt. Schalte es ab, und es verlässt überhaupt nichts diese App.",
         "covers online working":
             "Suche das Cover von „{{asking}}“…",
-        "covers online done":
-            "{{found}} gefunden. Ohne Treffer: {{missed}} (wird einen Monat lang nicht erneut gefragt).",
+        "covers found_one":
+            "{{count}} gefunden.",
+        "covers found_other":
+            "{{count}} gefunden.",
+        "covers missed_one":
+            "Ohne Ergebnis: {{count}} (wird einen Monat lang nicht erneut gefragt).",
+        "covers missed_other":
+            "Ohne Ergebnis: {{count}} (werden einen Monat lang nicht erneut gefragt).",
         "nothing is copied":
             "Deine Dateien werden weder kopiert noch hochgeladen: gespeichert wird nur ein Verweis auf das, was ohnehin auf deiner Festplatte liegt. Das Einzige, was von hier hinausgeht, sind Künstler und Album des Albums, das du gerade hörst, als Text, um sein Cover zu suchen — und das schaltest du direkt darunter ab.",
         "allow on every visit":
@@ -207,8 +219,10 @@ const de = {
             "„{{name}}“ liegt in „{{other}}“, das schon drin ist — und ein Ordner wird ganz genommen, seine Stücke sind also längst in Ihrer Bibliothek.",
         "files already added":
             "Diese Dateien sind schon da. Sie stecken in: {{other}}. Nichts wurde doppelt hinzugefügt.",
-        "some were already in":
-            "{{skipped}} davon waren schon da, in: {{other}}. Die blieben draußen, der Rest wurde hinzugefügt.",
+        "some were already in_one":
+            "{{count}} davon war schon da, in: {{other}}. Die blieb draußen, der Rest wurde hinzugefügt.",
+        "some were already in_other":
+            "{{count}} davon waren schon da, in: {{other}}. Die blieben draußen, der Rest wurde hinzugefügt.",
         "folder contains others":
             "In „{{name}}“ steckt schon Hinzugefügtes: {{other}}. Um den ganzen Ordner zu nehmen, ohne dass diese Stücke doppelt erscheinen, muss das erst weg — und seine Wiedergaben und Herzen gehen mit.",
         "remove it and add this":

@@ -41,11 +41,23 @@ const fr = {
         "delete":               "Supprimer",
         "remove":               "Retirer",
         "add to queue":         "Ajouter à la file",
-        "tracks":               "morceaux",
-        "n albums":             "albums",
+        /*  ---- counts ---- */
+        "n tracks_one": "morceau",
+        "n tracks_many": "morceaux",
+        "n tracks_other": "morceaux",
+        "n albums_one": "album",
+        "n albums_many": "albums",
+        "n albums_other": "albums",
+        "n entries_one": "entrée",
+        "n entries_many": "entrées",
+        "n entries_other": "entrées",
+        "n missing_one": "introuvable",
+        "n missing_many": "introuvables",
+        "n missing_other": "introuvables",
+        "n folders inside_one": "dossier dedans",
+        "n folders inside_many": "dossiers dedans",
+        "n folders inside_other": "dossiers dedans",
         "albums":               "Albums",
-        "entries":              "entrées",
-        "missing":              "introuvables",
         "reading tags":         "Lecture des étiquettes…",
 
         "nothing cued":         "Rien de chargé",
@@ -87,7 +99,6 @@ const fr = {
         "back to the deck":    "Revenir à la file",
         "to the deck":        "Dans la file",
         "look inside":       "Voir dedans",
-        "folders inside":    "dossiers dedans",
         "already on the deck": "Déjà dans la file",
         "temporary queue":      "File composée à la main",
         "playing list":         "Liste",
@@ -182,8 +193,12 @@ const fr = {
             "« {{name}} » est à l’intérieur de « {{other}} », déjà présent — et un dossier est pris en entier, donc ses morceaux sont déjà dans votre bibliothèque.",
         "files already added":
             "Ces fichiers sont déjà là. Ils sont dans : {{other}}. Rien n’a été ajouté deux fois.",
-        "some were already in":
-            "{{skipped}} d’entre eux étaient déjà là, dans : {{other}}. Ceux-là ont été laissés de côté ; les autres ont été ajoutés.",
+        "some were already in_one":
+            "{{count}} d’entre eux était déjà là, dans : {{other}}. Celui-là a été laissé de côté ; les autres ont été ajoutés.",
+        "some were already in_many":
+            "{{count}} d’entre eux étaient déjà là, dans : {{other}}. Ceux-là ont été laissés de côté ; les autres ont été ajoutés.",
+        "some were already in_other":
+            "{{count}} d’entre eux étaient déjà là, dans : {{other}}. Ceux-là ont été laissés de côté ; les autres ont été ajoutés.",
         "folder contains others":
             "Dans « {{name}} » se trouve déjà ceci : {{other}}. Pour prendre le dossier entier sans que ces morceaux apparaissent deux fois, il faut d’abord le retirer — et ses écoutes et ses cœurs partent avec.",
         "remove it and add this":

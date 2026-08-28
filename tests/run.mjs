@@ -36,6 +36,7 @@ const PORT = Number(new URL(process.env.YUNOMUSICA_URL || "http://localhost:4321
     should not cost three minutes to discover. */
 const TESTS = [
     {name: "fallback",  what: "idioma de entrada y dirección"},
+    {name: "plural",    what: "una pista y tres pistas, en los diez idiomas"},
     {name: "navink",    what: "tinta del nav y de los botones primarios"},
     {name: "minink",    what: "tinta del botón del mini-reproductor"},
     {name: "select",    what: "navegar no cambia lo que suena"},

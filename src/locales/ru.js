@@ -41,11 +41,28 @@ const ru = {
         "delete":               "Удалить",
         "remove":               "Убрать",
         "add to queue":         "Добавить в очередь",
-        "tracks":               "треков",
-        "n albums":             "альбомов",
+        /*  ---- counts ---- */
+        "n tracks_one": "трек",
+        "n tracks_few": "трека",
+        "n tracks_many": "треков",
+        "n tracks_other": "треков",
+        "n albums_one": "альбом",
+        "n albums_few": "альбома",
+        "n albums_many": "альбомов",
+        "n albums_other": "альбомов",
+        "n entries_one": "запись",
+        "n entries_few": "записи",
+        "n entries_many": "записей",
+        "n entries_other": "записей",
+        "n missing_one": "не найдено",
+        "n missing_few": "не найдено",
+        "n missing_many": "не найдено",
+        "n missing_other": "не найдено",
+        "n folders inside_one": "папка внутри",
+        "n folders inside_few": "папки внутри",
+        "n folders inside_many": "папок внутри",
+        "n folders inside_other": "папок внутри",
         "albums":               "Альбомы",
-        "entries":              "записей",
-        "missing":              "не найдено",
         "reading tags":         "Чтение тегов…",
 
         "nothing cued":         "Ничего не загружено",
@@ -87,7 +104,6 @@ const ru = {
         "back to the deck":    "Вернуться к очереди",
         "to the deck":        "В очередь",
         "look inside":       "Заглянуть внутрь",
-        "folders inside":    "папок внутри",
         "already on the deck": "Уже в очереди",
         "temporary queue":      "Очередь, собранная вручную",
         "playing list":         "Список",
@@ -182,8 +198,14 @@ const ru = {
             "«{{name}}» находится внутри «{{other}}», которая уже добавлена, — а папка берётся целиком, так что её дорожки уже в библиотеке.",
         "files already added":
             "Эти файлы уже есть — вот где: {{other}}. Ничего не добавлено дважды.",
-        "some were already in":
-            "{{skipped}} из них уже были — вот где: {{other}}. Они пропущены, остальные добавлены.",
+        "some were already in_one":
+            "{{count}} из них уже был — вот где: {{other}}. Он пропущен, остальные добавлены.",
+        "some were already in_few":
+            "{{count}} из них уже были — вот где: {{other}}. Они пропущены, остальные добавлены.",
+        "some were already in_many":
+            "{{count}} из них уже были — вот где: {{other}}. Они пропущены, остальные добавлены.",
+        "some were already in_other":
+            "{{count}} из них уже были — вот где: {{other}}. Они пропущены, остальные добавлены.",
         "folder contains others":
             "Внутри «{{name}}» уже добавлено: {{other}}. Чтобы взять папку целиком и не получить эти дорожки дважды, это придётся убрать — вместе с прослушиваниями и сердечками.",
         "remove it and add this":

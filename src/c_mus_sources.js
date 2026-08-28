@@ -44,6 +44,8 @@ import {
     set_covers_online, covers_online_state, subscribe_covers, retry_covers
 } from "./covers_online.js";
 
+import {count_pair} from "./plural.js";
+
 import {t} from "i18next";
 
 
@@ -372,7 +374,7 @@ function build_notice()
     return createElement2(
         ["div", {class: "MUS_SRCNOTE is-warn", role: "status"}, [
             ["p", {class: "MUS_SRCNOTE_TEXT"},
-                t(n.kind, {name: n.name, other: n.other, skipped: n.skipped})],
+                t(n.kind, {name: n.name, other: n.other, count: n.skipped})],
             ["div", {class: "MUS_SRCNOTE_ACTIONS"}, actions]
         ]]
     );
@@ -399,7 +401,18 @@ function build_covers_switch(gobj)
     if(st.running) {
         note = t("covers online working", {asking: st.asking});
     } else if(st.on && (st.found || st.missed)) {
-        note = t("covers online done", {found: st.found, missed: st.missed});
+        /*  Two counts, so two sentences: i18next pluralises on ONE
+            `count` per key, and one sentence carrying both could only
+            agree with one of them. Which is how "Sin resultado: 1 (no
+            se vuelven a preguntar)" got onto the screen. */
+        let bits = [];
+        if(st.found) {
+            bits.push(t("covers found", {count: st.found}));
+        }
+        if(st.missed) {
+            bits.push(t("covers missed", {count: st.missed}));
+        }
+        note = bits.join(" ");
     }
 
     /*  The attribute is ADDED or it is absent. Passing `checked:
@@ -504,8 +517,7 @@ function build_source_row(gobj, s)
         ["div", {class: "MUS_T2"}, [
             ["span", {i18n: kind_key}, t(kind_key)],
             ["span", {class: "MUS_SEP"}, "·"],
-            ["span", {}, String(s.count)],
-            ["span", {i18n: "tracks"}, t("tracks")]
+            ...count_pair(s.count, "n tracks")
         ]]
     ]];
 

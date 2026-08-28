@@ -41,11 +41,18 @@ const hi = {
         "delete":               "मिटाएँ",
         "remove":               "हटाएँ",
         "add to queue":         "कतार में जोड़ें",
-        "tracks":               "ट्रैक",
-        "n albums":             "ऐल्बम",
+        /*  ---- counts ---- */
+        "n tracks_one": "ट्रैक",
+        "n tracks_other": "ट्रैक",
+        "n albums_one": "ऐल्बम",
+        "n albums_other": "ऐल्बम",
+        "n entries_one": "प्रविष्टि",
+        "n entries_other": "प्रविष्टियाँ",
+        "n missing_one": "नहीं मिली",
+        "n missing_other": "नहीं मिलीं",
+        "n folders inside_one": "फ़ोल्डर अंदर",
+        "n folders inside_other": "फ़ोल्डर अंदर",
         "albums":               "ऐल्बम",
-        "entries":              "प्रविष्टियाँ",
-        "missing":              "नहीं मिलीं",
         "reading tags":         "टैग पढ़े जा रहे हैं…",
 
         "nothing cued":         "कुछ भी लोड नहीं है",
@@ -87,7 +94,6 @@ const hi = {
         "back to the deck":    "कतार पर लौटें",
         "to the deck":        "कतार में",
         "look inside":       "अंदर देखें",
-        "folders inside":    "फ़ोल्डर अंदर",
         "already on the deck": "पहले से कतार में",
         "temporary queue":      "हाथ से बनाई कतार",
         "playing list":         "सूची",
@@ -182,8 +188,10 @@ const hi = {
             "“{{name}}” उस “{{other}}” के भीतर है जो पहले से जुड़ा है — और फ़ोल्डर पूरा लिया जाता है, इसलिए उसके ट्रैक आपकी लाइब्रेरी में पहले से हैं।",
         "files already added":
             "वे फ़ाइलें पहले से हैं — यहाँ: {{other}}. कुछ भी दो बार नहीं जोड़ा गया।",
-        "some were already in":
-            "उनमें से {{skipped}} पहले से थीं — यहाँ: {{other}}. वे छोड़ दी गईं; बाक़ी जोड़ दी गईं।",
+        "some were already in_one":
+            "उनमें से {{count}} पहले से यहाँ थी: {{other}}. वह छोड़ दी गई; बाक़ी जोड़ दी गईं।",
+        "some were already in_other":
+            "उनमें से {{count}} पहले से यहाँ थीं: {{other}}. वे छोड़ दी गईं; बाक़ी जोड़ दी गईं।",
         "folder contains others":
             "“{{name}}” के भीतर पहले से जुड़ा है: {{other}}. पूरा फ़ोल्डर लेने पर वे ट्रैक दो बार न आएँ, इसके लिए पहले उसे हटाना होगा — और उसके साथ उसकी सुनवाइयाँ और दिल भी चले जाएँगे।",
         "remove it and add this":

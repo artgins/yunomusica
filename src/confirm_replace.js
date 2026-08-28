@@ -24,6 +24,8 @@ import {
 
 import {queue_length, queue_origin} from "./music_store.js";
 
+import {count_noun} from "./plural.js";
+
 import {t} from "i18next";
 
 
@@ -72,7 +74,7 @@ function confirm_replace(shell_gobj)
                     tracks, and whether they are a saved list. */
                 ["p", {class: "MUS_CONFIRM_WHAT"}, [
                     ["span", {class: "MUS_CONFIRM_N"}, String(have)],
-                    ["span", {i18n: "tracks"}, t("tracks")],
+                    ["span", {}, count_noun("n tracks", have)],
                     ["span", {i18n: "on the deck"}, t("on the deck")],
                     origin
                         ? ["span", {class: "MUS_CONFIRM_LIST"}, "— " + origin.name]

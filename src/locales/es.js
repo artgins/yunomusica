@@ -43,11 +43,23 @@ const es = {
         "delete":               "Borrar",
         "remove":               "Quitar",
         "add to queue":         "Añadir a la cola",
-        "tracks":               "pistas",
-        "n albums":             "álbumes",
+        /*  ---- cuentas: todas las formas plurales del idioma ---- */
+        "n tracks_one": "pista",
+        "n tracks_many": "pistas",
+        "n tracks_other": "pistas",
+        "n albums_one": "álbum",
+        "n albums_many": "álbumes",
+        "n albums_other": "álbumes",
+        "n entries_one": "entrada",
+        "n entries_many": "entradas",
+        "n entries_other": "entradas",
+        "n missing_one": "no encontrada",
+        "n missing_many": "no encontradas",
+        "n missing_other": "no encontradas",
+        "n folders inside_one": "carpeta dentro",
+        "n folders inside_many": "carpetas dentro",
+        "n folders inside_other": "carpetas dentro",
         "albums":               "Álbumes",
-        "entries":              "entradas",
-        "missing":              "no encontradas",
         "reading tags":         "Leyendo etiquetas…",
 
         /* ---- el plato ---- */
@@ -94,7 +106,6 @@ const es = {
         "back to the deck":    "Volver a la cola",
         "to the deck":        "A la cola",
         "look inside":       "Ver dentro",
-        "folders inside":    "carpetas dentro",
         "already on the deck": "Ya en la cola",
         "temporary queue":      "Cola montada a mano",
         "playing list":         "Lista",
@@ -160,8 +171,18 @@ const es = {
             "Encendido, cuando suena un disco sin carátula dentro del fichero salen su artista y su álbum como texto — nada más: ni ficheros, ni listas, ni identificadores. Se pregunta solo por lo que estás escuchando, nunca por tu biblioteca entera, y lo que llega se guarda aquí: ese disco no se vuelve a preguntar nunca. Apágalo y de esta app no sale absolutamente nada.",
         "covers online working":
             "Buscando la carátula de «{{asking}}»…",
-        "covers online done":
-            "Encontradas {{found}}. Sin resultado: {{missed}} (no se vuelven a preguntar en un mes).",
+        "covers found_one":
+            "Encontrada {{count}}.",
+        "covers found_many":
+            "Encontradas {{count}}.",
+        "covers found_other":
+            "Encontradas {{count}}.",
+        "covers missed_one":
+            "Sin resultado: {{count}} (no se vuelve a preguntar en un mes).",
+        "covers missed_many":
+            "Sin resultado: {{count}} (no se vuelven a preguntar en un mes).",
+        "covers missed_other":
+            "Sin resultado: {{count}} (no se vuelven a preguntar en un mes).",
         "nothing is copied":
             "Tus ficheros no se copian ni se suben: solo se guarda una referencia a lo que ya está en tu disco. Lo único que sale de aquí es el artista y el álbum del disco que estés escuchando, como texto, para buscar su carátula — y eso se apaga justo aquí debajo.",
         "allow on every visit":
@@ -212,8 +233,12 @@ const es = {
             "«{{name}}» está dentro de «{{other}}», que ya está — y una carpeta se toma entera, así que sus pistas ya están en tu biblioteca.",
         "files already added":
             "Esos ficheros ya están. Los tiene: {{other}}. No se ha añadido nada dos veces.",
-        "some were already in":
-            "{{skipped}} de ellos ya estaban. Los tiene: {{other}}. Esos se han dejado fuera; los demás se han añadido.",
+        "some were already in_one":
+            "{{count}} ya estaba, en: {{other}}. Ese se ha dejado fuera; el resto se ha añadido.",
+        "some were already in_many":
+            "{{count}} ya estaban, en: {{other}}. Esos se han dejado fuera; el resto se ha añadido.",
+        "some were already in_other":
+            "{{count}} ya estaban, en: {{other}}. Esos se han dejado fuera; el resto se ha añadido.",
         "folder contains others":
             "«{{name}}» tiene dentro algo que ya está añadido: {{other}}. Para coger la carpeta entera sin que esas pistas salgan dos veces hay que quitarlo primero — y sus escuchas y sus corazones se van con ello.",
         "remove it and add this":

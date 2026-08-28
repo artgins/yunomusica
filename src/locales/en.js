@@ -53,11 +53,18 @@ const en = {
         "delete":               "Delete",
         "remove":               "Remove",
         "add to queue":         "Add to queue",
-        "tracks":               "tracks",
-        "n albums":             "albums",
+        /*  ---- counts: every CLDR form the language has ---- */
+        "n tracks_one": "track",
+        "n tracks_other": "tracks",
+        "n albums_one": "album",
+        "n albums_other": "albums",
+        "n entries_one": "entry",
+        "n entries_other": "entries",
+        "n missing_one": "missing",
+        "n missing_other": "missing",
+        "n folders inside_one": "folder inside",
+        "n folders inside_other": "folders inside",
         "albums":               "Albums",
-        "entries":              "entries",
-        "missing":              "missing",
         "reading tags":         "Reading tags…",
 
         /* ---- the deck ---- */
@@ -104,7 +111,6 @@ const en = {
         "back to the deck":    "Back to the deck",
         "to the deck":        "To the deck",
         "look inside":       "Look inside",
-        "folders inside":    "folders inside",
         "already on the deck": "Already on the deck",
         "temporary queue":      "Queue put together by hand",
         "playing list":         "List",
@@ -170,8 +176,14 @@ const en = {
             "On, when a record with no cover inside the file starts playing, its artist and album go out as text — nothing else: no files, no lists, no identifiers. Only what you are listening to is ever asked about, never your whole library, and what comes back is kept here: that record is never asked about again. Switch it off and absolutely nothing leaves this app.",
         "covers online working":
             "Looking for the cover of “{{asking}}”…",
-        "covers online done":
-            "Found {{found}}. No luck with {{missed}} (not asked again for a month).",
+        "covers found_one":
+            "Found {{count}}.",
+        "covers found_other":
+            "Found {{count}}.",
+        "covers missed_one":
+            "No luck with {{count}} (not asked about again for a month).",
+        "covers missed_other":
+            "No luck with {{count}} (not asked about again for a month).",
         "nothing is copied":
             "Your files are neither copied nor uploaded: only a reference to what is already on your disk is stored. The one thing that leaves here is the artist and album of the record you are listening to, as text, to look for its cover — and that is switched off just below.",
         "allow on every visit":
@@ -222,8 +234,10 @@ const en = {
             "“{{name}}” is inside “{{other}}”, which is already in — and a folder is taken whole, so its tracks are already in your library.",
         "files already added":
             "Those files are already in. They are held by: {{other}}. Nothing was added twice.",
-        "some were already in":
-            "{{skipped}} of them were already in, held by: {{other}}. Those were left out; the rest were added.",
+        "some were already in_one":
+            "{{count}} of them was already in, held by: {{other}}. That one was left out; the rest were added.",
+        "some were already in_other":
+            "{{count}} of them were already in, held by: {{other}}. Those were left out; the rest were added.",
         "folder contains others":
             "“{{name}}” holds something that is already in: {{other}}. To take the whole folder without those tracks appearing twice, that has to go first — and its play counts and hearts go with it.",
         "remove it and add this":

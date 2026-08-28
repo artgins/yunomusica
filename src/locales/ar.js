@@ -45,11 +45,38 @@ const ar = {
         "delete":               "حذف",
         "remove":               "إزالة",
         "add to queue":         "إضافة إلى القائمة",
-        "tracks":               "مقطوعات",
-        "n albums":             "ألبومات",
+        /*  ---- counts ---- */
+        "n tracks_zero": "مقطوعات",
+        "n tracks_one": "مقطوعة",
+        "n tracks_two": "مقطوعتان",
+        "n tracks_few": "مقطوعات",
+        "n tracks_many": "مقطوعة",
+        "n tracks_other": "مقطوعة",
+        "n albums_zero": "ألبومات",
+        "n albums_one": "ألبوم",
+        "n albums_two": "ألبومان",
+        "n albums_few": "ألبومات",
+        "n albums_many": "ألبومًا",
+        "n albums_other": "ألبوم",
+        "n entries_zero": "مُدخلات",
+        "n entries_one": "مُدخل",
+        "n entries_two": "مُدخلان",
+        "n entries_few": "مُدخلات",
+        "n entries_many": "مُدخلًا",
+        "n entries_other": "مُدخل",
+        "n missing_zero": "مفقودة",
+        "n missing_one": "مفقودة",
+        "n missing_two": "مفقودتان",
+        "n missing_few": "مفقودة",
+        "n missing_many": "مفقودة",
+        "n missing_other": "مفقودة",
+        "n folders inside_zero": "مجلدات بالداخل",
+        "n folders inside_one": "مجلد بالداخل",
+        "n folders inside_two": "مجلدان بالداخل",
+        "n folders inside_few": "مجلدات بالداخل",
+        "n folders inside_many": "مجلدًا بالداخل",
+        "n folders inside_other": "مجلد بالداخل",
         "albums":               "ألبومات",
-        "entries":              "مُدخلات",
-        "missing":              "مفقودة",
         "reading tags":         "جارٍ قراءة الوسوم…",
 
         "nothing cued":         "لا شيء محمَّل",
@@ -91,7 +118,6 @@ const ar = {
         "back to the deck":    "العودة إلى القائمة",
         "to the deck":        "إلى القائمة",
         "look inside":       "انظر بالداخل",
-        "folders inside":    "مجلدات بالداخل",
         "already on the deck": "في القائمة بالفعل",
         "temporary queue":      "قائمة أُعدّت يدويًا",
         "playing list":         "قائمة",
@@ -186,8 +212,18 @@ const ar = {
             "«{{name}}» داخل «{{other}}» الموجود بالفعل — والمجلد يُؤخذ كاملًا، فمقاطعه في مكتبتك من قبل.",
         "files already added":
             "هذه الملفات موجودة بالفعل، في: {{other}}. لم يُضَف شيء مرتين.",
-        "some were already in":
-            "{{skipped}} منها كانت موجودة بالفعل، في: {{other}}. تُركت تلك، وأُضيف الباقي.",
+        "some were already in_zero":
+            "لم يكن أي منها موجودًا.",
+        "some were already in_one":
+            "واحد منها كان موجودًا بالفعل، في: {{other}}. تُرك ذاك، وأُضيف الباقي.",
+        "some were already in_two":
+            "اثنان منها كانا موجودين بالفعل، في: {{other}}. تُركا، وأُضيف الباقي.",
+        "some were already in_few":
+            "{{count}} منها كانت موجودة بالفعل، في: {{other}}. تُركت تلك، وأُضيف الباقي.",
+        "some were already in_many":
+            "{{count}} منها كانت موجودة بالفعل، في: {{other}}. تُركت تلك، وأُضيف الباقي.",
+        "some were already in_other":
+            "{{count}} منها كانت موجودة بالفعل، في: {{other}}. تُركت تلك، وأُضيف الباقي.",
         "folder contains others":
             "داخل «{{name}}» موجود بالفعل: {{other}}. لأخذ المجلد كاملًا دون أن تظهر تلك المقاطع مرتين، لا بد من إزالته أولًا — ومعه عدّاد الاستماع والقلوب.",
         "remove it and add this":

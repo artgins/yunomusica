@@ -42,6 +42,7 @@ import {
     all_sources,
 } from "./sources_store.js";
 import {open_track, track_counts, refresh_counts} from "./track_card.js";
+import {count_pair} from "./plural.js";
 import {subscribe_stats} from "./stats_store.js";
 
 import {t} from "i18next";
@@ -432,7 +433,7 @@ function build_empty()
     if(n && !n.pending) {
         children.push(["div", {class: "MUS_SRCNOTE is-warn", role: "status"}, [
             ["p", {class: "MUS_SRCNOTE_TEXT"},
-                t(n.kind, {name: n.name, other: n.other, skipped: n.skipped})],
+                t(n.kind, {name: n.name, other: n.other, count: n.skipped})],
             ["div", {class: "MUS_SRCNOTE_ACTIONS"}, [
                 ["button", {class: "MUS_QBTN button is-ghost", type: "button",
                             i18n: "understood"},
@@ -454,10 +455,8 @@ function build_loading()
     let pct = Math.round((store_state.loaded / total) * 100);
     return createElement2(
         ["div", {class: "MUS_LOADING"}, [
-            ["div", {class: "MUS_LOAD_COUNT"}, [
-                ["span", {}, String(store_state.loaded)],
-                ["span", {i18n: "tracks"}, t("tracks")]
-            ]],
+            ["div", {class: "MUS_LOAD_COUNT"},
+                count_pair(store_state.loaded, "n tracks")],
             ["div", {class: "MUS_BAR"}, [
                 ["i", {class: "MUS_BAR_FILL", style: `width:${pct}%`}]
             ]],
@@ -618,10 +617,7 @@ function render_groups(gobj, $content, view)
     let fallback = round ? "♫" : (view === "folders" ? "▤" : "♪");
 
     let rows = groups.map(function(g) {
-        let sub = [
-            ["span", {}, String(g.tracks.length)],
-            ["span", {i18n: "tracks"}, t("tracks")]
-        ];
+        let sub = count_pair(g.tracks.length, "n tracks");
         if(view === "artists") {
             /*  By the album KEY, the same thing the Albums view groups
                 on. Counting distinct titles said "12 albums" for an
@@ -631,8 +627,7 @@ function render_groups(gobj, $content, view)
             sub.push(["span", {class: "MUS_SEP"}, "·"]);
             /*  "n albums" is the count noun; "albums" is the chip label,
                 which is capitalised in the languages that capitalise. */
-            sub.push(["span", {}, String(n)]);
-            sub.push(["span", {i18n: "n albums"}, t("n albums")]);
+            sub.push(...count_pair(n, "n albums"));
         }
         return ["div", {class: "MUS_ROW"}, [
             cover_spec(g.tracks[0].key, "MUS_ART" + (round ? " is-round" : ""), fallback),
@@ -699,12 +694,10 @@ function render_tree(gobj, $content)
             ["div", {class: "MUS_DINFO"}, [
                 ["h3", {class: "MUS_DTITLE"}, tree_title(priv.tree)],
                 ["p", {class: "MUS_DMETA"}, [
-                    ["span", {}, String(ordered.length)],
-                    ["span", {i18n: "tracks"}, t("tracks")],
+                    ...count_pair(ordered.length, "n tracks"),
                     ...(level.dirs.length ? [
                         ["span", {class: "MUS_SEP"}, "·"],
-                        ["span", {}, String(level.dirs.length)],
-                        ["span", {i18n: "folders inside"}, t("folders inside")]
+                        ...count_pair(level.dirs.length, "n folders inside")
                     ] : [])
                 ]],
                 /*  Play takes the whole subtree, in tree order, which is
@@ -728,10 +721,7 @@ function render_tree(gobj, $content)
             ico(P.folder, 22),
             ["button", {class: "MUS_ROWMAIN", type: "button"}, [
                 ["span", {class: "MUS_T1"}, d.name],
-                ["span", {class: "MUS_T2"}, [
-                    ["span", {}, String(inside.length)],
-                    ["span", {i18n: "tracks"}, t("tracks")]
-                ]]
+                ["span", {class: "MUS_T2"}, count_pair(inside.length, "n tracks")]
             ], {
                 click: () => {
                     priv.tree = {...priv.tree, path: d.path};
@@ -830,10 +820,7 @@ function render_tree_roots(gobj, $content)
             ico(P.folder, 22),
             ["button", {class: "MUS_ROWMAIN", type: "button"}, [
                 ["span", {class: "MUS_T1"}, r.s.name],
-                ["span", {class: "MUS_T2"}, [
-                    ["span", {}, String(r.tracks.length)],
-                    ["span", {i18n: "tracks"}, t("tracks")]
-                ]]
+                ["span", {class: "MUS_T2"}, count_pair(r.tracks.length, "n tracks")]
             ], {
                 click: () => {
                     priv.tree = {source_id: r.s.id, name: r.s.name,
@@ -890,10 +877,7 @@ function render_detail(gobj, $content)
             {click: () => { priv.detail = null; render(gobj); scroll_top(gobj); }}]));
 
     let year = d.tracks[0].year;
-    let meta = [
-        ["span", {}, String(d.tracks.length)],
-        ["span", {i18n: "tracks"}, t("tracks")]
-    ];
+    let meta = count_pair(d.tracks.length, "n tracks");
     if(d.kind === "albums") {
         meta.push(["span", {class: "MUS_SEP"}, "·"]);
         meta.push(["span", {}, display_name(d.artist || d.tracks[0].albumArtist)]);
@@ -948,10 +932,7 @@ function render_detail(gobj, $content)
                 cover_spec(a.tracks[0].key, "MUS_ART MUS_ALBHEAD_ART", "♪"),
                 ["button", {class: "MUS_ROWMAIN", type: "button"}, [
                     ["span", {class: "MUS_T1"}, display_name(a.name)],
-                    ["span", {class: "MUS_T2"}, [
-                        ["span", {}, String(tracks.length)],
-                        ["span", {i18n: "tracks"}, t("tracks")]
-                    ]]
+                    ["span", {class: "MUS_T2"}, count_pair(tracks.length, "n tracks")]
                 ], {
                     click: () => {
                         priv.detail = {kind: "albums", id: a.id, name: a.name,

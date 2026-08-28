@@ -41,11 +41,13 @@ const zh = {
         "delete":               "删除",
         "remove":               "移除",
         "add to queue":         "加入队列",
-        "tracks":               "首",
-        "n albums":             "张专辑",
+        /*  ---- counts ---- */
+        "n tracks_other": "首",
+        "n albums_other": "张专辑",
+        "n entries_other": "条",
+        "n missing_other": "缺失",
+        "n folders inside_other": "个子文件夹",
         "albums":               "专辑",
-        "entries":              "条",
-        "missing":              "缺失",
         "reading tags":         "正在读取标签…",
 
         "nothing cued":         "未载入曲目",
@@ -87,7 +89,6 @@ const zh = {
         "back to the deck":    "回到队列",
         "to the deck":        "加入队列",
         "look inside":       "查看内容",
-        "folders inside":    "个子文件夹",
         "already on the deck": "已在队列中",
         "temporary queue":      "手动编排的队列",
         "playing list":         "列表",
@@ -182,8 +183,8 @@ const zh = {
             "“{{name}}”在已经加入的“{{other}}”里面 —— 文件夹是整个读取的，所以它的曲目已经在你的资料库中。",
         "files already added":
             "这些文件已经在了，属于：{{other}}。没有重复添加。",
-        "some were already in":
-            "其中 {{skipped}} 个已经在了，属于：{{other}}。这些被略过，其余的已添加。",
+        "some were already in_other":
+            "其中 {{count}} 个已经在了，属于：{{other}}。这些被略过，其余的已添加。",
         "folder contains others":
             "“{{name}}”里面已经加入过：{{other}}。要整个加入而不让那些曲目出现两次，必须先移除它们 —— 它们的播放次数和收藏也会一起消失。",
         "remove it and add this":

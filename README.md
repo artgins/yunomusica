@@ -433,6 +433,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | Test | What breaks if it goes red |
 |---|---|
 | `fallback` | a visitor lands in a language nobody chose |
+| `plural` | "1 pistas" — a count that does not agree with its noun |
 | `navink` | nav and primary buttons disagree about black-or-white ink |
 | `minink` | the mini-player's button, the one accent surface `navink` cannot see |
 | `select` | browsing changes what is sounding |
@@ -1115,3 +1116,64 @@ growing another one inside Sources would be two things to keep honest instead of
 one. The hand-off goes through `open_in_library()` — read once on the way in and
 cleared — rather than a route carrying a source id, because that id is internal
 and has no business in the address bar.
+
+## "1 pistas"
+
+Every count in the app was drawn as two nodes — the figure, then the noun — with
+the noun frozen in its plural form. The comment above it said the split existed
+so that *"neither language nor plural rules leak into a composed string"*. That
+was the wrong lesson from a real problem. Keeping them apart did not avoid the
+plural; it made it wrong, on every screen that counts anything, in every language
+that inflects: `1 pistas`, `1 álbumes`, `1 entradas`, `1 carpetas dentro`, and
+`1 Alben` in German where the plural is a different word.
+
+The nouns are plural keys now — `n tracks`, `n albums`, `n entries`, `n missing`,
+`n folders inside` — resolved with `t(key, {count: n})`. i18next picks the CLDR
+category for the language in force, so each catalogue carries every form its own
+language actually has and no code here knows anything about any of it: **six**
+forms for Arabic, four for Russian, three for Spanish, two for German, one for
+Japanese, which is correct for Japanese.
+
+The figure stays its own node, so the stylesheet can still give it tabular
+numerals or an accent. What changed is only that the noun beside it is now asked
+for with a number.
+
+Two things that are easy to get wrong here, and both are pinned down by
+`tests/plural.mjs`:
+
+**A missing category does not fall back within the language.** i18next resolves
+`n tracks_many` for a Spanish count of a million; if that key is absent it falls
+through to `fallbackLng` and prints the English word, or prints the bare key. So
+"it looks right in Spanish" is no evidence at all about Arabic. The test asks
+`Intl.PluralRules` which categories each language declares, finds an integer that
+selects each one, and runs every key through i18next at every one of them.
+
+**The noun node carries no `i18n` attribute.** `refresh_language` cannot pass a
+count, so re-translating one of these in place would look the key up without it
+and paint `n tracks` on the screen. The views that show counts re-render on a
+language change instead — which is what the runtime's own documentation
+prescribes for anything `refresh_language` cannot reach.
+
+Declared and *reachable* are not the same number, and the gap is not a hole:
+Russian declares four categories but only ever selects `other` for a fraction,
+and this app counts whole tracks. The test prints both so nobody reads the
+smaller one as a missing form.
+
+### Two whole sentences had the same fault
+
+`"{{skipped}} de ellos ya estaban"` is as wrong at one as `1 pistas` is, and it
+is not a noun that can be split off — the whole sentence has to agree. It is a
+plural key now, on `count`.
+
+The covers line could not be fixed at all in the shape it had:
+
+> Encontradas {{found}}. Sin resultado: {{missed}} (no se vuelven a preguntar…)
+
+i18next pluralises on **one** `count` per key, and that sentence carries two
+numbers, so a single key could only ever have agreed with one of them. It is two
+keys now, `covers found` and `covers missed`, rendered side by side — which is
+why "Sin resultado: 1 (no se **vuelven** a preguntar)" was on the screen at all.
+
+Worth knowing while reading those catalogues: the whole covers section is
+translated only in English, Spanish and German. The other seven fall back to
+English there, as they did before — a translation gap, not a plural one.

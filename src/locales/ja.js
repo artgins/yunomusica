@@ -41,11 +41,13 @@ const ja = {
         "delete":               "削除",
         "remove":               "取り除く",
         "add to queue":         "キューに追加",
-        "tracks":               "曲",
-        "n albums":             "アルバム",
+        /*  ---- counts ---- */
+        "n tracks_other": "曲",
+        "n albums_other": "アルバム",
+        "n entries_other": "項目",
+        "n missing_other": "見つかりません",
+        "n folders inside_other": "個のフォルダー",
         "albums":               "アルバム",
-        "entries":              "項目",
-        "missing":              "見つかりません",
         "reading tags":         "タグを読み込み中…",
 
         "nothing cued":         "何も読み込まれていません",
@@ -87,7 +89,6 @@ const ja = {
         "back to the deck":    "キューに戻る",
         "to the deck":        "キューへ",
         "look inside":       "中を見る",
-        "folders inside":    "個のフォルダー",
         "already on the deck": "すでにキューにあり",
         "temporary queue":      "手作業で組んだキュー",
         "playing list":         "リスト",
@@ -182,8 +183,8 @@ const ja = {
             "「{{name}}」はすでに入っている「{{other}}」の中にあります。フォルダーは丸ごと読むので、その曲はもうライブラリにあります。",
         "files already added":
             "それらのファイルはすでにあります。ここにあります：{{other}}。二重には追加していません。",
-        "some were already in":
-            "そのうち {{skipped}} 個はすでにここにありました：{{other}}。それらは外し、残りを追加しました。",
+        "some were already in_other":
+            "そのうち {{count}} 個はすでにここにありました：{{other}}。それらは外し、残りを追加しました。",
         "folder contains others":
             "「{{name}}」の中に、すでに追加済みのものがあります：{{other}}。フォルダー全体を取り込んでもその曲が二重にならないようにするには、先にそれを外すしかなく、再生回数とお気に入りもいっしょに消えます。",
         "remove it and add this":

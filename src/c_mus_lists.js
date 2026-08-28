@@ -34,6 +34,8 @@ import {confirm_replace} from "./confirm_replace.js";
 import {subscribe_stats, ranked, split_key, clear_counts} from "./stats_store.js";
 import {open_track, track_counts} from "./track_card.js";
 
+import {count_pair, count_noun} from "./plural.js";
+
 import {t} from "i18next";
 
 
@@ -297,10 +299,8 @@ function build_ranked(gobj, $c, by, title_key, empty_key, hint_key)
             ...clear_button(gobj, by),
 
             missing
-                ? ["span", {class: "MUS_T2 is-warn"}, [
-                    ["span", {}, String(missing)],
-                    ["span", {i18n: "missing"}, t("missing")]
-                  ]]
+                ? ["span", {class: "MUS_T2 is-warn"},
+                    count_pair(missing, "n missing")]
                 : ["span", {}]
         ]]));
 
@@ -368,7 +368,9 @@ function track_rows(gobj, items)
                         ["span", {class: "MUS_T1"}, item.title || "?"],
                         ["span", {class: "MUS_T2"}, item.artist || ""]
                     ]],
-                    ["span", {class: "MUS_T2 is-warn", i18n: "missing"}, t("missing")]
+                    /*  One row, named as missing: the singular is the
+                        whole of what this says. */
+                    ["span", {class: "MUS_T2 is-warn"}, count_noun("n missing", 1)]
                 ]]));
             continue;
         }
@@ -402,14 +404,10 @@ function build_list_row(gobj, p)
     let r = resolve(p.id);
     let playable = r.tracks.length > 0;
 
-    let sub = [
-        ["span", {}, String(p.count)],
-        ["span", {i18n: "entries"}, t("entries")]
-    ];
+    let sub = count_pair(p.count, "n entries");
     if(r.missing) {
         sub.push(["span", {class: "MUS_SEP"}, "·"]);
-        sub.push(["span", {class: "is-warn"}, String(r.missing)]);
-        sub.push(["span", {class: "is-warn", i18n: "missing"}, t("missing")]);
+        sub.push(...count_pair(r.missing, "n missing", "is-warn"));
     }
 
     let actions = [
