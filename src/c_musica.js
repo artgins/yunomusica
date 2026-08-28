@@ -45,7 +45,7 @@ import {
     cancel_ingest, fmt_time,
     queue_snapshot, restore_queue,
     temp_track, temp_playing, temp_toggle, temp_position,
-    back_to_deck, temp_next, queue_add,
+    back_to_deck, temp_next, queue_add, last_said, clear_said,
     temp_progress, seek_temp_fraction,
 } from "./music_store.js";
 
@@ -101,6 +101,8 @@ let PRIVATE_DATA = {
     $root:    null,     // flex column: shell + player
     $player:  null,
     $scan:    null,     // the "reading your music" bar
+    $said:    null,     // "it went to the deck", for two seconds
+    said_timer: 0,
     scan_timer: 0,      // ticks the elapsed clock on that bar
     scan_t0:  0,        // when the wait started, from the user's side
     save_timer: 0,      // coalesces storing the deck
@@ -191,6 +193,8 @@ function mt_start(gobj)
             paint_scan(gobj);
         } else if(channel === "temp") {
             paint_player(gobj);
+        } else if(channel === "said") {
+            paint_said(gobj);
         }
         if(channel === "queue" || channel === "playing") {
             save_queue_soon(gobj);
@@ -469,6 +473,15 @@ function build_player(gobj)
     priv.$scan = $scan;
     priv.$root.appendChild($scan);
 
+    /*  What the deck was just told, said once and then gone.
+     *
+     *  It floats over the strips rather than docking beside them: it
+     *  lasts two seconds and must not push the player up and drop it
+     *  back down again every time somebody presses +. */
+    priv.$said = createElement2(
+        ["div", {class: "MUS_SAID", role: "status", "aria-live": "polite"}, []]);
+    priv.$root.appendChild(priv.$said);
+
     /*  MEASURE the bottom strips instead of hard-coding how tall they
         are. The shell gives up exactly this much room, so a guess that
         is too small clips the strip — which is what happened to the
@@ -482,9 +495,21 @@ function build_player(gobj)
                 priv.$player.offsetHeight + "px");
             priv.$root.style.setProperty("--mus-scan-h",
                 $scan.offsetHeight + "px");
+            /*  The bottom nav belongs to the shell and only exists on a
+                narrow screen, so it cannot be assumed and cannot be
+                hard-coded. Anything floating over the strips has to
+                clear it too — the "to the deck" note landed squarely on
+                it the first time. */
+            let $nav = priv.$root.querySelector(".yui-zone-bottom");
+            priv.$root.style.setProperty("--mus-nav-h",
+                (($nav && $nav.offsetHeight) || 0) + "px");
         });
         priv.strips.observe($scan);
         priv.strips.observe(priv.$player);
+        let $nav = priv.$root.querySelector(".yui-zone-bottom");
+        if($nav) {
+            priv.strips.observe($nav);
+        }
     }
 
     /*  The position moves without any event worth storing on, and the
@@ -596,6 +621,69 @@ function paint_player(gobj)
     tint_from(gobj, track.key, url);
     paint_time(gobj);
 }
+
+/***************************************************************
+ *  "It went to the deck." Said from wherever + was pressed.
+ *
+ *  Adding to the queue was the only action in the app with no
+ *  visible result at all: the deck is another screen, and it
+ *  refuses repeats, so + on a record already on it changed
+ *  nothing and said nothing. From the outside that is a dead
+ *  button, and the second press — and the third — were people
+ *  checking whether it worked.
+ *
+ *  No number is welded into a sentence. A label and a figure,
+ *  the same shape the rest of the app uses for counts, because
+ *  a count inside a sentence is a plural rule per language and
+ *  this app speaks ten.
+ ***************************************************************/
+function paint_said(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.$said) {
+        return;
+    }
+    if(priv.said_timer) {
+        clearTimeout(priv.said_timer);
+        priv.said_timer = 0;
+    }
+    let said = last_said();
+    priv.$said.innerHTML = "";
+    if(!said) {
+        priv.$said.classList.remove("is-on");
+        return;
+    }
+
+    let parts = [];
+    if(said.added) {
+        parts.push(["span", {class: "MUS_SAID_BIT"}, [
+            ["span", {i18n: "to the deck"}, t("to the deck")],
+            ["b", {class: "MUS_SAID_N"}, String(said.added)]
+        ]]);
+    }
+    /*  The ones that were already there are the whole point when
+        nothing was added: without this the answer to "why did my press
+        do nothing" is nowhere on the screen. */
+    if(said.already) {
+        parts.push(["span", {class: "MUS_SAID_BIT MUS_DIM"}, [
+            ["span", {i18n: "already on the deck"}, t("already on the deck")],
+            ["b", {class: "MUS_SAID_N"}, String(said.already)]
+        ]]);
+    }
+    if(!parts.length) {
+        priv.$said.classList.remove("is-on");
+        return;
+    }
+
+    priv.$said.appendChild(createElement2(["div", {class: "MUS_SAID_CARD"}, parts]));
+    refresh_language(priv.$said, t);
+    priv.$said.classList.add("is-on");
+    priv.said_timer = setTimeout(function() {
+        priv.said_timer = 0;
+        clear_said();
+    }, 2400);
+}
+
 
 /***************************************************************
  *  The scan bar. Shown while a source is being read, from

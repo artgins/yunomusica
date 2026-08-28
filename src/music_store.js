@@ -256,8 +256,13 @@ function fromPath(file)
     const rel = file.webkitRelativePath || file.name;
     const parts = rel.split("/");
     const base = parts.pop().replace(/\.[a-z0-9]+$/i,"");
-    const folder = parts.pop() || "";
-    const parent = parts.pop() || "";
+    /*  READ, not popped. Taking the parent off the array dropped it out
+        of the path rebuilt below, so `folder` came out missing a level:
+        "messy/Aqualung" for a file living in "messy/Jethro Tull/
+        Aqualung". Nothing showed it until something tried to walk the
+        tree with it. */
+    const folder = parts[parts.length - 1] || "";
+    const parent = parts[parts.length - 2] || "";
     let track = "", artist = "", title = base;
     const seq = base.match(/^\s*(\d{1,2})\s*[-._ ]\s*(.+)$/);
     if(seq) {
@@ -270,7 +275,7 @@ function fromPath(file)
         title = dash.slice(1).join(" - ").trim();
     }
     return {title, artist: artist || parent || "", album: folder || "", track,
-            folder: parts.concat(folder).filter(Boolean).join("/") || "—"};
+            folder: parts.filter(Boolean).join("/") || "—"};
 }
 
 
@@ -324,6 +329,7 @@ const S = {
         threw together?" is not a question the user should have to guess. */
     origin:  null,      // {list_id, name} while it is a saved list
     edited:  false,     // …and whether it has been changed since
+    said:    null,      // {added, already} — what the last add did, for the shell
     /*  THE TEMPORARY LIST.
      *
      *  What the user is looking at in the library is already a list —
@@ -795,6 +801,123 @@ function albums_of(tracks)
     return group_by_norm(tracks || [], (t) => t.key, (t) => t.album);
 }
 
+/*  One screen asking another to open something.
+ *
+ *  Fuentes holds a folder and wants the library to walk it. There is no
+ *  route that carries a source id, and inventing one would put an
+ *  internal id in the address bar for a hand-off between two screens of
+ *  the same app. Left here, read once, and gone. */
+let pending_open = null;
+
+function open_in_library(what)
+{
+    pending_open = what || null;
+}
+
+function take_open_request()
+{
+    const w = pending_open;
+    pending_open = null;
+    return w;
+}
+
+
+/*  The directory a track lives in, taken from its PATH.
+ *
+ *  Not from `folder`, which is a guess made at scan time and is stored
+ *  with the tags — a library read by an older build carries the old,
+ *  broken value, and it would take a rescan of every source to correct
+ *  it. The path is the path; it is what the file is FETCHED by, so it
+ *  cannot be wrong without the track being unplayable. Loose files have
+ *  no directory at all and belong to the root. */
+function dir_of(t)
+{
+    const p = t.path || "";
+    const i = p.lastIndexOf("/");
+    return i < 0 ? "" : p.slice(0, i);
+}
+
+
+/*  Where a walk of a source STARTS.
+ *
+ *  Every path a pick produces carries the pick's own folder name at its
+ *  head — the handle's name, or the top folder of the file list — so
+ *  starting the walk at "" showed a single child named after the source
+ *  and made the user click through a rung that told them nothing they
+ *  had not just read. Loose files have no head segment at all, and two
+ *  heads means the pick was not one folder, so both start at the root. */
+function source_root_path(source_id)
+{
+    let first = null;
+    for(const t of S.tracks) {
+        if(t.source_id !== source_id) {
+            continue;
+        }
+        const d = dir_of(t);
+        const head = d ? d.split("/")[0] : "";
+        if(first === null) {
+            first = head;
+        } else if(first !== head) {
+            return "";
+        }
+    }
+    return first || "";
+}
+
+
+/*  ONE LEVEL OF ONE SOURCE'S TREE, as it is on the disk.
+ *
+ *  "Folders" used to group on the whole path, which produced a flat
+ *  list of every LEAF directory in the library — and since a leaf
+ *  directory is nearly always an album, it was the Albums view again
+ *  with worse names. What it never showed was the shape: what holds
+ *  what, which is the one thing the file system knows and the tags do
+ *  not.
+ *
+ *  So it is walked a level at a time. `path` is relative to the source
+ *  and includes the picked folder's own name, exactly as `track.folder`
+ *  carries it; "" is the source itself. Returns the directories
+ *  directly inside it, each with everything below it, and the tracks
+ *  that live in it rather than in one of its children.
+ *
+ *  Scoped to ONE source on purpose. Two sources can each hold a folder
+ *  called "music", and merging them under one row would invent a folder
+ *  that is not on anybody's disk. */
+function folder_level(source_id, path)
+{
+    const prefix = path ? path + "/" : "";
+    const dirs = new Map();
+    const here = [];
+    for(const t of S.tracks) {
+        if(t.source_id !== source_id) {
+            continue;
+        }
+        const f = dir_of(t);
+        if(f === path) {
+            here.push(t);
+            continue;
+        }
+        if(path && !f.startsWith(prefix)) {
+            continue;
+        }
+        const name = f.slice(prefix.length).split("/")[0];
+        if(!name) {
+            continue;
+        }
+        const child = prefix + name;
+        let d = dirs.get(child);
+        if(!d) {
+            d = {name: name, path: child, tracks: []};
+            dirs.set(child, d);
+        }
+        d.tracks.push(t);
+    }
+    return {
+        dirs: [...dirs.values()].sort((a, b) => collator.compare(a.name, b.name)),
+        tracks: here.sort(byTrackNo),
+    };
+}
+
 function all_tracks_sorted()
 {
     return [...S.tracks].sort((a,b) => collator.compare(a.title, b.title));
@@ -948,11 +1071,42 @@ function dedupe(list, against)
     return out;
 }
 
+/*  WHAT JUST HAPPENED TO THE DECK, so somebody can say it.
+ *
+ *  Adding to the queue was the one action in this app that did nothing
+ *  visible. The deck is on another screen, and it refuses repeats — so
+ *  pressing + on a record already on it did literally nothing and said
+ *  literally nothing, which from the outside is a broken button. The
+ *  refusal is right; the silence was not.
+ *
+ *  Counted, never phrased: the store has no business holding a sentence,
+ *  and a count welded into one is a plural rule per language. */
+function say_added(added, already)
+{
+    S.said = {added: added, already: already, at: Date.now()};
+    emit("said");
+}
+
+/*  The last thing the deck was told to do, or null. */
+function last_said()
+{
+    return S.said;
+}
+
+function clear_said()
+{
+    if(S.said) {
+        S.said = null;
+        emit("said");
+    }
+}
+
 function queue_add(list, mode)
 {
     if(!list || !list.length) {
         return 0;
     }
+    const offered = list.length;
     if(mode === "replace") {
         /*  Nothing to compare against — the deck is being thrown away —
             but a list handed in with repeats inside it still gets them
@@ -969,8 +1123,12 @@ function queue_add(list, mode)
     list = dedupe(list, S.queue);
     if(!list.length) {
         /*  Every one of them was already on the deck. Not an error, and
-            not a change either: say nothing, touch nothing. Marking the
-            queue edited here would falsely un-save a saved list. */
+            not a change either: touch nothing. Marking the queue edited
+            here would falsely un-save a saved list.
+            It is still SAID, though — "nothing happened because it was
+            already there" is the one thing the user cannot see for
+            themselves from this screen. */
+        say_added(0, offered);
         return 0;
     }
 
@@ -992,6 +1150,7 @@ function queue_add(list, mode)
         S.qi = at;
         load_current(false);
     }
+    say_added(list.length, offered - list.length);
     return list.length;
 }
 
@@ -1737,6 +1896,10 @@ export {
     groups_for,
     albums,
     albums_of,
+    folder_level,
+    source_root_path,
+    open_in_library,
+    take_open_request,
     all_tracks_sorted,
     search,
     cover_url,
@@ -1753,6 +1916,8 @@ export {
     queue_index,
     queue_length,
     queue_add,
+    last_said,
+    clear_said,
     queue_remove_at,
     queue_move,
     queue_clear,

@@ -28,7 +28,7 @@ import {
     createElement2, refresh_language,
 } from "@yuneta/gobj-js";
 
-import {yui_shell_of} from "@yuneta/gobj-ui/src/c_yui_shell.js";
+import {yui_shell_of, yui_shell_navigate} from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {
     subscribe_sources, all_sources, fsa_supported, is_persistent,
@@ -37,7 +37,9 @@ import {
     source_notice, dismiss_notice, accept_notice,
 } from "./sources_store.js";
 
-import {subscribe, tracks_of_source, queue_add, store_state} from "./music_store.js";
+import {
+    subscribe, tracks_of_source, queue_add, store_state, open_in_library,
+} from "./music_store.js";
 import {
     set_covers_online, covers_online_state, subscribe_covers, retry_covers
 } from "./covers_online.js";
@@ -550,6 +552,24 @@ function build_source_row(gobj, s)
     }
 
     let actions = [];
+    /*  LOOK INSIDE.
+     *
+     *  This screen could remove a folder, re-read it and queue it, and
+     *  could not show what was in it — the one question anybody actually
+     *  has about a source. It is not answered here: the library already
+     *  walks folders, so this is a door to that, opened at this source's
+     *  root, rather than a second browser grown inside Sources. */
+    if(!needs_auth && s.count) {
+        actions.push(["button", {class: "MUS_QBTN button", type: "button"},
+            [ico(P.folder, 15), ["span", {i18n: "look inside"}, t("look inside")]],
+            {click: () => {
+                open_in_library({source_id: s.id, name: s.name});
+                let shell = yui_shell_of(gobj);
+                if(shell) {
+                    yui_shell_navigate(shell, "/library");
+                }
+            }}]);
+    }
     if(needs_auth) {
         actions.push(["button", {class: "MUS_QBTN button is-primary", type: "button"},
             [ico(P.lock, 15), ["span", {i18n: "authorise"}, t("authorise")]],

@@ -33,11 +33,13 @@ import {
     subscribe,
     has_library, store_state,
     groups_for, albums, albums_of, all_tracks_sorted, search, cover_url,
-    queue_add, current_track, play_temp,
+    queue_add, current_track, play_temp, folder_level, tracks_of_source,
+    source_root_path, take_open_request,
 } from "./music_store.js";
 
 import {
     add_dir, add_files, subscribe_sources, source_notice, dismiss_notice,
+    all_sources,
 } from "./sources_store.js";
 import {open_track, track_counts, refresh_counts} from "./track_card.js";
 import {subscribe_stats} from "./stats_store.js";
@@ -68,6 +70,9 @@ function ico(path, size)
     return ["span", {class: "MUS_ICO"}, svg(path, size)];
 }
 
+const collator = new Intl.Collator(undefined, {sensitivity: "base", numeric: true});
+const by_track_no = (a, b) => (a.track - b.track) || collator.compare(a.title, b.title);
+
 /*  The three "unknown" group names are stored as their key, so they can
     follow the language like everything else. */
 const UNKNOWN_KEYS = {
@@ -94,6 +99,9 @@ SDATA_END()
 let PRIVATE_DATA = {
     view:     "artists",
     detail:   null,     // {kind, name, tracks} while drilled in
+    /*  The folders view is not a group list but a WALK, so it keeps a
+        place rather than a group: which source, and how deep in. */
+    tree:     null,     // {source_id, name, path} while walking a source
     search:   "",
     unsub:    null,
     unsub_st: null,     // hearts and play counts, which rows show
@@ -149,6 +157,18 @@ function mt_start(gobj)
         up, changes a chip on it — two numbers, not a list. Re-rendering
         would throw away the button the finger is still on. */
     priv.unsub_st = subscribe_stats(() => paint_counts(gobj));
+
+    /*  Fuentes sends the user here to look inside a folder. Taken on the
+        way in, so arriving by any other road leaves the screen where the
+        user last left it. */
+    let want = take_open_request();
+    if(want && want.source_id) {
+        priv.view = "folders";
+        priv.search = "";
+        priv.detail = null;
+        priv.tree = {source_id: want.source_id, name: want.name || "",
+                     path: source_root_path(want.source_id)};
+    }
 
     /*  The empty screen carries the two pickers, so it also has to
         carry their answer. A pick that adds nothing changes nothing in
@@ -223,6 +243,7 @@ function build_ui(gobj)
                 priv.search_timer = setTimeout(function() {
                     priv.search = value;
                     priv.detail = null;     // a search leaves any drill-down
+                    priv.tree = null;
                     render(gobj);
                 }, 140);
             }
@@ -339,6 +360,8 @@ function render(gobj)
         render_list(gobj, $content, all_tracks_sorted());
     } else if(priv.view === "albums") {
         render_albums(gobj, $content);
+    } else if(priv.view === "folders") {
+        render_tree(gobj, $content);
     } else {
         render_groups(gobj, $content, priv.view);
     }
@@ -368,6 +391,7 @@ function paint_chips(gobj)
                 click: () => {
                     priv.view = v;
                     priv.detail = null;
+                    priv.tree = null;
                     scroll_top(gobj);
                     render(gobj);
                 }
@@ -630,6 +654,201 @@ function render_groups(gobj, $content, view)
 }
 
 
+/***************************************************************
+ *  THE FOLDER TREE — the library as it is on the disk.
+ *
+ *  This is also the answer to "I can remove it, re-read it and
+ *  queue it, but what about its INSIDE?": a source is a folder,
+ *  so the way to look inside one is to walk it, and Fuentes
+ *  links straight to its root here rather than growing a second
+ *  browser of its own.
+ *
+ *  The top of the walk is the list of sources, because a folder
+ *  only means anything inside the source it came from — two
+ *  sources can each hold a "music", and one row merging them
+ *  would invent a folder nobody has.
+ ***************************************************************/
+function render_tree(gobj, $content)
+{
+    let priv = gobj.priv;
+
+    if(!priv.tree) {
+        render_tree_roots(gobj, $content);
+        return;
+    }
+
+    const level = folder_level(priv.tree.source_id, priv.tree.path);
+    const below = [...level.dirs.reduce((all, d) => all.concat(d.tracks), []),
+                   ...level.tracks];
+
+    /*  The source is gone, or emptied, while this screen was up. */
+    if(!below.length) {
+        priv.tree = null;
+        render_tree_roots(gobj, $content);
+        return;
+    }
+
+    $content.appendChild(build_crumbs(gobj));
+
+    const ordered = [...below].sort(
+        (a, b) => collator.compare(a.folder, b.folder) || by_track_no(a, b));
+
+    $content.appendChild(createElement2(
+        ["div", {class: "MUS_DHEAD MUS_TREEHEAD"}, [
+            ico(P.folder, 34),
+            ["div", {class: "MUS_DINFO"}, [
+                ["h3", {class: "MUS_DTITLE"}, tree_title(priv.tree)],
+                ["p", {class: "MUS_DMETA"}, [
+                    ["span", {}, String(ordered.length)],
+                    ["span", {i18n: "tracks"}, t("tracks")],
+                    ...(level.dirs.length ? [
+                        ["span", {class: "MUS_SEP"}, "·"],
+                        ["span", {}, String(level.dirs.length)],
+                        ["span", {i18n: "folders inside"}, t("folders inside")]
+                    ] : [])
+                ]],
+                /*  Play takes the whole subtree, in tree order, which is
+                    what choosing a folder has always meant here. */
+                ["div", {class: "MUS_QACTIONS"}, [
+                    ["button", {class: "MUS_QBTN button is-primary", type: "button"},
+                        [ico(P.play, 15), ["span", {i18n: "play all"}, t("play all")]],
+                        {click: () => play_temp(ordered, 0)}],
+                    ["button", {class: "MUS_QBTN button", type: "button"},
+                        [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
+                        {click: () => queue_add(ordered, "append")}]
+                ]]
+            ]]
+        ]]));
+
+    let rows = [];
+    for(const d of level.dirs) {
+        const inside = [...d.tracks].sort(
+            (a, b) => collator.compare(a.folder, b.folder) || by_track_no(a, b));
+        rows.push(["div", {class: "MUS_ROW MUS_DIRROW"}, [
+            ico(P.folder, 22),
+            ["button", {class: "MUS_ROWMAIN", type: "button"}, [
+                ["span", {class: "MUS_T1"}, d.name],
+                ["span", {class: "MUS_T2"}, [
+                    ["span", {}, String(inside.length)],
+                    ["span", {i18n: "tracks"}, t("tracks")]
+                ]]
+            ], {
+                click: () => {
+                    priv.tree = {...priv.tree, path: d.path};
+                    scroll_top(gobj);
+                    render(gobj);
+                }
+            }],
+            verb_buttons(gobj, () => inside)
+        ]]);
+    }
+    if(rows.length) {
+        $content.appendChild(createElement2(["div", {class: "MUS_ROWS"}, rows]));
+    }
+
+    /*  The tracks of THIS folder, under the folders it holds — the order
+        a file manager shows them in. */
+    if(level.tracks.length) {
+        $content.appendChild(createElement2(
+            ["div", {class: "MUS_ROWS"},
+                level.tracks.map((x) => track_row(gobj, x, level.tracks, true))]));
+    }
+}
+
+function tree_title(tree)
+{
+    if(!tree.path) {
+        return tree.name;
+    }
+    const segs = tree.path.split("/");
+    return segs[segs.length - 1];
+}
+
+/*  How far down we are, counted from where the walk of THIS source
+    began — not from "/", which would put a rung on the trail for the
+    folder the user is already looking at the name of. */
+function tree_depth(tree, root)
+{
+    const a = (tree.path || "").split("/").filter(Boolean);
+    const b = (root || "").split("/").filter(Boolean);
+    return Math.max(0, a.length - b.length);
+}
+
+/*  Every step back up, not just one. A tree with only "back" makes the
+    user climb it one rung at a time to reach the root they can see the
+    name of. */
+function build_crumbs(gobj)
+{
+    let priv = gobj.priv;
+    const root = source_root_path(priv.tree.source_id);
+    const all = (priv.tree.path || "").split("/").filter(Boolean);
+    const base = (root || "").split("/").filter(Boolean).length;
+    /*  Everything from the source's own root down, the root included:
+        it is a real rung, and the one people reach for most. */
+    const segs = all.slice(Math.max(0, base - 1));
+
+    let bits = [
+        ["button", {class: "MUS_CRUMB", type: "button"},
+            [ico(P.back, 15), ["span", {i18n: "sources"}, t("sources")]],
+            {click: () => {
+                priv.tree = null;
+                scroll_top(gobj);
+                render(gobj);
+            }}]
+    ];
+    /*  The last segment is where we ARE; it is the title below, not a
+        step to take. */
+    const head = all.slice(0, Math.max(0, base - 1)).join("/");
+    segs.slice(0, -1).forEach(function(seg, i) {
+        const upto = (head ? head + "/" : "") + segs.slice(0, i + 1).join("/");
+        bits.push(["span", {class: "MUS_SEP"}, "/"]);
+        bits.push(["button", {class: "MUS_CRUMB", type: "button"}, seg,
+            {click: () => {
+                priv.tree = {...priv.tree, path: upto};
+                scroll_top(gobj);
+                render(gobj);
+            }}]);
+    });
+    return createElement2(["nav", {class: "MUS_CRUMBS"}, bits]);
+}
+
+function render_tree_roots(gobj, $content)
+{
+    let priv = gobj.priv;
+    const roots = all_sources()
+        .map((s) => ({s: s, tracks: tracks_of_source(s.id)}))
+        .filter((r) => r.tracks.length);
+
+    if(!roots.length) {
+        $content.appendChild(createElement2(
+            ["div", {class: "MUS_EMPTY_NOTE", i18n: "nothing here"}, t("nothing here")]));
+        return;
+    }
+
+    const rows = roots.map(function(r) {
+        return ["div", {class: "MUS_ROW MUS_DIRROW"}, [
+            ico(P.folder, 22),
+            ["button", {class: "MUS_ROWMAIN", type: "button"}, [
+                ["span", {class: "MUS_T1"}, r.s.name],
+                ["span", {class: "MUS_T2"}, [
+                    ["span", {}, String(r.tracks.length)],
+                    ["span", {i18n: "tracks"}, t("tracks")]
+                ]]
+            ], {
+                click: () => {
+                    priv.tree = {source_id: r.s.id, name: r.s.name,
+                                 path: source_root_path(r.s.id)};
+                    scroll_top(gobj);
+                    render(gobj);
+                }
+            }],
+            verb_buttons(gobj, () => r.tracks)
+        ]];
+    });
+    $content.appendChild(createElement2(["div", {class: "MUS_ROWS"}, rows]));
+}
+
+
 function render_albums(gobj, $content)
 {
     let priv = gobj.priv;
@@ -754,12 +973,10 @@ function render_detail(gobj, $content)
 function ordered_detail(d)
 {
     let list = [...d.tracks];
-    const collator = new Intl.Collator(undefined, {sensitivity: "base", numeric: true});
-    const byTrackNo = (a,b) => (a.track - b.track) || collator.compare(a.title, b.title);
     if(d.kind === "albums") {
-        return list.sort(byTrackNo);
+        return list.sort(by_track_no);
     }
-    return list.sort((a,b) => collator.compare(a.album, b.album) || byTrackNo(a,b));
+    return list.sort((a,b) => collator.compare(a.album, b.album) || by_track_no(a,b));
 }
 
 

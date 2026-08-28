@@ -449,6 +449,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `addsrc` | a folder added twice doubles the library, or two folders are read at once |
 | `templist` | playing from the library asks, stops after one track, or eats the deck |
 | `grouping` | one album tagged two ways shows as two, or two albums as one |
+| `tree` | Carpetas stops showing the disk, or a source cannot be looked into |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
 
 Two things they are strict about, both learned the hard way:
@@ -1036,3 +1037,81 @@ for the sake of a test: an album spelled three ways, two different records
 called `Greatest Hits`, an artist spelled two ways, a genre spelled two ways.
 Five real albums by four real artists. Anything that reports more is reporting
 the tags, not the music.
+
+## The deck says what it was told
+
+Adding to the queue was the only action in this app with no visible result at
+all. The deck is another screen, and it **refuses repeats** — so pressing ＋ on a
+record already on it changed nothing and said nothing. From the outside that is
+a dead button, and the second press, and the third, were people checking whether
+it worked. The refusal is right; the silence was not.
+
+`queue_add` now records what it did — how many went on, how many were already
+there — and the shell says it for about two seconds, above whatever strips are
+showing. It floats rather than docking: a note that pushed the player up and
+dropped it back down on every ＋ would be worse than saying nothing.
+
+No number is welded into a sentence. A label and a figure, the same shape the
+rest of the app uses for counts, because a count inside a sentence is a plural
+rule per language and this app speaks ten. `Ya en la cola · 2` is true whatever
+the number is.
+
+The note has to clear the bottom **nav** as well as the strips, and that nav
+belongs to the shell and only exists on a narrow screen — so its height is
+measured by the same `ResizeObserver` that measures the strips, into
+`--mus-nav-h`. Hard-coding it put the note squarely on top of the nav.
+
+## Carpetas is the disk now, not the tags again
+
+"Folders" grouped on the whole path, which produced a flat list of every **leaf**
+directory in the library. A leaf directory is nearly always an album, so the view
+was the Albums view again with worse names — as the person who asked for this put
+it, *"es otra forma de ver los álbumes"*. What it never showed was the **shape**:
+what holds what, the one thing the file system knows and the tags do not.
+
+It is a walk now. One level at a time, starting at the source — because a folder
+only means anything inside the source it came from, and two sources can each hold
+a `music` that one merged row would turn into a folder nobody has. Each level
+shows the directories directly inside it, each with everything below it counted,
+and then the tracks that live in the level itself. A breadcrumb offers **every**
+rung back, not just one: a tree with only "back" makes you climb down it a step
+at a time to reach a root whose name is right there on the screen.
+
+The walk starts at the source's own root segment, not at `""`. Every path a pick
+produces carries the pick's folder name at its head — the handle's name, or the
+top folder of the file list — so starting at nothing showed a single child named
+after the source and made the user click through a rung that told them nothing.
+
+### The bug underneath it
+
+`fromPath` **popped** the parent segment off the array it then rebuilt the path
+from:
+
+```js
+const folder = parts.pop() || "";     // "Aqualung"      — and parts loses it
+const parent = parts.pop() || "";     // "Jethro Tull"   — and parts loses it too
+…
+folder: parts.concat(folder).join("/")   // "messy/Aqualung"
+```
+
+So the stored folder of a file living in `messy/Jethro Tull/Aqualung` was
+`messy/Aqualung`, a directory nobody has. It read as harmless because nothing
+ever walked with it — the old flat view only ever compared whole strings. Reading
+those two segments instead of popping them fixes it.
+
+That value is **stored with the tags**, though, so a library read by an older
+build still carries the broken one until every source is re-read. The tree
+therefore builds from the track's `path`, not from `folder`: the path is what the
+file is fetched by, so it cannot be wrong without the track being unplayable.
+
+## Looking inside a source
+
+Fuentes could remove a folder, re-read it and queue it, and could not show what
+was **in** it — the one question anybody actually has about a source. Each row
+now carries **Ver dentro**, which opens that source's root in the tree above.
+
+It is a door, not a second browser: the library already walks folders, and
+growing another one inside Sources would be two things to keep honest instead of
+one. The hand-off goes through `open_in_library()` — read once on the way in and
+cleared — rather than a route carrying a source id, because that id is internal
+and has no business in the address bar.
