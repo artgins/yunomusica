@@ -150,6 +150,7 @@ const zh = {
         "rescan":               "重新扫描",
         "no sources yet":       "还没有来源。",
         "reading":              "正在读取…",
+        "waiting its turn":   "等待前一个文件夹读完",
         "preparing folder":
             "正在准备文件夹…",
         "this can take a while":
@@ -167,6 +168,21 @@ const zh = {
         "files":                "文件",
         "remove this source":   "移除此来源",
         "remove this source?":  "移除此来源？",
+
+        /*  ---- 会造成重复的一次选择 ---- */
+        "folder already added":
+            "“{{name}}”已经在列表中，没有重复添加。要读取之后新增的文件，请用该行的“重新扫描”。",
+        "folder inside another":
+            "“{{name}}”在已经加入的“{{other}}”里面 —— 文件夹是整个读取的，所以它的曲目已经在你的资料库中。",
+        "files already added":
+            "这些文件已经在了，属于：{{other}}。没有重复添加。",
+        "some were already in":
+            "其中 {{skipped}} 个已经在了，属于：{{other}}。这些被略过，其余的已添加。",
+        "folder contains others":
+            "“{{name}}”里面已经加入过：{{other}}。要整个加入而不让那些曲目出现两次，必须先移除它们 —— 它们的播放次数和收藏也会一起消失。",
+        "remove it and add this":
+            "移除它并添加这个",
+        "understood":           "知道了",
         "diagnostics":         "诊断信息",
         "copy":                "复制",
         "new version":         "有新版本可用",

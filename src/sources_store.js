@@ -33,7 +33,7 @@ import {
     request_persistence, storage_persisted,
 } from "./idb.js";
 import {
-    ingest, drop_source_tracks, cancel_ingest,
+    ingest, begin_read, drop_source_tracks, cancel_ingest,
     tags_of_source, covers_snapshot, prime_covers, is_audio,
     restore_tracks, set_file_resolver,
     queue_length, queue_add, tracks_of_source, reload_current,
@@ -92,6 +92,8 @@ const S = {
     stopping: false,        // Stop pressed, waiting for the loop to break
     write_failed: new Set(),  // ids of sources whose store attempt did not land
     durable: null,          // storage is exempt from eviction (null = unknown)
+    notice: null,           // what the last pick ran into, for the screen to say
+    pending: null,          // a folder waiting on the user's answer to that notice
 };
 
 /*  Put the relative path back on a File that came out of store, so it
@@ -113,7 +115,7 @@ function rt(id)
 {
     let r = S.runtime.get(id);
     if(!r) {
-        r = {permission: "granted", scanning: false, error: ""};
+        r = {permission: "granted", scanning: false, queued: false, error: ""};
         S.runtime.set(id, r);
     }
     return r;
@@ -166,6 +168,7 @@ function all_sources()
             rescannable: s.kind === "dir",
             permission: r.permission,
             scanning: r.scanning,
+            queued: r.queued,
             error: r.error,
         };
     });
@@ -628,6 +631,156 @@ async function diagnose()
     return lines;
 }
 
+/***************************************************************
+ *      Nothing is added twice
+ *
+ *  Picking the same folder again is the easiest mistake in the
+ *  whole app to make: the picker reopens where it was left, the
+ *  folder is under the cursor, and nothing on the screen says it
+ *  is already in. What came of it was every track twice — twice
+ *  in the library, twice in its album, twice in the folder tree,
+ *  and twice in any list saved from them. By then there is
+ *  nothing left to tell the copies apart, so the answer has to
+ *  be given BEFORE the source exists.
+ *
+ *  It is decided on what the browser can actually prove, and the
+ *  two kinds of source can prove different things:
+ *
+ *    - a FOLDER handle knows whether it is the same entry as
+ *      another (isSameEntry) and whether it lies inside it
+ *      (resolve). Exact, and it survives a restart.
+ *
+ *    - a FILE snapshot has no path above the folder that was
+ *      picked, so "Bach" chosen on its own and "Bach" reached
+ *      through "music" do not compare. The files themselves do:
+ *      name, size and modification time. So the pick is trimmed
+ *      to what is genuinely new instead of being refused.
+ ***************************************************************/
+
+/*  Not the path: the same file reached through two different
+    picks carries two different paths and is still one file. */
+function fingerprint(f)
+{
+    return (f.name || "") + "|" + f.size + "|" + f.lastModified;
+}
+
+/*  fingerprint -> the id of the source that already holds it. */
+function files_index()
+{
+    let idx = new Map();
+    for(const s of S.sources) {
+        if(s.kind !== "files" || !s.files) {
+            continue;
+        }
+        for(const f of s.files) {
+            let k = fingerprint(f);
+            if(!idx.has(k)) {
+                idx.set(k, s.id);
+            }
+        }
+    }
+    return idx;
+}
+
+/*  `resolve` reads downwards: a.resolve(b) is the path from a
+    down to b, or null when b is not below a. It returns the
+    empty array for the same entry — which is truthy — so
+    isSameEntry has to be asked first. */
+async function is_inside(parent, child)
+{
+    if(!parent || !child || typeof parent.resolve !== "function") {
+        return false;
+    }
+    try {
+        return !!(await parent.resolve(child));
+    } catch(e) {
+        return false;               // an engine without it: no opinion
+    }
+}
+
+async function same_entry(a, b)
+{
+    if(!a || !b || typeof a.isSameEntry !== "function") {
+        return false;
+    }
+    try {
+        return !!(await a.isSameEntry(b));
+    } catch(e) {
+        return false;
+    }
+}
+
+/*  What this folder collides with, or null. */
+async function dir_clash(handle)
+{
+    for(const s of S.sources) {
+        if(s.kind !== "dir" || !s.handle) {
+            continue;
+        }
+        if(await same_entry(s.handle, handle)) {
+            return {how: "same", sources: [s]};
+        }
+        if(await is_inside(s.handle, handle)) {
+            return {how: "inside", sources: [s]};
+        }
+    }
+
+    /*  The other way round: the folder just picked holds folders
+        that are already sources. Adding it over them would double
+        their tracks, and dropping them costs their play counts —
+        so that one is asked, not decided here. */
+    let contained = [];
+    for(const s of S.sources) {
+        if(s.kind === "dir" && s.handle && await is_inside(handle, s.handle)) {
+            contained.push(s);
+        }
+    }
+    if(contained.length) {
+        return {how: "contains", sources: contained};
+    }
+    return null;
+}
+
+function names_of(sources)
+{
+    return sources.map((s) => s.name).join(", ");
+}
+
+/*  What the last pick ran into, for the screen to say in words.
+    `kind` is the i18n key; `pending` is true while a folder is
+    waiting on an answer. */
+function source_notice()
+{
+    return S.notice;
+}
+
+function dismiss_notice()
+{
+    if(!S.notice && !S.pending) {
+        return;
+    }
+    S.notice = null;
+    S.pending = null;
+    emit();
+}
+
+/*  The user said yes to replacing the folders the new one holds. */
+async function accept_notice()
+{
+    let p = S.pending;
+    S.notice = null;
+    S.pending = null;
+    if(!p) {
+        emit();
+        return "";
+    }
+    for(const id of p.replace) {
+        await remove_source(id);
+    }
+    return await add_dir_handle(p.handle);
+}
+
+
 /*  A whole folder, recursively. Returns the new source id, or "". */
 async function add_dir()
 {
@@ -640,6 +793,37 @@ async function add_dir()
     } catch(e) {
         return "";                  // the user closed the picker
     }
+    return await add_dir_handle(handle);
+}
+
+async function add_dir_handle(handle)
+{
+    S.notice = null;
+    S.pending = null;
+
+    let clash = await dir_clash(handle);
+    if(clash && clash.how !== "contains") {
+        S.notice = {
+            kind: clash.how === "same" ? "folder already added" : "folder inside another",
+            name: handle.name || "—",
+            other: names_of(clash.sources),
+            pending: false,
+        };
+        emit();
+        return "";
+    }
+    if(clash) {
+        S.notice = {
+            kind: "folder contains others",
+            name: handle.name || "—",
+            other: names_of(clash.sources),
+            pending: true,
+        };
+        S.pending = {handle: handle, replace: clash.sources.map((s) => s.id)};
+        emit();
+        return "";
+    }
+
     let source = {
         id: new_id(),
         name: handle.name || "—",
@@ -744,6 +928,46 @@ function pick_with_input(as_dir)
                 resolve("");
                 return;
             }
+
+            /*  Whatever another source already holds is dropped here
+                and now. A snapshot has no folder above the one that
+                was picked to compare, so the files are compared: the
+                same folder picked twice, or picked after one of its
+                albums, otherwise arrives as a second copy of every
+                track. What is genuinely new is still added — refusing
+                the whole pick would make the parent folder of an album
+                already in impossible to add. */
+            let all = files.length;
+            let idx = files_index();
+            let owners = new Set();
+            let kept = [];
+            for(const f of files) {
+                let owner = idx.get(fingerprint(f));
+                if(owner) {
+                    owners.add(owner);
+                } else {
+                    kept.push(f);
+                }
+            }
+            let others = names_of(
+                Array.from(owners).map(find).filter(Boolean));
+            if(!kept.length) {
+                S.notice = {
+                    kind: as_dir ? "folder already added" : "files already added",
+                    name: as_dir ? top_folder_of(files) : label_for_files(files),
+                    other: others,
+                    pending: false,
+                };
+                emit();
+                resolve("");
+                return;
+            }
+            S.notice = (kept.length < all)
+                ? {kind: "some were already in", name: "",
+                   other: others, skipped: all - kept.length, pending: false}
+                : null;
+            files = kept;
+
             let name = as_dir ? top_folder_of(files) : label_for_files(files);
             let source = {
                 id: new_id(),
@@ -858,15 +1082,53 @@ async function walk_dir(handle, path, out, stats)
     }
 }
 
-async function scan(id, force)
+/*  ONE READ AT A TIME.
+ *
+ *  The buttons stay live while a folder is being read — queueing a
+ *  second one is a reasonable thing to do, and a picker that goes dead
+ *  for two minutes is worse than the wait. What could not be shared was
+ *  the READING: there is one progress counter, one elapsed clock and
+ *  one Stop, and two reads fighting over them made the counter jump
+ *  (98, then 0, then 175) and reach "300 / 300" while the other folder
+ *  was still half way through. A bar that fills up and stays up is
+ *  exactly how a working app gets read as a stuck one.
+ *
+ *  So a scan asked for while another is running waits its turn, and the
+ *  source waiting says so on its row rather than sitting at 0 tracks
+ *  with nothing to explain it. */
+let scan_queue = Promise.resolve();
+
+function scan(id, force)
+{
+    let r = rt(id);
+    r.queued = true;
+    emit();
+    const run_it = () => scan_now(id, force);
+    let next = scan_queue.then(run_it, run_it);
+    /*  The chain must survive a scan that threw, or every folder picked
+        after it would be dropped on the floor. */
+    scan_queue = next.catch(() => 0);
+    return next;
+}
+
+async function scan_now(id, force)
 {
     let source = find(id);
     if(!source) {
+        /*  Removed while it was waiting its turn. Nothing to read, and
+            nothing to remember about it either. */
+        S.runtime.delete(id);
+        emit();
         return 0;
     }
     let r = rt(id);
+    r.queued = false;
     r.scanning = true;
     r.error = "";
+    /*  The bar is about to carry THIS folder's name; it must not carry
+        the last one's numbers with it. The walk below produces none of
+        its own until the first file is read. */
+    begin_read(id);
     emit();
 
     let files = [];
@@ -890,11 +1152,47 @@ async function scan(id, force)
         return 0;
     }
 
-    /*  How many files the walk actually handed over, audio or not. Two
-        browsers reporting different track counts for the same folder is
-        either a different WALK or a different idea of what counts as
-        audio, and only this number tells them apart. */
+    /*  How many files the walk actually handed over, audio or not, and
+        BEFORE anything below drops any of them. Two browsers reporting
+        different track counts for the same folder is either a different
+        WALK or a different idea of what counts as audio, and only this
+        number tells them apart. */
     source.seen = files.length;
+
+    /*  A folder can also overlap a SNAPSHOT — loose files picked out of
+        it earlier, which every browser offers and Chromium offers
+        alongside the folder picker. Ancestry cannot see that: a
+        snapshot has no folder to be inside of. So what the walk brought
+        back is checked against what the snapshots hold, file by file,
+        the same way a pick is. Only here: the tree has to be walked
+        before there is anything to compare, so this cannot be answered
+        at the picker like the folder cases are. */
+    if(source.kind === "dir") {
+        let idx = files_index();
+        if(idx.size) {
+            let owners = new Set();
+            let kept = [];
+            for(const f of files) {
+                let owner = idx.get(fingerprint(f));
+                if(owner) {
+                    owners.add(owner);
+                } else {
+                    kept.push(f);
+                }
+            }
+            if(kept.length < files.length) {
+                S.notice = {
+                    kind: "some were already in",
+                    name: source.name,
+                    other: names_of(Array.from(owners).map(find).filter(Boolean)),
+                    skipped: files.length - kept.length,
+                    pending: false,
+                };
+                files = kept;
+            }
+        }
+    }
+
     source.by_path = null;      // rebuilt on demand from the new file list
 
     /*  A rescan replaces this source's tracks; it never doubles them. */
@@ -975,6 +1273,11 @@ async function remove_source(id)
     }
     S.sources.splice(i, 1);
 
+    /*  A notice names sources by name. Once one of them is gone the
+        sentence is about something that is no longer there. */
+    S.notice = null;
+    S.pending = null;
+
     /*  Stop its read first. Removing a source while it is being read used
         to leave the read running: it went on adding tracks to the library
         for a folder the user had just deleted. scan() does the final
@@ -983,6 +1286,8 @@ async function remove_source(id)
     if(r && r.scanning) {
         cancel_ingest(id);
     } else {
+        /*  Not reading — either never started or still waiting its
+            turn. scan_now() finds it gone and steps over it. */
         S.runtime.delete(id);
     }
 
@@ -1034,6 +1339,9 @@ export {
     scanning_source,
     add_dir,
     add_files,
+    source_notice,
+    dismiss_notice,
+    accept_notice,
     authorize,
     authorize_all,
     pending_authorisation,

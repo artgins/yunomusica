@@ -34,7 +34,9 @@ import {
     queue_add, current_track, preview_track,
 } from "./music_store.js";
 
-import {add_dir, add_files} from "./sources_store.js";
+import {
+    add_dir, add_files, subscribe_sources, source_notice, dismiss_notice,
+} from "./sources_store.js";
 import {confirm_replace} from "./confirm_replace.js";
 import {open_track, track_counts, refresh_counts} from "./track_card.js";
 import {subscribe_stats} from "./stats_store.js";
@@ -94,6 +96,7 @@ let PRIVATE_DATA = {
     search:   "",
     unsub:    null,
     unsub_st: null,     // hearts and play counts, which rows show
+    unsub_src: null,    // the sources, for what the empty screen has to say
     $chips:   null,
     $content: null,
     search_timer: 0,
@@ -146,6 +149,12 @@ function mt_start(gobj)
         would throw away the button the finger is still on. */
     priv.unsub_st = subscribe_stats(() => paint_counts(gobj));
 
+    /*  The empty screen carries the two pickers, so it also has to
+        carry their answer. A pick that adds nothing changes nothing in
+        the library, so the library channel never fires and the screen
+        would sit there as if the button had not been pressed. */
+    priv.unsub_src = subscribe_sources(() => render(gobj));
+
     let shell = yui_shell_of(gobj);
     if(shell) {
         gobj_subscribe_event(shell, "EV_LANGUAGE_CHANGED", {}, gobj);
@@ -164,6 +173,10 @@ function mt_stop(gobj)
     if(priv.unsub_st) {
         priv.unsub_st();
         priv.unsub_st = null;
+    }
+    if(priv.unsub_src) {
+        priv.unsub_src();
+        priv.unsub_src = null;
     }
 }
 
@@ -361,22 +374,44 @@ function paint_chips(gobj)
  ***************************************************************/
 function build_empty()
 {
-    return createElement2(
-        ["div", {class: "MUS_EMPTY"}, [
-            ["p", {class: "MUS_EMPTY_LEAD", i18n: "load something to start"},
-                t("load something to start")],
-            ["div", {class: "MUS_QACTIONS"}, [
-                ["button", {class: "MUS_QBTN button is-primary", type: "button"},
-                    [ico(P.folder, 16), ["span", {i18n: "add a folder"}, t("add a folder")]],
-                    {click: () => add_dir()}],
-                ["button", {class: "MUS_QBTN button", type: "button"},
-                    [ico(P.file, 16), ["span", {i18n: "add loose files"}, t("add loose files")]],
-                    {click: () => add_files()}]
-            ]],
-            ["p", {class: "MUS_DIM MUS_HINT", i18n: "folders are recursive"},
-                t("folders are recursive")]
+    let children = [
+        ["p", {class: "MUS_EMPTY_LEAD", i18n: "load something to start"},
+            t("load something to start")],
+        ["div", {class: "MUS_QACTIONS"}, [
+            ["button", {class: "MUS_QBTN button is-primary", type: "button"},
+                [ico(P.folder, 16), ["span", {i18n: "add a folder"}, t("add a folder")]],
+                {click: () => add_dir()}],
+            ["button", {class: "MUS_QBTN button", type: "button"},
+                [ico(P.file, 16), ["span", {i18n: "add loose files"}, t("add loose files")]],
+                {click: () => add_files()}]
         ]]
-    );
+    ];
+
+    /*  These are the same two buttons as in Sources, so they can run
+        into the same wall: a folder that is already in. Pressing a
+        button on an empty screen and getting an empty screen back is
+        the one answer that cannot be given here — the folder that WOULD
+        have filled it is the one already in, and only this line says
+        so. The question that needs an answer (a folder holding folders
+        already added) is not asked here; it belongs beside the list of
+        what would be dropped, which is in Sources. */
+    const n = source_notice();
+    if(n && !n.pending) {
+        children.push(["div", {class: "MUS_SRCNOTE is-warn", role: "status"}, [
+            ["p", {class: "MUS_SRCNOTE_TEXT"},
+                t(n.kind, {name: n.name, other: n.other, skipped: n.skipped})],
+            ["div", {class: "MUS_SRCNOTE_ACTIONS"}, [
+                ["button", {class: "MUS_QBTN button is-ghost", type: "button",
+                            i18n: "understood"},
+                    t("understood"), {click: () => dismiss_notice()}]
+            ]]
+        ]]);
+    }
+
+    children.push(["p", {class: "MUS_DIM MUS_HINT", i18n: "folders are recursive"},
+        t("folders are recursive")]);
+
+    return createElement2(["div", {class: "MUS_EMPTY"}, children]);
 }
 
 

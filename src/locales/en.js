@@ -190,6 +190,7 @@ const en = {
         "rescan":               "Rescan",
         "no sources yet":       "No sources yet.",
         "reading":              "Reading…",
+        "waiting its turn":   "Waiting for the folder before it",
         "preparing folder":
             "Preparing the folder…",
         "this can take a while":
@@ -207,6 +208,21 @@ const en = {
         "files":                "Files",
         "remove this source":   "Remove this source",
         "remove this source?":  "Remove this source?",
+
+        /*  ---- a pick that would have doubled something ---- */
+        "folder already added":
+            "“{{name}}” is already in the list. Nothing was added twice. To pick up files added to it since, use Rescan on its row.",
+        "folder inside another":
+            "“{{name}}” is inside “{{other}}”, which is already in — and a folder is taken whole, so its tracks are already in your library.",
+        "files already added":
+            "Those files are already in. They are held by: {{other}}. Nothing was added twice.",
+        "some were already in":
+            "{{skipped}} of them were already in, held by: {{other}}. Those were left out; the rest were added.",
+        "folder contains others":
+            "“{{name}}” holds something that is already in: {{other}}. To take the whole folder without those tracks appearing twice, that has to go first — and its play counts and hearts go with it.",
+        "remove it and add this":
+            "Remove it and add this one",
+        "understood":           "Understood",
         "diagnostics":         "Diagnostics",
         "copy":                "Copy",
         "new version":         "A new version is available",

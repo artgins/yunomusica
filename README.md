@@ -446,6 +446,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `follow` | the banner scrolls away, or the queue stops following the music |
 | `viz` | the banner draws the wrong note — or tapping the audio silenced it |
 | `counts` | a skipped track counts as listened to, or the counts vanish on reload |
+| `addsrc` | a folder added twice doubles the library, or two folders are read at once |
 | `e2e` | the whole walk: play, edit, save, Arabic, reload |
 
 Two things they are strict about, both learned the hard way:
@@ -833,10 +834,11 @@ them out on the way in. When every track handed over is already on the deck,
 nothing happens at all: in particular the queue is **not** marked edited, or a
 no-op would quietly un-save a saved list.
 
-Identity is the **track**, not the song. Two files of the same tune — in
-different albums, or in a folder that was authorised twice — are two records,
-and the app has no business deciding they are one. What it refuses is the same
-file appearing twice over.
+Identity is the **track**, not the song. Two files of the same tune, in
+different albums, are two records, and the app has no business deciding they are
+one. What it refuses is the same file appearing twice over. (The other way a
+track used to arrive twice — the same folder added twice — is closed further
+upstream now; see "Nothing is added twice".)
 
 ## Giving the queue the screen
 
@@ -859,3 +861,95 @@ survive, along with the queue itself.
 It is added **after** the "follow playing" toggle on purpose. Both are settings
 rather than actions on the queue, and anything inserted before them moves the
 save and clear buttons, which the suite finds by position.
+
+## Nothing is added twice
+
+The easiest mistake in this app to make, and the worst one to notice. The picker
+reopens on the folder you used last, that folder is under the cursor, and
+nothing on the screen said it was already in. Press again and every track
+arrived a second time: twice in the library, twice in its album, twice in the
+folder tree, twice in any list saved from them — and by then there is nothing
+left to tell the copies apart, because they are the same file read twice under
+two source ids. Adding a **subfolder** of one already in did the same thing, and
+so did picking loose files out of a folder that was in.
+
+So the question is answered **before a source exists**, and it is answered on
+what the browser can actually prove — which is not the same thing for the two
+kinds of source.
+
+A **folder handle** knows its own identity. `isSameEntry` says whether two
+handles are the same folder, and `resolve` says whether one lies inside the
+other; both are exact and both survive a restart. Three answers come out of it:
+
+- the same folder → not added, and it says so. Rescan is the button that was
+  wanted.
+- a folder **inside** one already in → not added. A folder is taken whole, so
+  its tracks are in the library already.
+- a folder that **contains** ones already in → this is a question, not a
+  refusal. Wanting the whole music folder after adding one album from it months
+  ago is entirely reasonable, and it can only be granted by dropping those
+  inner sources — which drops their play counts and their hearts. That is not a
+  decision to make on somebody's behalf, so it is asked, in the row of the
+  buttons, with both exits on it.
+
+A **file snapshot** has no path above the folder that was chosen: "Bach" picked
+on its own and "Bach" reached through "music" are indistinguishable by path. The
+files are compared instead, by name, size and modification time. What is already
+held is dropped and what is genuinely new is still added — refusing the whole
+pick would make the parent of an album already in impossible to add at all, and
+a snapshot is a bag of files, so trimming it is honest.
+
+The two kinds can also meet each other, and on Chromium both pickers are on
+offer, so they do: loose files taken out of a folder that is later added whole.
+Ancestry cannot see that — a snapshot is not *inside* anything — so a folder's
+walk is checked against what the snapshots hold before its files are read. That
+is the one check that cannot happen at the picker: there is nothing to compare
+until the tree has been walked.
+
+That last case is **not covered by the suite**, and it is worth saying why rather
+than leaving a green run implying it is. The folder-handle tests drive the origin
+private file system, and a file written there and a file picked off the real disk
+never share a modification time, so the harness cannot build the overlap it would
+need to. The two directions that *are* reproducible — a folder then its loose
+files, and loose files then the folder over them — are both in `addsrc`, and they
+exercise the same comparison.
+
+Every one of those answers is **spoken**. A refusal in silence is no better than
+the duplicate: the user pressed a button and nothing happened. The note sits
+directly under the two pickers — on the Sources screen and on the empty library
+screen, which carries the same two buttons — and names the folder it collided
+with.
+
+`resolve` returns the **empty array** for the same entry, and an empty array is
+truthy. `isSameEntry` has to be asked first or every folder reads as being
+inside itself.
+
+## One folder read at a time
+
+The pickers stay live while a folder is being read, and queueing a second one is
+a reasonable thing to do — a picker that goes dead for two minutes is worse than
+the wait. What could not be shared was the reading. There is one progress
+counter, one elapsed clock and one Stop, and two reads fighting over them made
+the counter jump backwards — 98, then 0, then 175 — and reach `300 / 300` while
+the other folder was still half way through. A bar that fills up and stays up is
+exactly how a working app gets read as a stuck one, which is the failure this
+bar was built to prevent in the first place.
+
+Scans now go through a queue, one at a time, and a source waiting its turn says
+so on its row instead of sitting at "0 tracks" with nothing to explain it — the
+same silence, one level up. The chain absorbs a scan that threw, or every folder
+picked after a bad one would be dropped on the floor.
+
+Serialising them uncovered an older lie underneath, one that needed no
+concurrency at all. A read has two phases: the tree is **walked** first, which
+produces no numbers, and only then are files opened and counted. The counters
+still held the *previous* folder's, so through the whole walk the bar showed the
+new folder's name beside `300 / 300` and a full bar, before one file of it had
+been opened. `begin_read()` zeroes them when the read starts, and the bar falls
+back to the indeterminate one — reading, and not yet countable, which is the
+truth.
+
+`tests/addsrc.mjs` samples the bar's **name** alongside its count, because that
+is what separates the two reads: starting over when the folder changes is
+correct, going backwards without it is the bug. A bare counter cannot tell them
+apart.

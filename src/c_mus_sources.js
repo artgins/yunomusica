@@ -34,6 +34,7 @@ import {
     subscribe_sources, all_sources, fsa_supported, is_persistent,
     is_durable, write_failed, is_blocked, diagnose,
     add_dir, add_files, authorize, scan, remove_source,
+    source_notice, dismiss_notice, accept_notice,
 } from "./sources_store.js";
 
 import {subscribe, tracks_of_source, queue_add, store_state} from "./music_store.js";
@@ -204,6 +205,10 @@ function render(gobj)
     clear($c);
 
     $c.appendChild(build_header());
+    let $note = build_notice();
+    if($note) {
+        $c.appendChild($note);
+    }
     $c.appendChild(build_explainer());
     $c.appendChild(build_covers_switch(gobj));
 
@@ -322,6 +327,51 @@ function build_header()
                     [ico(P.file, 16), ["span", {i18n: "add loose files"}, t("add loose files")]],
                     {click: () => add_files()}]
             ]]
+        ]]
+    );
+}
+
+
+/*  What the last pick ran into, said next to the buttons that made it
+ *  happen.
+ *
+ *  A folder that is already in used to be added again in silence, and
+ *  the damage only showed up two screens away, as every track twice.
+ *  Refusing it silently would be no better: the user pressed a button
+ *  and nothing happened. So the refusal is spoken, in the row of the
+ *  action, and it says which folder it collided with.
+ *
+ *  One case is not a refusal but a question. A folder that CONTAINS
+ *  folders already added can be exactly what the user wants — the whole
+ *  music folder, after one album was added months ago — and it can only
+ *  be taken by dropping those, which drops their play counts and their
+ *  hearts with them. That is not a decision to make for somebody. */
+function build_notice()
+{
+    const n = source_notice();
+    if(!n) {
+        return null;
+    }
+
+    let actions = [];
+    if(n.pending) {
+        actions.push(["button", {class: "MUS_QBTN button is-danger", type: "button",
+                                 i18n: "remove it and add this"},
+            t("remove it and add this"), {click: () => accept_notice()}]);
+        actions.push(["button", {class: "MUS_QBTN button is-ghost", type: "button",
+                                 i18n: "cancel"},
+            t("cancel"), {click: () => dismiss_notice()}]);
+    } else {
+        actions.push(["button", {class: "MUS_QBTN button is-ghost", type: "button",
+                                 i18n: "understood"},
+            t("understood"), {click: () => dismiss_notice()}]);
+    }
+
+    return createElement2(
+        ["div", {class: "MUS_SRCNOTE is-warn", role: "status"}, [
+            ["p", {class: "MUS_SRCNOTE_TEXT"},
+                t(n.kind, {name: n.name, other: n.other, skipped: n.skipped})],
+            ["div", {class: "MUS_SRCNOTE_ACTIONS"}, actions]
         ]]
     );
 }
@@ -482,6 +532,13 @@ function build_source_row(gobj, s)
                 }]
             ]]
         ]];
+    } else if(s.queued) {
+        /*  Waiting behind another folder. Without this the row sits at
+            "0 tracks" with nothing to explain it, which reads as an
+            empty folder — the same silence the progress bar exists to
+            break, one level up. */
+        $state = ["div", {class: "MUS_SRCSTATE MUS_DIM", i18n: "waiting its turn"},
+            t("waiting its turn")];
     } else if(needs_auth) {
         let k = (s.permission === "denied") ? "permission denied" : "waiting for permission";
         $state = ["div", {class: "MUS_SRCSTATE is-warn", i18n: k}, t(k)];

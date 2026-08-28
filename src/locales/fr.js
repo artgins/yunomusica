@@ -150,6 +150,7 @@ const fr = {
         "rescan":               "Relire",
         "no sources yet":       "Pas encore de source.",
         "reading":              "Lecture…",
+        "waiting its turn":   "En attente du dossier précédent",
         "preparing folder":
             "Préparation du dossier…",
         "this can take a while":
@@ -167,6 +168,21 @@ const fr = {
         "files":                "Fichiers",
         "remove this source":   "Retirer cette source",
         "remove this source?":  "Retirer cette source ?",
+
+        /*  ---- un choix qui aurait doublé quelque chose ---- */
+        "folder already added":
+            "« {{name}} » est déjà dans la liste. Rien n’a été ajouté deux fois. Pour prendre les fichiers déposés depuis, utilisez Relire sur sa ligne.",
+        "folder inside another":
+            "« {{name}} » est à l’intérieur de « {{other}} », déjà présent — et un dossier est pris en entier, donc ses morceaux sont déjà dans votre bibliothèque.",
+        "files already added":
+            "Ces fichiers sont déjà là. Ils sont dans : {{other}}. Rien n’a été ajouté deux fois.",
+        "some were already in":
+            "{{skipped}} d’entre eux étaient déjà là, dans : {{other}}. Ceux-là ont été laissés de côté ; les autres ont été ajoutés.",
+        "folder contains others":
+            "Dans « {{name}} » se trouve déjà ceci : {{other}}. Pour prendre le dossier entier sans que ces morceaux apparaissent deux fois, il faut d’abord le retirer — et ses écoutes et ses cœurs partent avec.",
+        "remove it and add this":
+            "Le retirer et ajouter celui-ci",
+        "understood":           "Compris",
         "diagnostics":         "Diagnostic",
         "copy":                "Copier",
         "new version":         "Une nouvelle version est disponible",

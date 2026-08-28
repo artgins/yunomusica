@@ -1309,6 +1309,38 @@ img.MUS_ART { object-fit: cover; }
 .MUS_EXPLAIN p { margin: 0 0 0.4rem; }
 .MUS_EXPLAIN p:last-child { margin-bottom: 0; }
 
+
+/*  The answer to a pick that would have doubled something.
+ *
+ *  It sits directly under the two buttons that opened the picker,
+ *  because that is where the user is looking when nothing appears to
+ *  have happened. Bordered in the warning ink rather than only written
+ *  in it: it has to be findable on a screen that is already a wall of
+ *  small print about permissions and storage. */
+.MUS_SRCNOTE {
+    border-radius: 14px;
+    padding: 0.8rem 0.9rem;
+    margin-bottom: 1.1rem;
+    background: color-mix(in srgb, currentColor 7%, transparent);
+    border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+    font-size: 0.87rem;
+    line-height: 1.5;
+}
+.MUS_SRCNOTE_TEXT { margin: 0; }
+.MUS_SRCNOTE_ACTIONS {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.7rem;
+}
+
+/*  On the empty library screen the same note follows the buttons
+    instead of preceding a list, so its margin belongs above it. */
+.MUS_EMPTY .MUS_SRCNOTE {
+    margin: 1.1rem 0 0;
+    text-align: start;
+}
+
 .MUS_SRCLIST { display: flex; flex-direction: column; gap: 0.7rem; }
 
 .MUS_SRCROW {

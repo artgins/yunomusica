@@ -180,6 +180,7 @@ const es = {
         "rescan":               "Releer",
         "no sources yet":       "Todavía no hay fuentes.",
         "reading":              "Leyendo…",
+        "waiting its turn":   "Esperando a la carpeta de antes",
         "preparing folder":
             "Preparando la carpeta…",
         "this can take a while":
@@ -197,6 +198,21 @@ const es = {
         "files":                "Ficheros",
         "remove this source":   "Quitar esta fuente",
         "remove this source?":  "¿Quitar esta fuente?",
+
+        /*  ---- una elección que habría duplicado algo ---- */
+        "folder already added":
+            "«{{name}}» ya está en la lista. No se ha añadido nada dos veces. Si le has metido ficheros desde entonces, usa Releer en su fila.",
+        "folder inside another":
+            "«{{name}}» está dentro de «{{other}}», que ya está — y una carpeta se toma entera, así que sus pistas ya están en tu biblioteca.",
+        "files already added":
+            "Esos ficheros ya están. Los tiene: {{other}}. No se ha añadido nada dos veces.",
+        "some were already in":
+            "{{skipped}} de ellos ya estaban. Los tiene: {{other}}. Esos se han dejado fuera; los demás se han añadido.",
+        "folder contains others":
+            "«{{name}}» tiene dentro algo que ya está añadido: {{other}}. Para coger la carpeta entera sin que esas pistas salgan dos veces hay que quitarlo primero — y sus escuchas y sus corazones se van con ello.",
+        "remove it and add this":
+            "Quitarlo y añadir esta",
+        "understood":           "Entendido",
         "diagnostics":         "Diagnóstico",
         "copy":                "Copiar",
         "new version":         "Hay una versión nueva",

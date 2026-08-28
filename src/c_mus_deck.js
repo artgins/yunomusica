@@ -44,7 +44,6 @@ import {
 } from "./music_store.js";
 
 import {
-    add_dir, add_files,
     subscribe_sources, pending_authorisation, authorize_all,
 } from "./sources_store.js";
 import {create_visualizer, create_seek_wave} from "./visualizer.js";

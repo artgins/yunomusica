@@ -150,6 +150,7 @@ const pt = {
         "rescan":               "Reler",
         "no sources yet":       "Ainda não há fontes.",
         "reading":              "A ler…",
+        "waiting its turn":   "À espera da pasta anterior",
         "preparing folder":
             "A preparar a pasta…",
         "this can take a while":
@@ -167,6 +168,21 @@ const pt = {
         "files":                "Ficheiros",
         "remove this source":   "Remover esta fonte",
         "remove this source?":  "Remover esta fonte?",
+
+        /*  ---- uma escolha que teria duplicado algo ---- */
+        "folder already added":
+            "“{{name}}” já está na lista. Nada foi acrescentado duas vezes. Para apanhar ficheiros metidos lá depois, use Reler na linha dela.",
+        "folder inside another":
+            "“{{name}}” está dentro de “{{other}}”, que já está — e uma pasta é tomada inteira, por isso as faixas dela já estão na sua biblioteca.",
+        "files already added":
+            "Esses ficheiros já estão. Tem-nos: {{other}}. Nada foi acrescentado duas vezes.",
+        "some were already in":
+            "{{skipped}} deles já estavam. Tem-nos: {{other}}. Esses ficaram de fora; os restantes foram acrescentados.",
+        "folder contains others":
+            "Dentro de “{{name}}” já está acrescentado: {{other}}. Para levar a pasta inteira sem que essas faixas apareçam duas vezes, isso tem de sair primeiro — e as suas escutas e os seus corações vão com ele.",
+        "remove it and add this":
+            "Retirar isso e acrescentar esta",
+        "understood":           "Entendido",
         "diagnostics":         "Diagnóstico",
         "copy":                "Copiar",
         "new version":         "Há uma versão nova",

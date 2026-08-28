@@ -383,6 +383,25 @@ function track_count()
 
 /*  Read `files` into the library, tagging every track with the source
     they came from. Returns {ok, count}. */
+/*  A read is starting, but there is nothing to count yet.
+ *
+ *  Between "this folder is being read" and the first file, the tree is
+ *  being walked — long, on a real music folder, and it produces no
+ *  numbers. The counters still held the LAST folder's, so the bar
+ *  showed the new folder's name beside "300 / 300" and a full bar,
+ *  before a single file of it had been opened. Zeroed here, the bar
+ *  goes back to what is true: reading, and not yet countable. */
+function begin_read(source_id)
+{
+    S.loading = true;
+    S.loaded  = 0;
+    S.total   = 0;
+    S.load_name = "";
+    S.load_source = source_id || "";
+    S.load_started = Date.now();
+    emit("loading");
+}
+
 /*  `cached` maps a path to the tag data already parsed for it in an
     earlier session. A hit means the file is not opened at all — which is
     the difference between a reload that takes a second and one that
@@ -1484,6 +1503,7 @@ export {
     has_library,
     track_count,
     ingest,
+    begin_read,
     cancel_ingest,
     scan_elapsed,
     is_audio,

@@ -175,6 +175,7 @@ const de = {
         "rescan":               "Neu einlesen",
         "no sources yet":       "Noch keine Quellen.",
         "reading":              "Wird gelesen…",
+        "waiting its turn":   "Wartet auf den Ordner davor",
         "preparing folder":
             "Ordner wird vorbereitet…",
         "this can take a while":
@@ -192,6 +193,21 @@ const de = {
         "files":                "Dateien",
         "remove this source":   "Diese Quelle entfernen",
         "remove this source?":  "Diese Quelle entfernen?",
+
+        /*  ---- eine Wahl, die etwas verdoppelt hätte ---- */
+        "folder already added":
+            "„{{name}}“ ist schon in der Liste. Nichts wurde doppelt hinzugefügt. Für Dateien, die seitdem dazugekommen sind, auf ihrer Zeile Neu einlesen drücken.",
+        "folder inside another":
+            "„{{name}}“ liegt in „{{other}}“, das schon drin ist — und ein Ordner wird ganz genommen, seine Stücke sind also längst in Ihrer Bibliothek.",
+        "files already added":
+            "Diese Dateien sind schon da. Sie stecken in: {{other}}. Nichts wurde doppelt hinzugefügt.",
+        "some were already in":
+            "{{skipped}} davon waren schon da, in: {{other}}. Die blieben draußen, der Rest wurde hinzugefügt.",
+        "folder contains others":
+            "In „{{name}}“ steckt schon Hinzugefügtes: {{other}}. Um den ganzen Ordner zu nehmen, ohne dass diese Stücke doppelt erscheinen, muss das erst weg — und seine Wiedergaben und Herzen gehen mit.",
+        "remove it and add this":
+            "Das entfernen und diesen hinzufügen",
+        "understood":           "Verstanden",
         "diagnostics":         "Diagnose",
         "copy":                "Kopieren",
         "new version":         "Eine neue Version ist verfügbar",

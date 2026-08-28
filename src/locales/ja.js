@@ -150,6 +150,7 @@ const ja = {
         "rescan":               "読み直す",
         "no sources yet":       "ソースはまだありません。",
         "reading":              "読み込み中…",
+        "waiting its turn":   "前のフォルダーの読み込み待ち",
         "preparing folder":
             "フォルダーを準備しています…",
         "this can take a while":
@@ -167,6 +168,21 @@ const ja = {
         "files":                "ファイル",
         "remove this source":   "このソースを取り除く",
         "remove this source?":  "このソースを取り除きますか？",
+
+        /*  ---- 何かを二重にしていたはずの選択 ---- */
+        "folder already added":
+            "「{{name}}」はすでに一覧にあります。二重には追加していません。その後で入れたファイルを読むには、その行の「読み直す」を押してください。",
+        "folder inside another":
+            "「{{name}}」はすでに入っている「{{other}}」の中にあります。フォルダーは丸ごと読むので、その曲はもうライブラリにあります。",
+        "files already added":
+            "それらのファイルはすでにあります。ここにあります：{{other}}。二重には追加していません。",
+        "some were already in":
+            "そのうち {{skipped}} 個はすでにここにありました：{{other}}。それらは外し、残りを追加しました。",
+        "folder contains others":
+            "「{{name}}」の中に、すでに追加済みのものがあります：{{other}}。フォルダー全体を取り込んでもその曲が二重にならないようにするには、先にそれを外すしかなく、再生回数とお気に入りもいっしょに消えます。",
+        "remove it and add this":
+            "それを外してこれを追加",
+        "understood":           "わかりました",
         "diagnostics":         "診断情報",
         "copy":                "コピー",
         "new version":         "新しいバージョンがあります",
