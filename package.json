@@ -14,12 +14,12 @@
     },
     "dependencies": {
         "@yuneta/gobj-js": "^7.16.1",
-        "@yuneta/gobj-ui": "^5.14.2",
+        "@yuneta/gobj-ui": "^7.23.44",
         "bulma": "^1.0.4",
-        "i18next": "^26.3.6"
+        "i18next": "^26.4.0"
     },
     "devDependencies": {
         "playwright": "^1.62.1",
-        "vite": "^8.2.1"
+        "vite": "^8.2.2"
     }
 }
