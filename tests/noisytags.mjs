@@ -124,9 +124,47 @@ check(titles.includes("across the universe"),
       `un título bueno con un álbum malo conserva el título`);
 
 /*  =================================================================
- *  5. Y una biblioteca YA leída se corrige sin volver a leerla
+ *  5. Un guion dentro del título no es un artista
  *  ================================================================= */
-console.log("5. y lo ya leído se corrige al arrancar, sin releer nada");
+console.log("5. un guion dentro del título no convierte media frase en artista");
+
+/*  "Gloria Estefan - Conga" y "The boy's burial - Pran sees the red
+    cross" tienen la misma forma y significan lo contrario. El fichero
+    solo no lo dice; la CARPETA sí: un recopilatorio escribe el artista
+    en todos sus ficheros, un disco escribe el título. */
+await route(page, "#/library", 700);
+await page.locator('.MUS_CHIP:has-text("Artistas")').click();
+await page.waitForTimeout(700);
+const artists = await page.evaluate(() =>
+    [...document.querySelectorAll(".MUS_ROW .MUS_T1")].map((e) => e.textContent.trim()));
+console.log("   artistas: " + artists.join(" · "));
+
+check(!artists.includes("The boy's burial"),
+      `"The boy's burial" no es un artista`);
+check(artists.includes("Mike Oldfield"),
+      `la pista rara se queda con su disco: Mike Oldfield`);
+
+/*  Y el disco no se parte: las seis pistas bajo un solo artista. */
+const oldfield = await page.evaluate(() => {
+    const row = [...document.querySelectorAll(".MUS_ROW")]
+        .find((r) => (r.querySelector(".MUS_T1") || {}).textContent === "Mike Oldfield");
+    return row ? row.querySelector(".MUS_T2").textContent.replace(/\s+/g, " ").trim() : "";
+});
+console.log("   Mike Oldfield: " + oldfield);
+check(/6/.test(oldfield), `y están las seis, no cinco y una suelta: ${oldfield}`);
+
+/*  La otra mitad, que es la que tumbó dos reglas anteriores. */
+check(artists.includes("Marina Heredia") && artists.includes("Pepe Luis Carmona"),
+      `un recopilatorio numerado SÍ nombra a los suyos`);
+check(artists.includes("Gloria Estefan"),
+      `y un fichero sin número delante también, aunque su carpeta no use guiones`);
+await page.screenshot({path: `${OUT}/noisy-artists.png`, fullPage: true});
+
+
+/*  =================================================================
+ *  6. Y una biblioteca YA leída se corrige sin volver a leerla
+ *  ================================================================= */
+console.log("6. y lo ya leído se corrige al arrancar, sin releer nada");
 
 /*  Arrancar no lee ficheros: restaura los metadatos guardados. Una
     biblioteca leída por una versión anterior tiene el ruido METIDO en

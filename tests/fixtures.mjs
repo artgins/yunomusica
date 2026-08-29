@@ -373,7 +373,58 @@ function build_noisy()
         /*  Leave alone: a compilation really is by various artists. */
         ["Junk/Various - Compilation Song.mp3",
          {title: "Compilation Song", artist: "Various Artists",
-          album: "Las mejores baladas", track: 3}]
+          album: "Las mejores baladas", track: 3}],
+
+        /*  ONE TITLE WITH A DASH IN IT, not an artist and a title.
+         *
+         *  A record whose file names are "NN - Title", except for the
+         *  medley, which is "NN - Title - Title". Read one file at a
+         *  time, that medley put itself under an artist called "The
+         *  boy's burial" and split off from the record it belongs to.
+         *  Its five siblings are the evidence that the folder does not
+         *  name artists at all. Every artist tag here says "Unknown",
+         *  so the name is all there is to go on. */
+        ["Mike Oldfield/Killing Fields/05 - Capture.mp3",
+         {title: "Capture", artist: "Unknown", album: "Unknown", track: null}],
+        ["Mike Oldfield/Killing Fields/08 - Pran's departure.mp3",
+         {title: "Pran's departure", artist: "Unknown", album: "Unknown", track: null}],
+        ["Mike Oldfield/Killing Fields/11 - Blood sucking.mp3",
+         {title: "Blood sucking", artist: "Unknown", album: "Unknown", track: null}],
+        ["Mike Oldfield/Killing Fields/14 - The trek.mp3",
+         {title: "The trek", artist: "Unknown", album: "Unknown", track: null}],
+        ["Mike Oldfield/Killing Fields/16 - Good news.mp3",
+         {title: "Good news", artist: "Unknown", album: "Unknown", track: null}],
+        ["Mike Oldfield/Killing Fields/15 - The boy's burial - Pran sees the red cross.mp3",
+         {title: "The boy's burial - Pran sees the red cross", artist: "Unknown",
+          album: "Unknown", track: null}],
+
+        /*  AND THE OTHER HALF: a numbered COMPILATION really does write
+            the artist into every file name, so every one of these keeps
+            its own. */
+        ["Varios/Flamenco/11. Marina Heredia - Me duele.mp3",
+         {title: "Me duele", artist: "Unknown", album: "Unknown", track: null}],
+        ["Varios/Flamenco/13. Pepe Luis Carmona - Caido del cielo.mp3",
+         {title: "Caido del cielo", artist: "Unknown", album: "Unknown", track: null}],
+        ["Varios/Flamenco/06. Yolanda Ramos - Bonito Bonito.mp3",
+         {title: "Bonito Bonito", artist: "Unknown", album: "Unknown", track: null}],
+
+        /*  A mixed folder where MOST files carry no dash — and the one
+            that does still names its artist, because it does not start
+            with a track number. This is the case that sank two earlier
+            rules: a folder-majority vote filed Gloria Estefan under the
+            folder's own name. */
+        ["Varios/Mixed/Gloria Estefan - Conga.mp3",
+         {title: "Conga", artist: "Unknown", album: "Unknown", track: null}],
+        ["Varios/Mixed/01 - Sin guion.mp3",
+         {title: "Sin guion", artist: "Unknown", album: "Unknown", track: null}],
+        ["Varios/Mixed/02 - Otra sin guion.mp3",
+         {title: "Otra sin guion", artist: "Unknown", album: "Unknown", track: null}],
+        ["Varios/Mixed/03 - Y otra.mp3",
+         {title: "Y otra", artist: "Unknown", album: "Unknown", track: null}],
+        ["Varios/Mixed/04 - Y una mas.mp3",
+         {title: "Y una mas", artist: "Unknown", album: "Unknown", track: null}],
+        ["Varios/Mixed/05 - Ultima.mp3",
+         {title: "Ultima", artist: "Unknown", album: "Unknown", track: null}]
     ];
     for(const [rel, tags] of files) {
         write_track(join(ROOT, "noisy", rel), audio, tags, null);

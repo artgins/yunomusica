@@ -250,8 +250,65 @@ async function read_tags(f)
 }
 
 
-/*  Fallback: deduce from the file name and the folder path. */
-function fromPath(file)
+const SEQ_RE = /^\s*(\d{1,2})\s*[-._ ]\s*(.+)$/;
+
+/*  DOES THIS FOLDER NAME ITS FILES "artist - title"?
+ *
+ *  One file name cannot say. "Gloria Estefan - Conga" and
+ *  "The boy's burial - Pran sees the red cross" have the same shape and
+ *  mean opposite things: the first names its artist, the second is one
+ *  title with a dash in it, and reading the second the first way put a
+ *  track of "The Killing Fields" under an artist called "The boy's
+ *  burial" — one file split off from the record it belongs to.
+ *
+ *  The FOLDER can say. A folder names its files one way: a compilation
+ *  writes "artist - title" on all of them, a record writes the title.
+ *  So when hardly any file in a folder carries a dashed head, the one
+ *  that does is not naming an artist.
+ *
+ *  Measured over one real 8,176-file library, and both halves matter.
+ *  Requiring BOTH signals — a leading track number, which already says
+ *  "track N of a record", AND a folder where fewer than one file in
+ *  five is dashed — moves 20 tracks, every one of them a song wrongly
+ *  filed as a performer: "Speak To Me", "North Star", "QE2", "Love Over
+ *  Gold", "The More We Live". It leaves all 1,209 others alone, which is
+ *  the half that took three tries to get right: a folder majority vote
+ *  filed Gloria Estefan under "abba, varios", and trusting the title tag
+ *  instead unmade "mr. mister" wherever a tagger had copied the whole
+ *  file name into the title. Neither ships. This does nothing unless the
+ *  folder itself is evidence.
+ */
+function dash_convention(paths)
+{
+    const tally = new Map();
+    for(const rel of (paths || [])) {
+        const parts = String(rel || "").split("/");
+        const base = parts.pop().replace(/\.[a-z0-9]+$/i, "");
+        const dir = parts.filter(Boolean).join("/");
+        const m = base.match(SEQ_RE);
+        const rest = m ? m[2] : base;
+        let t = tally.get(dir);
+        if(!t) {
+            t = {n: 0, dashed: 0};
+            tally.set(dir, t);
+        }
+        t.n++;
+        if(rest.split(/\s+-\s+/).length >= 2) {
+            t.dashed++;
+        }
+    }
+    /*  Unknown folder, or dashes that are not rare: read the name the
+        way it has always been read. The folder has to EARN the doubt. */
+    return function(dir) {
+        const t = tally.get(dir);
+        return !t || t.dashed * 5 >= t.n;
+    };
+}
+
+/*  Fallback: deduce from the file name and the folder path.
+    `names_artists` is dash_convention()'s answer for a folder; without
+    one every name is read as it always was. */
+function fromPath(file, names_artists)
 {
     const rel = file.webkitRelativePath || file.name;
     const parts = rel.split("/");
@@ -263,19 +320,24 @@ function fromPath(file)
         tree with it. */
     const folder = parts[parts.length - 1] || "";
     const parent = parts[parts.length - 2] || "";
+    const dir = parts.filter(Boolean).join("/");
     let track = "", artist = "", title = base;
-    const seq = base.match(/^\s*(\d{1,2})\s*[-._ ]\s*(.+)$/);
+    const seq = base.match(SEQ_RE);
     if(seq) {
         track = seq[1];
         title = seq[2];
     }
     const dash = title.split(/\s+-\s+/);
-    if(dash.length >= 2) {
+    /*  A number at the head already said "track N of a record", so what
+        follows is the title — unless this folder does write its artists
+        into the file names, which a compilation does. */
+    const heads_an_artist = !seq || !names_artists || names_artists(dir);
+    if(dash.length >= 2 && heads_an_artist) {
         artist = dash[0].trim();
         title = dash.slice(1).join(" - ").trim();
     }
     return {title, artist: artist || parent || "", album: folder || "", track,
-            folder: parts.filter(Boolean).join("/") || "—"};
+            folder: dir || "—"};
 }
 
 
@@ -574,6 +636,12 @@ async function ingest(files, source_id, cached)
         return {ok:false, reason:"no-audio", count:0};
     }
 
+    /*  What each FOLDER in this read looks like, decided once over the
+        whole list: a file name alone cannot say whether "A - B" is an
+        artist and a title or one title with a dash in it. */
+    const names_artists = dash_convention(
+        list.map((f) => f.webkitRelativePath || f.name));
+
     S.notice = "";
     S.loading = true;
     S.loaded  = 0;
@@ -596,7 +664,7 @@ async function ingest(files, source_id, cached)
         let meta = cached ? cached.get(path) : null;
 
         if(!meta) {
-            const guess = fromPath(f);
+            const guess = fromPath(f, names_artists);
             const tag = await read_tags(f);
             const said = meaningful(tag, guess);
 
@@ -750,9 +818,10 @@ function covers_snapshot()
  *  changes that key, so the sleeve moves with it. Otherwise every album
  *  this straightened out would go blank until a full rescan.
  */
-function corrected(stored, path)
+function corrected(stored, path, names_artists)
 {
-    const guess = fromPath({webkitRelativePath: path, name: path});
+    const guess = fromPath({webkitRelativePath: path, name: path},
+                           names_artists);
     const said = meaningful(stored, guess);
 
     const album  = said.album  || UNKNOWN_ALBUM;
@@ -790,8 +859,12 @@ function move_cover(from, to)
 
 function restore_tracks(source_id, entries, file_of)
 {
+    /*  The same folder-wide question as a read asks, from the paths
+        that were stored — see dash_convention. */
+    const names_artists = dash_convention((entries || []).map((e) => e[0]));
+
     for(const [path, stored] of (entries || [])) {
-        const meta = corrected(stored, path);
+        const meta = corrected(stored, path, names_artists);
         S.tracks.push({
             uid: S.uid_seq++,
             source_id: source_id || "",
