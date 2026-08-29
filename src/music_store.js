@@ -280,6 +280,140 @@ function fromPath(file)
 
 
 /***************************************************************
+ *      A TAG THAT SAYS NOTHING
+ *
+ *  A tag is a CLAIM about the file, and some taggers claim
+ *  nothing: they write boilerplate into the field and move on.
+ *  The app believed all of it, so a folder came out as eleven
+ *  rows of which two read "AlbumWrap Album", twice, with the
+ *  artist "AlbumWrap - King Crimson" — a name that belongs to a
+ *  program, not to a band. Meanwhile the file was called
+ *  "King Crimson - Live at the Jazz Cafe (Albumwrap).mp3", which
+ *  says the whole thing.
+ *
+ *  Counted over one real 8,176-file library, which is where every
+ *  pattern below comes from and the only reason any of them is
+ *  here:
+ *
+ *      title  "AlbumWrap Album"          19 files, all identical
+ *      title  "Track 07", "Pista 4",     ~200 files, a number
+ *             "AudioTrack 06"                  where a name goes
+ *      artist "AlbumWrap - <artist>"      19 files
+ *      artist "artist"                   123 files
+ *      album  "title"                    133 files
+ *      artist/album "Unknown"             35 files each
+ *
+ *  The last three are a tagger writing the FIELD'S OWN NAME, or
+ *  the word for not knowing, into the field. "Unknown" spelled
+ *  out is the same answer the app already has a word for, so it
+ *  is folded into that one rather than left to stand beside it as
+ *  a second group in English.
+ *
+ *  What is NOT touched: "Various Artists" and "Varios". A
+ *  compilation really is by various artists — that is an answer,
+ *  and a short one is not the same as a missing one.
+ ***************************************************************/
+
+/*  "AlbumWrap - King Crimson" is King Crimson, wrapped. The band
+    is the part after the tool's name. */
+const ALBUMWRAP_RE = /^\s*albumwrap\s*-\s*/i;
+
+/*  The same tool signs the FILE too — "… (Albumwrap).mp3",
+    "…_ALBW.mp3" — and that signature is not part of the name of
+    the record either. Only a trailing one: "Live Detroit (13 Nov
+    1971 ENTIRE ALBW)" is somebody's own note about the file and
+    is left as they wrote it. */
+const ALBW_TAIL_RE = /[\s_-]*[([]?\s*albumwrap\s*[)\]]?\s*$|[\s_-]+albw\s*$/i;
+
+function unwrap(s)
+{
+    const out = String(s || "").replace(ALBUMWRAP_RE, "").trim();
+    return out || String(s || "").trim();
+}
+
+function unsign(s)
+{
+    const out = String(s || "").replace(ALBW_TAIL_RE, "").trim();
+    return out || String(s || "").trim();
+}
+
+/*  A title that is the word "track" and a number is the position
+    the row already shows. Spanish and the odd "AudioTrack" are in
+    the list because they are in the library. Matched against the
+    NORMALISED value, so the accent of "canción" is already gone. */
+const NUMBERED_RE =
+    /^(track|trk|pista|tema|audio\s*track|audiotrack|cancion)\s*[-_.#:]*\s*\d*$/;
+
+const SAYS_NOTHING = {
+    "albumwrap album": 1,
+    "title": 1, "artist": 1, "album": 1, "genre": 1,
+    "unknown": 1, "unknown artist": 1, "unknown album": 1,
+    "<unknown>": 1, "(unknown)": 1, "unknown title": 1,
+    "untitled": 1, "sin titulo": 1, "no title": 1,
+    "no artist": 1, "no album": 1, "sin artista": 1,
+    "none": 1, "n/a": 1, "-": 1,
+};
+
+function says_nothing(s)
+{
+    const v = norm(String(s || "")).trim().replace(/\s+/g, " ");
+    if(!v) {
+        return true;
+    }
+    return !!SAYS_NOTHING[v] || NUMBERED_RE.test(v);
+}
+
+/*  The number inside "Track 07" — the one thing such a title does
+    say, and worth keeping when nothing else supplies it. */
+function number_in(s)
+{
+    const m = String(s || "").match(/(\d+)\s*$/);
+    return m ? m[1] : "";
+}
+
+/*  A name off the FILE is only better than a bad tag if it is a
+    name. "06.mp3" reduces to "06", which is exactly as mute as
+    the "Track 06" it would replace — so that swap is not made.
+    Any LETTER, in any script: this app is read in ten languages
+    and a title in Japanese is a title. */
+function is_a_name(s)
+{
+    return /\p{L}/u.test(String(s || ""));
+}
+
+/*  What the three fields really say, given the tag and what the
+ *  file is called. Pure, and given the stored values it returns
+ *  them unchanged when they were fine — which is what lets a
+ *  library that was already read be corrected on the way in
+ *  rather than by reading eight thousand files again. */
+function meaningful(tag, guess)
+{
+    let title = String(tag.title || "").trim();
+    let artist = unwrap(tag.artist);
+    let album = unwrap(tag.album);
+
+    /*  An EMPTY tag was always answered with the file name, and
+        still is. A tag that is present but mute is only worth
+        overruling when the file name is better than it — see
+        is_a_name. */
+    if(says_nothing(title)) {
+        if(is_a_name(guess.title) || !title) {
+            title = unsign(String(guess.title || "").trim()) || title;
+        }
+    }
+    if(says_nothing(artist)) {
+        artist = (is_a_name(guess.artist) || !artist)
+            ? String(guess.artist || "").trim() : "";
+    }
+    if(says_nothing(album)) {
+        album = (is_a_name(guess.album) || !album)
+            ? String(guess.album || "").trim() : "";
+    }
+    return {title, artist, album};
+}
+
+
+/***************************************************************
  *      2. State
  *
  *  A track's identity has two halves. `uid` is a per-session
@@ -464,10 +598,14 @@ async function ingest(files, source_id, cached)
         if(!meta) {
             const guess = fromPath(f);
             const tag = await read_tags(f);
+            const said = meaningful(tag, guess);
 
-            const album  = (tag.album  || guess.album  || UNKNOWN_ALBUM).trim();
-            const artist = (tag.artist || guess.artist || UNKNOWN_ARTIST).trim();
-            const albumArtist = (tag.albumArtist || artist).trim();
+            const album  = said.album  || UNKNOWN_ALBUM;
+            const artist = said.artist || UNKNOWN_ARTIST;
+            let albumArtist = unwrap(tag.albumArtist);
+            if(says_nothing(albumArtist)) {
+                albumArtist = artist;
+            }
             const key = norm(albumArtist) + "|" + norm(album);
 
             if(tag.cover && !S.cover_blobs.has(key)) {
@@ -476,10 +614,15 @@ async function ingest(files, source_id, cached)
             }
 
             meta = {
-                title: (tag.title || guess.title || f.name).trim(),
+                title: said.title || f.name.trim(),
                 artist, albumArtist, album,
                 genre: cleanGenre(tag.genre) || UNKNOWN_GENRE,
-                track: parseInt((tag.track || guess.track || "0").split("/")[0], 10) || 0,
+                /*  "Track 07" is a bad name and a good number: the
+                    position is the one thing it does state, so it is
+                    kept when nothing else supplies it. */
+                track: parseInt((tag.track || guess.track ||
+                                 number_in(tag.title) || "0")
+                                .split("/")[0], 10) || 0,
                 year: (tag.year || "").slice(0,4),
                 folder: guess.folder, key
             };
@@ -590,9 +733,65 @@ function covers_snapshot()
  *  one — a snapshot source does — and may be omitted, in which
  *  case every track resolves lazily.
  ***************************************************************/
+/*  A library READ BY AN EARLIER BUILD carries the noise this one
+ *  filters: "AlbumWrap Album" is what got stored, and startup restores
+ *  the metadata rather than reading the files again — so without this
+ *  the fix would only reach a library somebody thought to rescan, which
+ *  on eight thousand files is not a thing to ask for a spelling.
+ *
+ *  It is affordable because the filter is a pure function of the
+ *  metadata and the PATH, and the path is stored: it can run on the way
+ *  out of the database exactly as it runs on the way in. Nothing is
+ *  written back — it costs string work over what is already in memory,
+ *  and doing it every start is cheaper than an extra write of every
+ *  source.
+ *
+ *  The cover is filed under the album key, and correcting the album
+ *  changes that key, so the sleeve moves with it. Otherwise every album
+ *  this straightened out would go blank until a full rescan.
+ */
+function corrected(stored, path)
+{
+    const guess = fromPath({webkitRelativePath: path, name: path});
+    const said = meaningful(stored, guess);
+
+    const album  = said.album  || UNKNOWN_ALBUM;
+    const artist = said.artist || UNKNOWN_ARTIST;
+    let albumArtist = unwrap(stored.albumArtist);
+    if(says_nothing(albumArtist)) {
+        albumArtist = artist;
+    }
+    const title = said.title || stored.title || "";
+    const key = norm(albumArtist) + "|" + norm(album);
+
+    if(title === stored.title && artist === stored.artist &&
+       albumArtist === stored.albumArtist && album === stored.album &&
+       key === stored.key) {
+        return stored;
+    }
+    move_cover(stored.key, key);
+    return {...stored, title, artist, albumArtist, album, key,
+            track: stored.track ||
+                   parseInt(number_in(stored.title) || "0", 10) || 0};
+}
+
+function move_cover(from, to)
+{
+    if(!from || !to || from === to || S.covers.has(to)) {
+        return;
+    }
+    if(S.cover_blobs.has(from)) {
+        S.cover_blobs.set(to, S.cover_blobs.get(from));
+    }
+    if(S.covers.has(from)) {
+        S.covers.set(to, S.covers.get(from));
+    }
+}
+
 function restore_tracks(source_id, entries, file_of)
 {
-    for(const [path, meta] of (entries || [])) {
+    for(const [path, stored] of (entries || [])) {
+        const meta = corrected(stored, path);
         S.tracks.push({
             uid: S.uid_seq++,
             source_id: source_id || "",

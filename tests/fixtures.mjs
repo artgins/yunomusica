@@ -73,9 +73,14 @@ function id3v2(tags, png)
         text_frame("TIT2", tags.title),
         text_frame("TPE1", tags.artist),
         text_frame("TALB", tags.album),
-        text_frame("TCON", tags.genre || "prog"),
-        text_frame("TRCK", String(tags.track || 1))
+        text_frame("TCON", tags.genre || "prog")
     ];
+    /*  `track: null` writes NO number, which is the case a title like
+        "Track 02" has to cover: the position is in the title precisely
+        because the tagger put it nowhere else. */
+    if(tags.track !== null) {
+        frames.push(text_frame("TRCK", String(tags.track || 1)));
+    }
     if(tags.year) {
         frames.push(text_frame("TYER", String(tags.year)));
     }
@@ -328,6 +333,54 @@ function build_messy()
 }
 
 
+/*  `noisy`: tags that carry BOILERPLATE where a name should be.
+ *
+ *  Every row here was copied from a real 8,176-file library, counts
+ *  and spellings included — the app believed all of it, so a folder
+ *  came out as two rows both reading "AlbumWrap Album" by an artist
+ *  called "AlbumWrap - King Crimson". The file names, meanwhile, say
+ *  the whole thing.
+ *
+ *  The last two rows are the ones that must NOT move: a file called
+ *  "06.mp3" is no more informative than the "Track 06" it would
+ *  replace, and "Various Artists" is a real answer about a real
+ *  compilation, not a missing one. */
+function build_noisy()
+{
+    const audio = silence(1);
+    const files = [
+        /*  AlbumWrap: one title for every file it ever wrote, and its
+            own name glued to the front of the artist and the album. */
+        ["Junk/King Crimson - Live at the Jazz Cafe (Albumwrap).mp3",
+         {title: "AlbumWrap Album", artist: "AlbumWrap - King Crimson",
+          album: "AlbumWrap - Live at the Jazz Cafe", track: null}],
+        ["Junk/King Crimson - Red.mp3",
+         {title: "AlbumWrap Album", artist: "AlbumWrap - King Crimson",
+          album: "AlbumWrap - Red", track: null}],
+        /*  A number where a name goes, and no track frame at all — so
+            the number in the title is the only one there is. */
+        ["Junk/mr. mister - Close your eyes.mp3",
+         {title: "Track 02", artist: "mr mister", album: "pull", track: null}],
+        /*  A tagger that wrote each FIELD'S OWN NAME into the field. */
+        ["Junk/bowie - Peter and the Wolf.mp3",
+         {title: "Track 09", artist: "artist", album: "title", track: null}],
+        ["Junk/suede - across the universe.mp3",
+         {title: "across the universe", artist: "suede", album: "Unknown",
+          track: null}],
+        /*  Leave alone: the file says less than the tag does. */
+        ["Junk/06.mp3",
+         {title: "Track 06", artist: "Iceberg", album: "Tartessos", track: null}],
+        /*  Leave alone: a compilation really is by various artists. */
+        ["Junk/Various - Compilation Song.mp3",
+         {title: "Compilation Song", artist: "Various Artists",
+          album: "Las mejores baladas", track: 3}]
+    ];
+    for(const [rel, tags] of files) {
+        write_track(join(ROOT, "noisy", rel), audio, tags, null);
+    }
+}
+
+
 /***************************************************************
  *  Cheap when they already exist, so every test can just call
  *  it. `force` rebuilds from scratch.
@@ -345,6 +398,7 @@ function ensure_fixtures(force)
     if(!existsSync(join(ROOT, "mimusica")))   { build_mimusica();   built.push("mimusica"); }
     if(!existsSync(join(ROOT, "tones")))      { build_tones();      built.push("tones"); }
     if(!existsSync(join(ROOT, "messy")))      { build_messy();      built.push("messy"); }
+    if(!existsSync(join(ROOT, "noisy")))      { build_noisy();      built.push("noisy"); }
 
     return {
         root:       ROOT,
@@ -353,6 +407,7 @@ function ensure_fixtures(force)
         mimusica:   join(ROOT, "mimusica"),
         tones:      join(ROOT, "tones"),
         messy:      join(ROOT, "messy"),
+        noisy:      join(ROOT, "noisy"),
         built:      built
     };
 }

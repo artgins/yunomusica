@@ -45,6 +45,7 @@ const TESTS = [
     {name: "templist",  what: "el play de la biblioteca suena ya, y la cola oficial espera"},
     {name: "grouping",  what: "agrupar por la m\u00fasica y no por c\u00f3mo se etiquet\u00f3"},
     {name: "tree",      what: "la biblioteca tal como est\u00e1 en el disco, y desde la fuente"},
+    {name: "noisytags", what: "una etiqueta que no dice nada cede ante el nombre del fichero"},
     {name: "install",   what: "la app pregunta ella misma si instalarse"},
     {name: "offline",   what: "sin red arranca y sigue tocando lo del dispositivo"},
     {name: "covers",    what: "car\u00e1tulas de internet: solo del disco que suena, y con reintento"},

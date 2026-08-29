@@ -1,5 +1,5 @@
 {
-    "_comment": "yunomúsica shell. Four destinations, in the order they matter: Player (the deck: transport first, then the queue you curate), Library (five ways to look at the same tracks, switched by chips inside the view rather than by five routes), Sources (the authorised folders, which is where the app explains what it does with your disk) and Lists (the queues you saved). The default route is the player, so the first thing on screen is play/pause/next and what is sounding. Rendered as a LEFT vertical rail on desktop and a BOTTOM icon-bar on mobile. The toolbar carries the brand, the language menu, the theme toggle and the help/credits dialog, all as events the host acts on. It does NOT carry the pickers: adding music is Sources' job, and one door is better than three. No backend: a pure gobj tree with hash routing.",
+    "_comment": "yunomúsica shell. Four destinations, in the order they matter: Player (the deck: transport first, then the queue you curate), Lists (the queues you saved — next to the deck because loading one IS the deck's other way of being filled), Library (five ways to look at the same tracks, switched by chips inside the view rather than by five routes) and Sources (the authorised folders, which is where the app explains what it does with your disk). The default route is the player, so the first thing on screen is play/pause/next and what is sounding. Rendered as a LEFT vertical rail on desktop and a BOTTOM icon-bar on mobile. The toolbar carries the brand, the language menu, the theme toggle and the help/credits dialog, all as events the host acts on. It does NOT carry the pickers: adding music is Sources' job, and one door is better than three. No backend: a pure gobj tree with hash routing.",
     "shell": {
         "remember_section_position": true,
         "breakpoints": "bulma",
@@ -152,6 +152,21 @@
                     }
                 },
                 {
+                    "id": "lists",
+                    "name": "lists",
+                    "icon": "mi-tag",
+                    "tooltip": "lists",
+                    "route": "/lists",
+                    "target": {
+                        "stage": "main",
+                        "gclass": "C_MUS_LISTS",
+                        "lifecycle": "keep_alive",
+                        "kw": {
+                            "title": "lists"
+                        }
+                    }
+                },
+                {
                     "id": "library",
                     "name": "library",
                     "icon": "yi-bars",
@@ -179,21 +194,6 @@
                         "lifecycle": "keep_alive",
                         "kw": {
                             "title": "sources"
-                        }
-                    }
-                },
-                {
-                    "id": "lists",
-                    "name": "lists",
-                    "icon": "mi-tag",
-                    "tooltip": "lists",
-                    "route": "/lists",
-                    "target": {
-                        "stage": "main",
-                        "gclass": "C_MUS_LISTS",
-                        "lifecycle": "keep_alive",
-                        "kw": {
-                            "title": "lists"
                         }
                     }
                 }
