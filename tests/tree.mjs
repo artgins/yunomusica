@@ -169,6 +169,43 @@ check(!n.dirs.length && n.tracks.length === 2,
       `los sueltos salen en la raíz de su fuente, sin carpeta inventada: ` +
       `${n.dirs.length} carpetas, ${n.tracks.length} pistas`);
 
+/*  =================================================================
+ *  5. Y la segunda vez enseña la segunda fuente
+ *  ================================================================= */
+console.log("5. y ver dentro obedece a la fuente en la que se pulsa");
+
+/*  La biblioteca se construye una vez y a partir de ahí sólo se
+    esconde y se enseña, así que el segundo "ver dentro" no arrancaba
+    nada: la pantalla se quedaba en la carpeta del primero. Desde el
+    móvil era lo único que se veía — una fuente, para siempre. */
+await add_source(page, [FIX.mimusica], 1, 3500);
+
+await route(page, "#/sources", 900);
+await page.locator('.MUS_SRCROW:has-text("mimusica") .MUS_QBTN:has-text("Ver dentro")')
+    .first().click();
+await page.waitForTimeout(1200);
+n = await here();
+check(n.title === "mimusica",
+      `la segunda fuente se abre por su raíz: “${n.title}”`);
+
+await route(page, "#/sources", 900);
+await page.locator('.MUS_SRCROW:has-text("messy") .MUS_QBTN:has-text("Ver dentro")')
+    .first().click();
+await page.waitForTimeout(1200);
+n = await here();
+check(n.title === "messy",
+      `y volver a la primera vuelve a la primera: “${n.title}”`);
+
+/*  Y llegar por el menú no mueve nada: la pantalla se queda donde se
+    dejó, que es lo que el atajo NO debe romper. */
+await into("Jethro Tull");
+await route(page, "#/player", 700);
+await route(page, "#/library", 900);
+n = await here();
+check(n.title === "Jethro Tull",
+      `entrar por el menú deja la pantalla donde estaba: “${n.title}”`);
+
+
 if(report(page)) {
     bad = true;
 }

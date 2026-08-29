@@ -159,17 +159,8 @@ function mt_start(gobj)
         would throw away the button the finger is still on. */
     priv.unsub_st = subscribe_stats(() => paint_counts(gobj));
 
-    /*  Fuentes sends the user here to look inside a folder. Taken on the
-        way in, so arriving by any other road leaves the screen where the
-        user last left it. */
-    let want = take_open_request();
-    if(want && want.source_id) {
-        priv.view = "folders";
-        priv.search = "";
-        priv.detail = null;
-        priv.tree = {source_id: want.source_id, name: want.name || "",
-                     path: source_root_path(want.source_id)};
-    }
+    /*  Fuentes sends the user here to look inside a folder. */
+    apply_open_request(gobj);
 
     /*  The empty screen carries the two pickers, so it also has to
         carry their answer. A pick that adds nothing changes nothing in
@@ -180,6 +171,14 @@ function mt_start(gobj)
     let shell = yui_shell_of(gobj);
     if(shell) {
         gobj_subscribe_event(shell, "EV_LANGUAGE_CHANGED", {}, gobj);
+        /*  This view is kept alive: the shell builds it once and from
+            then on only hides and shows it, so mt_start runs for the
+            FIRST arrival and never again. Every later "look inside" set
+            a request nobody read, and the screen stayed on the folder
+            of the first one — which is exactly what it looked like from
+            the outside: one source, forever. The arrival itself is the
+            event, so that is what it now listens to. */
+        gobj_subscribe_event(shell, "EV_ROUTE_CHANGED", {}, gobj);
     }
 
     render(gobj);
@@ -209,6 +208,27 @@ function mt_destroy(gobj)
         $c.parentNode.removeChild($c);
     }
     gobj_write_attr(gobj, "$container", null);
+}
+
+/*  Fuentes asked for a source to be walked; take the request if there
+ *  is one, and say whether there was.
+ *
+ *  Read on every arrival, not only the first, and left alone when there
+ *  is nothing to take: coming back to the library by the menu must find
+ *  the screen where it was left. */
+function apply_open_request(gobj)
+{
+    let priv = gobj.priv;
+    let want = take_open_request();
+    if(!want || !want.source_id) {
+        return false;
+    }
+    priv.view = "folders";
+    priv.search = "";
+    priv.detail = null;
+    priv.tree = {source_id: want.source_id, name: want.name || "",
+                 path: source_root_path(want.source_id)};
+    return true;
 }
 
 
@@ -1010,6 +1030,17 @@ function ac_language_changed(gobj, event, kw, src)
     return 0;
 }
 
+/*  An arrival. Only a pending "look inside" changes anything here; any
+    other route leaves the screen untouched. */
+function ac_route_changed(gobj, event, kw, src)
+{
+    if(apply_open_request(gobj)) {
+        scroll_top(gobj);
+        render(gobj);
+    }
+    return 0;
+}
+
 
 
 
@@ -1032,11 +1063,13 @@ function create_gclass(gclass_name)
 
     const states = [
         ["ST_IDLE", [
-            ["EV_LANGUAGE_CHANGED", ac_language_changed, null]
+            ["EV_LANGUAGE_CHANGED", ac_language_changed, null],
+            ["EV_ROUTE_CHANGED",    ac_route_changed,    null]
         ]]
     ];
     const event_types = [
-        ["EV_LANGUAGE_CHANGED", 0]
+        ["EV_LANGUAGE_CHANGED", 0],
+        ["EV_ROUTE_CHANGED", 0]
     ];
 
     __gclass__ = gclass_create(
