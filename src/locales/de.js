@@ -27,6 +27,9 @@ const de = {
         "palette leaf":         "Blatt",
         "language":             "Sprache",
         "help":                 "Hilfe und Credits",
+        "more":                 "Mehr",
+        "developer":            "Entwickler",
+        "site map":             "Sitemap",
 
         "play":                 "Abspielen",
         "pause":                "Pause",
@@ -262,6 +265,37 @@ const de = {
         "made by artgins":      "Gemacht von ArtGins",
         "made with yuneta":     "Gemacht mit Yuneta",
         "about tagline":        "Ein ereignisgesteuertes Framework für verteilte Systeme.",
+
+        /* ---- the menu, and the developer sheet behind it ---- */
+        "source code":          "Quellcode",
+        "session log":          "Sitzungsprotokoll",
+        "traces":               "Traces",
+        "refresh":              "Aktualisieren",
+        "loading":              "Wird geladen…",
+        "clear log":            "Protokoll leeren",
+        "copied":               "Kopiert",
+        "log empty":
+            "Noch nichts aufgezeichnet. Das Protokoll schreibt sich selbst, während die App läuft.",
+        "no unexpected stop":   "Kein unerwarteter Stopp aufgezeichnet.",
+        "last unexpected stop": "Die App wurde beendet und neu gestartet",
+        "browser discarded the app":
+            "Der Browser hat die App verworfen, um Speicher freizugeben.",
+        "stopped while playing": "Beendet, während das lief:",
+        "silent for":           "Stumm für:",
+        "memory in use":        "Belegter Speicher:",
+        "restarts today":       "Neustarts in den letzten 24 Stunden:",
+        "unexpected stops today":
+            "Unerwartete Stopps in den letzten 24 Stunden:",
+
+        /* ---- the site map draws itself with gobj-ui's OWN keys — untranslated, they show as the key ---- */
+        "site map hint":
+            "Jede Stelle, die die App erreichen kann, ist eine URL. Zum Hinspringen antippen.",
+        "print":                "Drucken",
+        "filter":               "Filtern…",
+        "matches":              "Treffer",
+        "show references":      "Verweise anzeigen",
+        "shown above":          "oben gezeigt",
+        "you are here":         "Sie sind hier",
     },
 };
 

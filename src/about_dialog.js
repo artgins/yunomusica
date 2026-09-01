@@ -139,6 +139,16 @@ function build_footer(first_run)
             }, t("made with yuneta")],
             ["span", {class: "MUS_ABOUT_TAGLINE", i18n: "about tagline"},
                 t("about tagline")],
+            /*  MIT is a licence nobody can act on without the code it
+                covers. The line below says "MIT" and this says where —
+                the same claim, made checkable. */
+            ["a", {
+                class: "MUS_ABOUT_BRAND MUS_ABOUT_SOURCE",
+                href: "https://github.com/artgins/yunomusica",
+                target: "_blank",
+                rel: "noopener noreferrer",
+                i18n: "source code"
+            }, t("source code")],
             /*  Not translated on purpose: a copyright line and a licence
                 identifier are the same in every language, and turning
                 them into ten strings is ten chances to get a legal

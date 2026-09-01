@@ -27,6 +27,9 @@ const hi = {
         "palette leaf":         "पत्ती",
         "language":             "भाषा",
         "help":                 "मदद और श्रेय",
+        "more":                 "और",
+        "developer":            "डेवलपर",
+        "site map":             "साइट मैप",
 
         "play":                 "चलाएँ",
         "pause":                "रोकें",
@@ -253,6 +256,37 @@ const hi = {
         "made by artgins":      "ArtGins द्वारा निर्मित",
         "made with yuneta":     "Yuneta से बनाया गया",
         "about tagline":        "वितरित सिस्टम के लिए एक इवेंट-चालित फ़्रेमवर्क।",
+
+        /* ---- the menu, and the developer sheet behind it ---- */
+        "source code":          "सोर्स कोड",
+        "session log":          "सत्र लॉग",
+        "traces":               "ट्रेस",
+        "refresh":              "ताज़ा करें",
+        "loading":              "लोड हो रहा है…",
+        "clear log":            "लॉग साफ़ करें",
+        "copied":               "कॉपी हो गया",
+        "log empty":
+            "अभी तक कुछ दर्ज नहीं हुआ। ऐप के चलते रहने पर लॉग अपने आप लिखा जाता है।",
+        "no unexpected stop":   "कोई अप्रत्याशित रुकावट दर्ज नहीं है।",
+        "last unexpected stop": "ऐप रुका और फिर से शुरू हुआ",
+        "browser discarded the app":
+            "ब्राउज़र ने जगह बनाने के लिए ऐप को हटा दिया।",
+        "stopped while playing": "यह बजते समय रुका:",
+        "silent for":           "इतनी देर चुप रहा:",
+        "memory in use":        "उपयोग में मेमोरी:",
+        "restarts today":       "पिछले 24 घंटों में पुनरारंभ:",
+        "unexpected stops today":
+            "पिछले 24 घंटों में अप्रत्याशित रुकावटें:",
+
+        /* ---- the site map draws itself with gobj-ui's OWN keys — untranslated, they show as the key ---- */
+        "site map hint":
+            "ऐप की हर जगह एक URL है। वहाँ जाने के लिए उस पर टैप करें।",
+        "print":                "प्रिंट",
+        "filter":               "छानें…",
+        "matches":              "मिलान",
+        "show references":      "संदर्भ दिखाएँ",
+        "shown above":          "ऊपर दिखाया गया",
+        "you are here":         "आप यहाँ हैं",
     },
 };
 

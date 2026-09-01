@@ -37,6 +37,7 @@ import {register_c_mus_lists}   from "./c_mus_lists.js";
 import {setup_locale} from "./locales/locales.js";
 import {start_offline} from "./offline.js";
 import {start_covers_online} from "./covers_online.js";
+import {start_diag} from "./diag.js";
 
 import "bulma/css/bulma.css";
 import "@yuneta/gobj-ui/src/c_yui_shell.css";
@@ -44,6 +45,57 @@ import "@yuneta/gobj-ui/src/yui_icons.css";
 import "./musica.css";
 
 import app_config from "./app_config.json";
+
+
+/***************************************************************
+ *  The black box, started before anything else can fail.
+ *
+ *  It is at module scope and not inside main() on purpose: it
+ *  installs the window error handlers, and an exception thrown
+ *  while the gclasses are being registered is exactly the kind
+ *  of thing worth having a record of.
+ ***************************************************************/
+start_diag();
+
+
+/***************************************************************
+ *  Developer traces survive a launch — and they have to.
+ *
+ *  The bug they were switched on for is the app RESTARTING by
+ *  itself: if a restart also turned the tracing off, the one
+ *  event under investigation would be the one event that ends
+ *  the investigation. The flags live in localStorage (gobj-ui
+ *  owns them; see the Developer sheet), so they are read here
+ *  with no import at all, and the panel's own code — a big
+ *  module this app otherwise never needs — is fetched only if
+ *  something is actually switched on.
+ ***************************************************************/
+const TRACE_FLAGS = [
+    "trace_automata", "trace_creation", "trace_start_stop",
+    "trace_subscriptions", "trace_i18n", "trace_traffic",
+];
+
+function restore_traces()
+{
+    let wanted = false;
+    for(const key of TRACE_FLAGS) {
+        try {
+            if(Number(JSON.parse(window.localStorage.getItem(key) || "0"))) {
+                wanted = true;
+            }
+        } catch(e) {
+            /*  A key we cannot read is a key that is not set. */
+        }
+    }
+    if(!wanted) {
+        return;
+    }
+    import("@yuneta/gobj-ui/src/yui_dev.js").then(function(mod) {
+        mod.apply_dev_traces();
+    }).catch(function() {
+        /*  No panel, no traces: not worth a word on screen. */
+    });
+}
 
 
 /***************************************************************
@@ -96,6 +148,9 @@ function main()
 
     gobj_start(yuno);
     gobj_play(yuno);
+
+    /*  After the yuno exists: the flags are written onto it. */
+    restore_traces();
 }
 
 

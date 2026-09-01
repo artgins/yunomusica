@@ -31,6 +31,9 @@ const ar = {
         "palette leaf":         "أخضر",
         "language":             "اللغة",
         "help":                 "المساعدة وحقوق العمل",
+        "more":                 "المزيد",
+        "developer":            "المطوّر",
+        "site map":             "خريطة الموقع",
 
         "play":                 "تشغيل",
         "pause":                "إيقاف مؤقت",
@@ -292,6 +295,36 @@ const ar = {
         "made by artgins":      "من صنع ArtGins",
         "made with yuneta":     "مصنوع باستخدام Yuneta",
         "about tagline":        "إطار عمل مدفوع بالأحداث للأنظمة الموزَّعة.",
+
+        /* ---- the menu, and the developer sheet behind it ---- */
+        "source code":          "الشيفرة المصدرية",
+        "session log":          "سجل الجلسة",
+        "traces":               "التتبّع",
+        "refresh":              "تحديث",
+        "loading":              "جارٍ التحميل…",
+        "clear log":            "مسح السجل",
+        "copied":               "تم النسخ",
+        "log empty":
+            "لا يوجد شيء مسجَّل بعد. يكتب السجل نفسه أثناء عمل التطبيق.",
+        "no unexpected stop":   "لم يُسجَّل أي توقف غير متوقع.",
+        "last unexpected stop": "توقف التطبيق ثم بدأ من جديد",
+        "browser discarded the app": "تخلّص المتصفح من التطبيق ليوفّر الذاكرة.",
+        "stopped while playing": "توقف أثناء تشغيل:",
+        "silent for":           "صامت لمدة:",
+        "memory in use":        "الذاكرة المستخدمة:",
+        "restarts today":       "مرات إعادة التشغيل خلال ٢٤ ساعة:",
+        "unexpected stops today":
+            "مرات التوقف غير المتوقع خلال ٢٤ ساعة:",
+
+        /* ---- the site map draws itself with gobj-ui's OWN keys — untranslated, they show as the key ---- */
+        "site map hint":
+            "كل موضع يمكن للتطبيق الوصول إليه هو رابط. المس واحدًا للانتقال.",
+        "print":                "طباعة",
+        "filter":               "تصفية…",
+        "matches":              "نتائج مطابقة",
+        "show references":      "إظهار المراجع",
+        "shown above":          "معروض في الأعلى",
+        "you are here":         "أنت هنا",
     },
 };
 

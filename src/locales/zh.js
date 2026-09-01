@@ -27,6 +27,9 @@ const zh = {
         "palette leaf":         "叶绿",
         "language":             "语言",
         "help":                 "帮助与致谢",
+        "more":                 "更多",
+        "developer":            "开发者",
+        "site map":             "站点地图",
 
         "play":                 "播放",
         "pause":                "暂停",
@@ -240,6 +243,34 @@ const zh = {
         "made by artgins":      "由 ArtGins 制作",
         "made with yuneta":     "使用 Yuneta 构建",
         "about tagline":        "一个面向分布式系统的事件驱动框架。",
+
+        /* ---- the menu, and the developer sheet behind it ---- */
+        "source code":          "源代码",
+        "session log":          "会话日志",
+        "traces":               "跟踪",
+        "refresh":              "刷新",
+        "loading":              "加载中…",
+        "clear log":            "清空日志",
+        "copied":               "已复制",
+        "log empty":            "目前还没有任何记录。应用运行时日志会自动写入。",
+        "no unexpected stop":   "没有记录到意外停止。",
+        "last unexpected stop": "应用曾停止并重新启动",
+        "browser discarded the app": "浏览器为腾出内存丢弃了本应用。",
+        "stopped while playing": "停止时正在播放：",
+        "silent for":           "静默时长：",
+        "memory in use":        "已用内存：",
+        "restarts today":       "过去 24 小时内的重启次数：",
+        "unexpected stops today":
+            "过去 24 小时内的意外停止次数：",
+
+        /* ---- the site map draws itself with gobj-ui's OWN keys — untranslated, they show as the key ---- */
+        "site map hint":        "应用能到达的每个位置都是一个网址。点按即可前往。",
+        "print":                "打印",
+        "filter":               "筛选…",
+        "matches":              "个匹配",
+        "show references":      "显示引用",
+        "shown above":          "上面已列出",
+        "you are here":         "你在这里",
     },
 };
 

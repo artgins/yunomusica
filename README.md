@@ -1214,3 +1214,129 @@ follow each language's own convention — 「」 in Japanese, «» in Russian an
 Arabic, « » in French, “” in the rest — and the Arabic plural forms follow the
 usual rule: dual for two, the broken plural for three to ten, the singular from
 eleven up.
+
+## The app was restarting itself, and nothing was left behind to say so
+
+The report was precise, which is more than most are: four hours in a car, music
+playing from the phone, and **two or three times** the music stops and the app
+comes back **asking for the folders again**. That last part is the tell. A
+folder permission is asked for exactly once per launch, so an app asking again
+is an app that launched again. Something was ending the session and starting a
+new one, and the user was finding out by going quiet at seventy miles an hour.
+
+There was no way to look into it. Not because the framework has no tracing — it
+has plenty — but because **traces live in memory, and whatever killed the app
+took them with it**. Turning on the automata trace and driving to Valencia would
+produce, on arrival, a console describing the launch that happened after the
+last crash. The one event under investigation is the one event that erases the
+evidence for it.
+
+So the app now keeps a black box: `src/diag.js`.
+
+**A heartbeat every fifteen seconds.** One small record — the time, whether
+something was playing, what it was, the heap — overwritten in place. It is not
+history; it is a bookmark that says *the app was definitely alive at this
+moment*. When the next launch reads it, the difference between that timestamp
+and now is how long the app was dead, and it is never off by more than fifteen
+seconds.
+
+**The events on the way out.** `freeze` is Chrome telling a tab it is about to
+be suspended, and it is the last code that runs — timers stop right after.
+`pagehide` says whether the page went into the back/forward cache (it can come
+back) or was torn down (it cannot). Both are recorded, along with visibility
+changes, uncaught errors, rejected promises, media errors and a service worker
+taking over.
+
+**What the next launch admits.** `document.wasDiscarded` is Chrome saying, in
+so many words, *I threw that tab away to reclaim memory*. The navigation type
+separates a discard from a renderer crash from the user simply opening the app.
+And the number of folders left pending authorisation, written the moment the
+sources load, is the prompt the user saw — dated, from the inside.
+
+### In localStorage, and that is the whole design
+
+Everything else this app keeps is in IndexedDB, and this is not, for one
+reason: **localStorage is synchronous**. The records that matter most are the
+last ones, written while the tab is being frozen. An IndexedDB write started
+there is a promise nobody lives long enough to keep — the very moment the black
+box exists for is the moment an async store cannot record.
+
+The journal is capped at four hundred entries, which is about two nights of
+listening, and a write that hits the quota drops the oldest half rather than
+stopping. A black box that fills up and goes quiet is not one.
+
+### Reading it back: the "more" menu
+
+The toolbar's info button is now a menu — **Developer**, **Site map**, **Help
+and credits** — because one of those three was a dialog and the other two had
+nowhere to live.
+
+**Developer** opens a sheet with two panes. *Session log* is the black box,
+newest line first, under one sentence that reads it: *"The app was stopped and
+started again"* with the moment, what was playing, how long it was silent, and
+how many times it has happened in the last twenty-four hours — or *"No
+unexpected stop recorded"*, which is also an answer. It copies to the clipboard
+as text with the build, the display mode and the user agent at the top, so the
+report that arrives is the whole report.
+
+*Traces* is gobj-ui's own developer panel. It is fetched on demand — 27 kB this
+app otherwise never loads — but the trace **switches** live in localStorage and
+are re-applied on every launch (`restore_traces()` in `main.js`). That is not a
+convenience. If a restart turned the tracing off, the investigation would end
+at its subject.
+
+**Site map** draws the whole navigation surface out of `app_config.json` — every
+route, the toolbar, the menus, and the events each entry sends. It is
+documentation that cannot go out of date, because it is not written down
+anywhere: it is the config, rendered. It brought its own untranslated strings
+with it, which is why seven gobj-ui keys now live in the ten catalogues.
+
+**Help and credits** gained a link to the source. The dialog said "MIT" and gave
+no address, which is a licence nobody can act on.
+
+### Not every launch is a death
+
+The panel is one line of code away, at all times, from being useless. Every
+launch leaves a boot record with a gap in it, so a verdict that read each one as
+an unexpected stop would cry wolf on every refresh — and the one real stop would
+then arrive looking exactly like the twenty false ones.
+
+So `looks_like_death()` decides, and both of its thresholds come from how the
+browser behaves rather than from taste. A **hidden** tab has its timers
+throttled to about one a minute, so a heartbeat can be a minute late with
+nothing wrong: under ninety seconds proves nothing. A tab that is **playing
+audio** is neither throttled nor frozen — that is what the audible state is for
+— so while the music was on, forty-five seconds of silence from the heartbeat is
+already the app not running. And `wasDiscarded` needs no threshold at all: it is
+the browser stating what it did.
+
+That is why the sheet shows two counts. *Restarts* is every launch, deliberate
+ones included. *Unexpected stops* is the number the user was actually
+reporting — "two or three times in four hours" — and `tests/devmenu.mjs` stages
+both: a reload that must NOT be dressed up as a crash, and a forged discard that
+must be read back as one, in the user's own terms.
+
+### What the log will actually settle
+
+Three explanations fit the symptom, and they are told apart by lines the app now
+writes:
+
+- **The browser discarded the tab.** `wasDiscarded=yes` on the next boot, usually
+  after a `freeze`. Nothing is wrong with the app; the phone was short of memory
+  and this was the tab it took.
+- **The renderer crashed.** `nav=reload` with no `freeze` before it, and a gap of
+  seconds rather than minutes.
+- **The app is not installed.** `app=tab` in every boot record. A browser tab is
+  discarded far more eagerly than an installed PWA *and* never keeps folder
+  permissions across launches — which would make the folder prompt a symptom of
+  the install question, not of a bug. This is the first line to read, and it is
+  the cheapest to fix.
+
+The memory line carries two numbers, because one is not enough:
+`performance.memory` reports the **JS heap**, and blob bytes are not on it. An
+app holding three hundred megabytes of album art shows an innocent heap. So
+`cover_mb` is counted where it is known — by the store that holds it — and every
+launch primes *every* stored cover into a blob and an object URL, whether or not
+one of them is ever looked at. On the library this was measured against that
+figure is zero (no embedded art in the tags), so it is not the answer here. On a
+library full of illustrated albums it would be the first place to look.

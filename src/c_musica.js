@@ -14,7 +14,8 @@
  *          meant to remove;
  *        - the light/dark theme and the language;
  *        - the welcome / help / credits dialog, shown once and then only
- *          on request;
+ *          on request, and the two other doors the "more" menu opens:
+ *          the site map and the developer sheet;
  *        - loading what was remembered — the authorised sources and the
  *          saved lists — before anything else paints.
  *
@@ -38,6 +39,12 @@ import {
     yui_shell_navigate,
 } from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
+/*  The site map draws the WHOLE navigation surface — toolbar, menu,
+    every view's sub-routes — from the same app_config.json the shell is
+    built from. It is documentation that cannot go out of date, so it is
+    worth a menu entry even in an app with four destinations. */
+import {yui_shell_show_route_map} from "@yuneta/gobj-ui/src/shell_route_map.js";
+
 import {
     subscribe, store_state,
     current_track, is_playing, toggle, step, prev,
@@ -47,6 +54,7 @@ import {
     temp_track, temp_playing, temp_toggle, temp_position,
     back_to_deck, temp_next, queue_add, last_said, clear_said,
     temp_progress, seek_temp_fraction,
+    retained_covers,
 } from "./music_store.js";
 
 import {
@@ -58,9 +66,11 @@ import {load_playlists} from "./playlists_store.js";
 import {load_stats} from "./stats_store.js";
 import {create_visualizer} from "./visualizer.js";
 import {pref_get, pref_set} from "./idb.js";
+import {diag_watch} from "./diag.js";
 
 import {switch_locale, current_locale} from "./locales/locales.js";
 import {open_about, welcome_dismissed, about_bind_shell} from "./about_dialog.js";
+import {open_developer} from "./dev_dialog.js";
 import {start_update_watch} from "./update_check.js";
 import {start_install_watch} from "./install_prompt.js";
 import {offer_install_when_due} from "./install_dialog.js";
@@ -156,6 +166,8 @@ function mt_create(gobj)
     gobj_subscribe_event(shell, "EV_SET_PALETTE",  {}, gobj);
     gobj_subscribe_event(shell, "EV_SET_LOCALE",   {}, gobj);
     gobj_subscribe_event(shell, "EV_OPEN_ABOUT",   {}, gobj);
+    gobj_subscribe_event(shell, "EV_OPEN_SITEMAP", {}, gobj);
+    gobj_subscribe_event(shell, "EV_OPEN_DEVELOPER", {}, gobj);
     gobj_subscribe_event(shell, "EV_ROUTE_CHANGED",{}, gobj);
 
     yui_shell_set_translator(shell, t);
@@ -183,6 +195,27 @@ function mt_start(gobj)
         $root, so the player docks below it. */
     build_player(gobj);
     setup_media_session();
+
+    /*  Tell the black box how to describe what the app is doing. It is
+        asked, not told, so diag.js stays a leaf: everything records INTO
+        it and it imports none of them back. The point of the answer is
+        the report the user reads afterwards — "it stopped while Lady
+        Fantasy was playing" is a fact about their trip; "playing: true"
+        is a fact about a variable. */
+    diag_watch(function() {
+        let tr = current_track();
+        let name = "";
+        if(tr) {
+            name = (tr.artist ? tr.artist + " — " : "") + (tr.title || "");
+        }
+        let art = retained_covers();
+        return {
+            playing: is_playing(),
+            track: name,
+            covers: art.count,
+            cover_mb: art.mb
+        };
+    });
 
     priv.unsub = subscribe(function(channel) {
         if(channel === "playing" || channel === "queue") {
@@ -1048,6 +1081,21 @@ function ac_open_about(gobj, event, kw, src)
     return 0;
 }
 
+/*  Both of these TOGGLE: the menu entry that opened the sheet closes it
+    again, which is the behaviour gobj-ui's own site map already has and
+    the only one that makes sense from a menu you reach the same way. */
+function ac_open_sitemap(gobj, event, kw, src)
+{
+    yui_shell_show_route_map(gobj.priv.shell, {t: t});
+    return 0;
+}
+
+function ac_open_developer(gobj, event, kw, src)
+{
+    open_developer(gobj.priv.shell);
+    return 0;
+}
+
 function ac_route_changed(gobj, event, kw, src)
 {
     let route = (kw && (kw.base || kw.route)) || "";
@@ -1082,6 +1130,8 @@ function create_gclass(gclass_name)
             ["EV_SET_PALETTE",   ac_set_palette,   null],
             ["EV_SET_LOCALE",    ac_set_locale,    null],
             ["EV_OPEN_ABOUT",    ac_open_about,    null],
+            ["EV_OPEN_SITEMAP",  ac_open_sitemap,  null],
+            ["EV_OPEN_DEVELOPER", ac_open_developer, null],
             ["EV_ROUTE_CHANGED", ac_route_changed, null]
         ]]
     ];
@@ -1091,6 +1141,8 @@ function create_gclass(gclass_name)
         ["EV_SET_PALETTE",   0],
         ["EV_SET_LOCALE",    0],
         ["EV_OPEN_ABOUT",    0],
+        ["EV_OPEN_SITEMAP",  0],
+        ["EV_OPEN_DEVELOPER", 0],
         ["EV_ROUTE_CHANGED", 0]
     ];
 

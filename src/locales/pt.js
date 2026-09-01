@@ -27,6 +27,9 @@ const pt = {
         "palette leaf":         "Folha",
         "language":             "Idioma",
         "help":                 "Ajuda e créditos",
+        "more":                 "Mais",
+        "developer":            "Programador",
+        "site map":             "Mapa do site",
 
         "play":                 "Reproduzir",
         "pause":                "Pausa",
@@ -263,6 +266,37 @@ const pt = {
         "made by artgins":      "Feito pela ArtGins",
         "made with yuneta":     "Feito com Yuneta",
         "about tagline":        "Uma framework orientada a eventos para sistemas distribuídos.",
+
+        /* ---- the menu, and the developer sheet behind it ---- */
+        "source code":          "Código-fonte",
+        "session log":          "Registo da sessão",
+        "traces":               "Rastreios",
+        "refresh":              "Atualizar",
+        "loading":              "A carregar…",
+        "clear log":            "Limpar registo",
+        "copied":               "Copiado",
+        "log empty":
+            "Ainda não há nada registado. O registo escreve-se sozinho enquanto a app corre.",
+        "no unexpected stop":   "Nenhuma paragem inesperada registada.",
+        "last unexpected stop": "A app parou e voltou a arrancar",
+        "browser discarded the app":
+            "O navegador descartou a app para libertar memória.",
+        "stopped while playing": "Parou enquanto tocava:",
+        "silent for":           "Em silêncio durante:",
+        "memory in use":        "Memória em uso:",
+        "restarts today":       "Reinícios nas últimas 24 horas:",
+        "unexpected stops today":
+            "Paragens inesperadas nas últimas 24 horas:",
+
+        /* ---- the site map draws itself with gobj-ui's OWN keys — untranslated, they show as the key ---- */
+        "site map hint":
+            "Cada sítio a que a app chega é um URL. Toque num para lá ir.",
+        "print":                "Imprimir",
+        "filter":               "Filtrar…",
+        "matches":              "correspondências",
+        "show references":      "Mostrar referências",
+        "shown above":          "mostrado acima",
+        "you are here":         "Está aqui",
     },
 };
 

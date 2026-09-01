@@ -32,6 +32,7 @@ import {
     idb_available, idb_blocked, on_storage_change,
     request_persistence, storage_persisted,
 } from "./idb.js";
+import {diag} from "./diag.js";
 import {
     ingest, begin_read, drop_source_tracks, cancel_ingest,
     tags_of_source, covers_snapshot, prime_covers, is_audio,
@@ -332,6 +333,28 @@ async function load_sources()
         }
     }
     emit();
+
+    /*  The line that ties a restart to what the user actually SAW.
+     *
+     *  "The app asked for my folders again" and "the app restarted" are
+     *  the same sentence said from two sides, and only one of them is
+     *  visible from inside. Written here, the journal reads: boot, then
+     *  three folders pending — which is the prompt, dated. */
+    diag("sources", {
+        total: S.sources.length,
+        /*  Which KIND they are, because the two behave nothing alike on
+            a launch: a "dir" is a handle whose permission has to be
+            granted again, a "files" set is thousands of File snapshots
+            read back out of IndexedDB. Only one of them can produce the
+            prompt the user reported, and the log should not leave that
+            to be guessed. */
+        dirs: S.sources.filter((x) => x.kind === "dir").length,
+        filesets: S.sources.filter((x) => x.kind === "files").length,
+        pending: pending_authorisation().length,
+        idb: !!S.persistent,
+        durable: S.durable === null ? "unknown" : S.durable
+    });
+
     return S.sources.length;
 }
 

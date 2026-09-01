@@ -38,6 +38,9 @@ const en = {
         "palette leaf":         "Leaf",
         "language":             "Language",
         "help":                 "Help and credits",
+        "more":                 "More",
+        "developer":            "Developer",
+        "site map":             "Site map",
 
         /* ---- shared verbs and nouns ---- */
         "play":                 "Play",
@@ -279,6 +282,37 @@ const en = {
         "made by artgins":      "Made by ArtGins",
         "made with yuneta":     "Made with Yuneta",
         "about tagline":        "An event-driven framework for distributed systems.",
+
+        /* ---- the menu, and the developer sheet behind it ---- */
+        "source code":          "Source code",
+        "session log":          "Session log",
+        "traces":               "Traces",
+        "refresh":              "Refresh",
+        "loading":              "Loading…",
+        "clear log":            "Clear log",
+        "copied":               "Copied",
+        "log empty":
+            "Nothing recorded yet. The log writes itself while the app runs.",
+        "no unexpected stop":   "No unexpected stop recorded.",
+        "last unexpected stop": "The app was stopped and started again",
+        "browser discarded the app":
+            "The browser threw the app away to make room.",
+        "stopped while playing": "It stopped while this was playing:",
+        "silent for":           "Silent for:",
+        "memory in use":        "Memory in use:",
+        "restarts today":       "Restarts in the last 24 hours:",
+        "unexpected stops today":
+            "Unexpected stops in the last 24 hours:",
+
+        /* ---- the site map draws itself with gobj-ui's OWN keys — untranslated, they show as the key ---- */
+        "site map hint":
+            "Every place the app can be is a URL. Tap one to go there.",
+        "print":                "Print",
+        "filter":               "Filter…",
+        "matches":              "matches",
+        "show references":      "Show references",
+        "shown above":          "shown above",
+        "you are here":         "You are here",
     },
 };
 

@@ -27,6 +27,9 @@ const fr = {
         "palette leaf":         "Feuille",
         "language":             "Langue",
         "help":                 "Aide et crédits",
+        "more":                 "Plus",
+        "developer":            "Développeur",
+        "site map":             "Plan du site",
 
         "play":                 "Lire",
         "pause":                "Pause",
@@ -263,6 +266,38 @@ const fr = {
         "made by artgins":      "Réalisé par ArtGins",
         "made with yuneta":     "Réalisé avec Yuneta",
         "about tagline":        "Un framework événementiel pour systèmes distribués.",
+
+        /* ---- the menu, and the developer sheet behind it ---- */
+        "source code":          "Code source",
+        "session log":          "Journal de session",
+        "traces":               "Traces",
+        "refresh":              "Actualiser",
+        "loading":              "Chargement…",
+        "clear log":            "Vider le journal",
+        "copied":               "Copié",
+        "log empty":
+            "Rien d’enregistré pour l’instant. Le journal s’écrit tout seul pendant que l’app tourne.",
+        "no unexpected stop":   "Aucun arrêt inattendu enregistré.",
+        "last unexpected stop": "L’app s’est arrêtée puis relancée",
+        "browser discarded the app":
+            "Le navigateur a supprimé l’app pour libérer de la mémoire.",
+        "stopped while playing": "Arrêtée pendant la lecture de :",
+        "silent for":           "Silencieuse pendant :",
+        "memory in use":        "Mémoire utilisée :",
+        "restarts today":
+            "Redémarrages sur les 24 dernières heures :",
+        "unexpected stops today":
+            "Arrêts inattendus sur les 24 dernières heures :",
+
+        /* ---- the site map draws itself with gobj-ui's OWN keys — untranslated, they show as the key ---- */
+        "site map hint":
+            "Chaque endroit où l’app peut aller est une URL. Touchez-en un pour y aller.",
+        "print":                "Imprimer",
+        "filter":               "Filtrer…",
+        "matches":              "correspondances",
+        "show references":      "Afficher les références",
+        "shown above":          "déjà affiché plus haut",
+        "you are here":         "Vous êtes ici",
     },
 };
 

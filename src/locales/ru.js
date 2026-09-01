@@ -27,6 +27,9 @@ const ru = {
         "palette leaf":         "Лист",
         "language":             "Язык",
         "help":                 "Справка и авторы",
+        "more":                 "Ещё",
+        "developer":            "Разработчик",
+        "site map":             "Карта сайта",
 
         "play":                 "Воспроизвести",
         "pause":                "Пауза",
@@ -273,6 +276,38 @@ const ru = {
         "made by artgins":      "Сделано в ArtGins",
         "made with yuneta":     "Сделано на Yuneta",
         "about tagline":        "Событийно-ориентированный фреймворк для распределённых систем.",
+
+        /* ---- the menu, and the developer sheet behind it ---- */
+        "source code":          "Исходный код",
+        "session log":          "Журнал сеанса",
+        "traces":               "Трассировки",
+        "refresh":              "Обновить",
+        "loading":              "Загрузка…",
+        "clear log":            "Очистить журнал",
+        "copied":               "Скопировано",
+        "log empty":
+            "Пока ничего не записано. Журнал ведётся сам, пока приложение работает.",
+        "no unexpected stop":   "Неожиданных остановок не зафиксировано.",
+        "last unexpected stop":
+            "Приложение остановилось и запустилось заново",
+        "browser discarded the app":
+            "Браузер выгрузил приложение, чтобы освободить память.",
+        "stopped while playing": "Остановилось, когда играло:",
+        "silent for":           "Тишина длилась:",
+        "memory in use":        "Занято памяти:",
+        "restarts today":       "Перезапусков за последние 24 часа:",
+        "unexpected stops today":
+            "Неожиданных остановок за последние 24 часа:",
+
+        /* ---- the site map draws itself with gobj-ui's OWN keys — untranslated, they show as the key ---- */
+        "site map hint":
+            "Каждое место в приложении — это адрес. Нажмите, чтобы перейти.",
+        "print":                "Печать",
+        "filter":               "Фильтр…",
+        "matches":              "совпадений",
+        "show references":      "Показать ссылки",
+        "shown above":          "показано выше",
+        "you are here":         "Вы здесь",
     },
 };
 

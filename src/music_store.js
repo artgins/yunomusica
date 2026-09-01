@@ -18,6 +18,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {attach as attach_analyser} from "./analyser.js";
+import {diag} from "./diag.js";
 
 
 /***************************************************************
@@ -1211,6 +1212,28 @@ function cover_url(key)
     return S.covers.get(key) || null;
 }
 
+/***************************************************************
+ *  What the covers are costing, in memory, right now.
+ *
+ *  For the black box, and it is not a curiosity. Every launch
+ *  primes EVERY stored cover into a blob and an object URL
+ *  (prime_covers), so a library with six hundred illustrated
+ *  albums is holding six hundred images from the first second,
+ *  whether or not one of them is ever looked at. On a phone
+ *  that is the difference between a tab the system keeps and a
+ *  tab the system takes back — and the JS heap does not show
+ *  it, because blob bytes are not on the JS heap. So it is
+ *  measured where it is known: here.
+ ***************************************************************/
+function retained_covers()
+{
+    let bytes = 0;
+    for(const blob of S.cover_blobs.values()) {
+        bytes += (blob && blob.size) || 0;
+    }
+    return {count: S.cover_blobs.size, mb: Math.round(bytes / (1024 * 1024))};
+}
+
 /*  Put a cover on an album from outside the tag reader.
  *
  *  The only caller is covers_online.js, and the rule it obeys is here
@@ -1827,6 +1850,10 @@ function get_audio()
         });
         S.audio.addEventListener("pause", () => emit("playing"));
         S.audio.addEventListener("canplay", () => { S.retry_for = 0; });
+        /*  The element asking for bytes that are not coming. On a local
+            file this should never happen, so when it does it is either a
+            disk the system took away or a handle that went stale. */
+        S.audio.addEventListener("stalled", () => diag("stalled", {}));
         /*  Metadata is the moment the element learns how long the track
             is, and it arrives well after the src was set — on a phone,
             not until the file is really being read. Two things wait for
@@ -1848,6 +1875,11 @@ function get_audio()
             if(!S.audio.src || (err && err.code === 1)) {   // MEDIA_ERR_ABORTED
                 return;
             }
+            /*  Worth a line in the black box: "the music stopped" has a
+                media-layer answer and an app-layer one, and they are
+                told apart by whether anything was wrong with the FILE at
+                the moment it went quiet. */
+            diag("audio", {code: (err && err.code) || 0});
             /*  A File is a snapshot of what was on disk when it was
                 handed over. Re-tag a track, re-encode it, replace it —
                 and the reference we are holding no longer matches, which
@@ -2175,6 +2207,7 @@ export {
     all_tracks_sorted,
     search,
     cover_url,
+    retained_covers,
     add_cover,
     albums_missing_cover,
     tracks_of_source,

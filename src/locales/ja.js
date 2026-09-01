@@ -27,6 +27,9 @@ const ja = {
         "palette leaf":         "リーフ",
         "language":             "言語",
         "help":                 "ヘルプとクレジット",
+        "more":                 "その他",
+        "developer":            "開発者",
+        "site map":             "サイトマップ",
 
         "play":                 "再生",
         "pause":                "一時停止",
@@ -241,6 +244,34 @@ const ja = {
         "made by artgins":      "ArtGins 制作",
         "made with yuneta":     "Yuneta で構築",
         "about tagline":        "分散システムのためのイベント駆動フレームワーク。",
+
+        /* ---- the menu, and the developer sheet behind it ---- */
+        "source code":          "ソースコード",
+        "session log":          "セッションログ",
+        "traces":               "トレース",
+        "refresh":              "更新",
+        "loading":              "読み込み中…",
+        "clear log":            "ログを消去",
+        "copied":               "コピーしました",
+        "log empty":            "まだ記録はありません。アプリの動作中にログは自動で書かれます。",
+        "no unexpected stop":   "予期しない停止は記録されていません。",
+        "last unexpected stop": "アプリが停止して再起動しました",
+        "browser discarded the app": "ブラウザがメモリ確保のためアプリを破棄しました。",
+        "stopped while playing": "停止したときに再生していた曲:",
+        "silent for":           "無音だった時間:",
+        "memory in use":        "使用中のメモリ:",
+        "restarts today":       "過去 24 時間の再起動回数:",
+        "unexpected stops today":
+            "過去 24 時間の予期しない停止回数:",
+
+        /* ---- the site map draws itself with gobj-ui's OWN keys — untranslated, they show as the key ---- */
+        "site map hint":        "アプリが行けるすべての場所は URL です。タップすると移動します。",
+        "print":                "印刷",
+        "filter":               "絞り込み…",
+        "matches":              "件一致",
+        "show references":      "参照を表示",
+        "shown above":          "上に表示済み",
+        "you are here":         "現在地",
     },
 };
 

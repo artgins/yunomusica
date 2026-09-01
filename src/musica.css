@@ -2219,3 +2219,111 @@ img.MUS_ART { object-fit: cover; }
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+
+/*======================================================================
+ *      The Developer sheet
+ *
+ *      Two panes behind the "more" menu: the session log (the black
+ *      box, read back) and the framework traces. It is a diagnostic
+ *      screen and it is dressed like one — monospaced, dense, and
+ *      scrolling on its own so the sheet never grows past the phone.
+ *====================================================================*/
+.MUS_DEV {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: 0.6rem;
+}
+.MUS_DEV_TABS {
+    display: flex;
+    gap: 0.4rem;
+    flex: none;
+}
+.MUS_DEV_TAB {
+    flex: 1;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--bulma-border, #d0d0d0);
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+.MUS_DEV_TAB.is-on {
+    background: var(--mus-accent-soft);
+    border-color: var(--mus-accent);
+    font-weight: 600;
+}
+.MUS_DEV_PANE {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: 0.6rem;
+}
+/*  `display:flex` above beats the browser's own [hidden] rule, so the
+    pane that is not showing would show anyway — under the one that is. */
+.MUS_DEV_PANE[hidden] { display: none; }
+
+/*  The verdict: the reading of the evidence, above the evidence. */
+.MUS_DEV_VERDICT {
+    flex: none;
+    padding: 0.7rem 0.85rem;
+    border-radius: 12px;
+    background: var(--mus-accent-soft);
+    border: 1px solid var(--mus-accent);
+}
+.MUS_DEV_VERDICT p { margin: 0 0 0.25rem; }
+.MUS_DEV_VERDICT p:last-child { margin-bottom: 0; }
+.MUS_DEV_OK { font-weight: 600; }
+.MUS_DEV_BAD { font-weight: 700; color: var(--bulma-danger, #cc0f35); }
+.MUS_DEV_FACT { font-size: 0.85rem; }
+/*  The value half of a "label: value" line. A separate node because the
+    label is translated and the value never is — a heap size and a track
+    name mean the same in every language. */
+.MUS_DEV_VAL {
+    font-weight: 600;
+    margin-inline-start: 0.4ch;
+}
+
+.MUS_DEV_BAR {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    flex: none;
+}
+.MUS_DEV_BTN.button { border-radius: 10px; }
+
+/*  Newest first, so what just happened is the first line, and wrapping
+    off: these lines are read by scanning down the left edge. */
+.MUS_DEV_LOG {
+    flex: 1 1 auto;
+    min-height: 8rem;
+    max-height: 46vh;
+    overflow: auto;
+    margin: 0;
+    padding: 0.6rem 0.7rem;
+    border-radius: 10px;
+    background: var(--bulma-scheme-main-bis, #f5f5f5);
+    border: 1px solid var(--bulma-border, #d0d0d0);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    line-height: 1.45;
+    white-space: pre;
+}
+.MUS_DEV_WAIT {
+    padding: 1.2rem 0.2rem;
+    color: var(--bulma-text-weak, #8a8a8a);
+}
+
+/*  The traces pane hosts gobj-ui's own panel, which brings its own
+    colours and sizes itself; all it needs from us is room to be tall. */
+.MUS_DEV_TRACES {
+    min-height: 0;
+}
+
+[data-theme="dark"] .MUS_DEV_LOG {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.14);
+}
