@@ -1,7 +1,7 @@
 {
     "name": "yunomusica",
     "private": true,
-    "version": "2.31.0",
+    "version": "2.31.1",
     "type": "module",
     "license": "MIT",
     "description": "Yunomúsica — a small, offline SPA (Vite + Yuneta gobj-ui declarative shell) that reads the music on your device and plays it from a queue you curate. Folders are authorised once and remembered; no file is copied and no file leaves the device. Cover art is looked up online for the record you are playing, which can be switched off.",

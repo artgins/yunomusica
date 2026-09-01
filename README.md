@@ -1340,3 +1340,54 @@ launch primes *every* stored cover into a blob and an object URL, whether or not
 one of them is ever looked at. On the library this was measured against that
 figure is zero (no embedded art in the tags), so it is not the answer here. On a
 library full of illustrated albums it would be the first place to look.
+
+### What the first real capture said, and what it cost to read it
+
+The app stopped on a drive and the log came back. It closed three of the
+questions above in one go:
+
+    mode: installed · device memory: 4 GB · Android 10 · Chrome 152
+    11:10:00 … 11:55:00  mem heap=10 covers=259 cover_mb=23   (every 5 min, flat)
+    12:00:17 boot nav=back_forward app=installed gap_s=32
+             was_playing=yes was_track=EricClapton — the cream of clapton
+    12:00:23 sources total=1 dirs=1 filesets=0 pending=1
+
+Not a leak: the heap sat at 10 MB for fifty minutes and the cover art at
+23 MB, both flat. Not a browser tab: `installed`. Not a media failure: no
+`audio`, no `stalled`, no `err`. Not a tab discard either — `wasDiscarded`
+never appeared, and `nav=back_forward` is a session being restored, not a
+tab coming back.
+
+And **no `pagehide` before the gap**. That absence is the finding. An
+orderly departure fires `pagehide`; this one fired nothing and then the
+document was gone. The process was killed where it stood.
+
+The reason turned out to be in the library, not in the app. These are DJ
+sessions: **single mp3s of four hours and 330 to 440 MB each**. Measured
+on a desktop, playing one of them, the renderer climbs about 8 MB for
+every minute of playback and never plateaus; playing an album of
+four-minute tracks it is flat. The difference is not the app's — it is
+that a media resource is only freed when the element's `src` changes.
+Across an album that happens every four minutes. Inside one four-hour
+file it never happens at all, so four hours of buffering accumulate under
+a JS heap that stays at 10 MB and cannot see any of it.
+
+Two controls worth keeping, because both were nearly reported as answers
+and neither was one:
+
+- At **16x** the same measurement climbs 266 → 546 MB in six minutes,
+  which looks like a spectacular leak and is only Chrome buffering ahead
+  faster than it can release. At 1x it disappears. A number measured
+  under conditions the user is not in.
+- With the Web Audio tap removed the climb roughly halves (about 4 MB a
+  minute instead of 8). `attach_analyser` is called on every `play`
+  whether or not anything is drawing, and `createMediaElementSource` is a
+  one-way door — so every session routes its audio through the graph for
+  the life of the element, visualizer or no visualizer. That is worth
+  fixing on its own; it is not the whole of this.
+
+So the heartbeat now carries `dur` and `pos` as well, and the boot record
+reads them back as `was_dur` / `was_pos`. A death two hours into one
+four-hour file reads nothing like a death in the third minute of an
+album, and that distinction should come from the phone rather than from a
+desk.

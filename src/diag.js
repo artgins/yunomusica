@@ -250,6 +250,16 @@ function beat()
         playing: !!state.playing,
         track: state.track || "",
         heap: heap_mb(),
+        /*  Carried on the HEARTBEAT and not only in the five-minute
+            sample, because this is the one that survives a death: the
+            next launch reads it back as `was_graph` and can say what the
+            audio path was at the moment the app stopped existing. */
+        graph: state.graph || "",
+        /*  The length of what was playing, and how far in. A death two
+            hours into one four-hour file reads nothing like a death in
+            the third minute of an album. */
+        dur: state.dur || 0,
+        pos: state.pos || 0,
         vis: (typeof document !== "undefined") ? document.visibilityState : "?"
     };
     ls_set(KEY_BEAT, JSON.stringify(rec));
@@ -319,6 +329,13 @@ function start_diag()
         if(prev.vis) {
             d.was_vis = prev.vis;
         }
+        if(prev.graph) {
+            d.was_graph = prev.graph;
+        }
+        if(prev.dur) {
+            d.was_dur = prev.dur;
+            d.was_pos = prev.pos || 0;
+        }
     }
     diag("boot", d);
 
@@ -362,6 +379,24 @@ function sample_memory()
             if(state.cover_mb) {
                 d.cover_mb = state.cover_mb;
             }
+            /*  Whether the music is going through the Web Audio graph.
+             *
+             *  It is not a detail on a phone. Taking the visualizer's
+             *  tap re-routes the element through an AudioContext, and
+             *  that is a ONE-WAY DOOR (see analyser.js): from then on,
+             *  for the whole session, playback is the renderer's own
+             *  audio thread with an analyser on it rather than the
+             *  platform's media path — screen off and all. If the
+             *  system is reclaiming this app while it plays in the
+             *  background, this line is the first thing to correlate
+             *  it with. */
+            if(state.graph) {
+                d.graph = state.graph;
+            }
+            if(state.dur) {
+                d.dur = state.dur;
+                d.pos = state.pos || 0;
+            }
         } catch(e) {
             /* nothing */
         }
@@ -395,6 +430,21 @@ function install_listeners()
         torn down for good. */
     window.addEventListener("pagehide", function(ev) {
         diag("pagehide", {bfcache: !!ev.persisted, heap: heap_mb()});
+    });
+
+    /*  The other half of that pair, and it settles a real ambiguity.
+     *
+     *  A boot record says a NEW document was built. A `pageshow` with
+     *  persisted=true says the OLD one came back out of the back/forward
+     *  cache with everything still in it — no boot, no reload, nothing
+     *  lost. Without this line the two are told apart only by the
+     *  absence of a record, which is not evidence anybody should have to
+     *  reason from. */
+    window.addEventListener("pageshow", function(ev) {
+        if(ev.persisted) {
+            diag("restored", {bfcache: true});
+            beat();
+        }
     });
 
     document.addEventListener("visibilitychange", function() {

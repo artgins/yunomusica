@@ -65,6 +65,7 @@ import {
 import {load_playlists} from "./playlists_store.js";
 import {load_stats} from "./stats_store.js";
 import {create_visualizer} from "./visualizer.js";
+import {diagnostics as viz_diagnostics} from "./analyser.js";
 import {pref_get, pref_set} from "./idb.js";
 import {diag_watch} from "./diag.js";
 
@@ -209,11 +210,28 @@ function mt_start(gobj)
             name = (tr.artist ? tr.artist + " — " : "") + (tr.title || "");
         }
         let art = retained_covers();
+        let a = viz_diagnostics();
+        /*  How LONG the track is, and how far into it we are.
+         *
+         *  Not a curiosity in this library. A four-hour DJ set is one
+         *  media resource that never changes, so nothing the browser
+         *  buffered for it is ever dropped — where an album of
+         *  four-minute tracks frees everything at each change of src.
+         *  If the deaths cluster deep inside long files and never
+         *  happen in the first minutes of an album, these two numbers
+         *  are what shows it, from the phone rather than from a desk. */
+        let pr = progress();
         return {
             playing: is_playing(),
             track: name,
+            dur: Math.round(pr.duration || 0),
+            pos: Math.round(pr.current || 0),
             covers: art.count,
-            cover_mb: art.mb
+            cover_mb: art.mb,
+            /*  "tapped@running" or "untapped@-": whether playback is
+                going through the Web Audio graph, and what state that
+                graph is in. */
+            graph: (a.tapped ? "tapped" : "untapped") + "@" + (a.state || "-")
         };
     });
 
