@@ -117,6 +117,7 @@ let PRIVATE_DATA = {
     scan_timer: 0,      // ticks the elapsed clock on that bar
     scan_t0:  0,        // when the wait started, from the user's side
     save_timer: 0,      // coalesces storing the deck
+    saved_at: 0,        // when the deck was last written, for the position
     strips:   null,     // ResizeObserver keeping the bottom strips honest
     unsub:    null,
     unsub_src: null,
@@ -240,6 +241,7 @@ function mt_start(gobj)
             paint_player(gobj);
         } else if(channel === "time") {
             paint_time(gobj);
+            keep_place(gobj);
         } else if(channel === "loading") {
             paint_scan(gobj);
         } else if(channel === "temp") {
@@ -352,6 +354,10 @@ async function boot(gobj)
  *  timer rather than on every event — and once more on the way
  *  out, which is the moment that actually has to be right.
  ***************************************************************/
+/*  How often the position is written while the music is moving. */
+const KEEP_PLACE_EVERY = 15000;
+
+
 function save_queue_soon(gobj)
 {
     let priv = gobj.priv;
@@ -360,8 +366,46 @@ function save_queue_soon(gobj)
     }
     priv.save_timer = setTimeout(function() {
         priv.save_timer = 0;
+        priv.saved_at = Date.now();
         pref_set("queue", queue_snapshot());
     }, 1500);
+}
+
+/***************************************************************
+ *  Keep the place inside a track that is still playing.
+ *
+ *  The deck used to be stored on CHANGES only — a track starts,
+ *  the queue is edited, playback pauses. Across an album that is
+ *  a fresh snapshot every few minutes and the loss is small
+ *  enough never to be noticed.
+ *
+ *  Inside ONE long track nothing changes for as long as it
+ *  lasts, and this library has four-hour DJ sessions in a single
+ *  file. Press play, `time: 0` is written, and two hours later
+ *  the phone's system reclaims the app — which it does, and
+ *  which the app cannot prevent. It came back at 0:00, having
+ *  thrown away two hours of listening: worse than the silence
+ *  that started it, because the silence you can fix with a tap.
+ *
+ *  So the position goes down every fifteen seconds, and a kill
+ *  now costs a quarter of a minute at most.
+ *
+ *  Driven off the "time" channel rather than a timer of its own,
+ *  which is the whole reason there is nothing to start or stop:
+ *  that channel fires while — and only while — something is
+ *  actually playing. A paused deck stops asking by itself.
+ ***************************************************************/
+function keep_place(gobj)
+{
+    let priv = gobj.priv;
+    if(Date.now() - (priv.saved_at || 0) < KEEP_PLACE_EVERY) {
+        return;
+    }
+    /*  Claimed BEFORE the write, not after: `time` arrives four times a
+        second, and the write is a debounced 1.5 s away. Without this
+        every one of those six ticks would queue its own. */
+    priv.saved_at = Date.now();
+    save_queue_soon(gobj);
 }
 
 

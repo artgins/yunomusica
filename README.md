@@ -1363,14 +1363,32 @@ orderly departure fires `pagehide`; this one fired nothing and then the
 document was gone. The process was killed where it stood.
 
 The reason turned out to be in the library, not in the app. These are DJ
-sessions: **single mp3s of four hours and 330 to 440 MB each**. Measured
-on a desktop, playing one of them, the renderer climbs about 8 MB for
-every minute of playback and never plateaus; playing an album of
-four-minute tracks it is flat. The difference is not the app's — it is
-that a media resource is only freed when the element's `src` changes.
-Across an album that happens every four minutes. Inside one four-hour
-file it never happens at all, so four hours of buffering accumulate under
-a JS heap that stays at 10 MB and cannot see any of it.
+sessions: **single mp3s of four hours and 330 to 440 MB each**. Playing
+one, the renderer grows and an album of four-minute tracks does not. The
+difference is not the app's — it is that a media resource is only freed
+when the element's `src` changes. Across an album that happens every four
+minutes. Inside one four-hour file it never happens at all, so the whole
+file accumulates under a JS heap that stays at 10 MB and cannot see any
+of it.
+
+**How much it grows took a second measurement, and the first one was
+wrong.** Over 150 seconds the renderer climbs about 8 MB a minute, which
+extrapolates to 1.9 GB across four hours — more than the file itself, so
+the extrapolation had to be wrong somewhere. Over **21 minutes** of the
+same file the real figure is about **1.3 MB a minute** (251 → 278 MB,
+wobbling): the 8 was the opening buffering ramp, read as if it were the
+steady state. At 1.3 a four-hour set ends around 300 MB above a ~250 MB
+baseline — which is the size of the file, and says the ceiling is roughly
+"Chrome ends up holding the bytes it has read".
+
+That matters for the obvious question, *would a phone with more memory be
+fine?* Probably, and for a reason worth stating: the growth is **bounded
+by the size of the file**, not open-ended. About 700 MB for a background
+process is a plausible thing for Android 10 on 4 GB to reclaim — with a
+navigation app in the foreground for four hours, very plausible — and an
+unremarkable one at 8 or 12 GB. Not a promise: this was measured on
+desktop Linux Chrome over 21 minutes, Android's media stack is not the
+same one, and the system reclaims on pressure rather than on a number.
 
 Two controls worth keeping, because both were nearly reported as answers
 and neither was one:
@@ -1379,8 +1397,10 @@ and neither was one:
   which looks like a spectacular leak and is only Chrome buffering ahead
   faster than it can release. At 1x it disappears. A number measured
   under conditions the user is not in.
-- With the Web Audio tap removed the climb roughly halves (about 4 MB a
-  minute instead of 8). `attach_analyser` is called on every `play`
+- With the Web Audio tap removed the early climb roughly halves (about
+  4 MB a minute against 8, over the same short window — so both halves of
+  that comparison carry the caveat above).
+  `attach_analyser` is called on every `play`
   whether or not anything is drawing, and `createMediaElementSource` is a
   one-way door — so every session routes its audio through the graph for
   the life of the element, visualizer or no visualizer. That is worth
@@ -1391,3 +1411,42 @@ reads them back as `was_dur` / `was_pos`. A death two hours into one
 four-hour file reads nothing like a death in the third minute of an
 album, and that distinction should come from the phone rather than from a
 desk.
+
+## Coming back at 0:00 was worse than stopping
+
+The app cannot stop a phone's system from reclaiming it, and after the capture
+above that was accepted: let it be killed, the folder banner is one tap, the
+deck comes back where it was. Two of those three were true.
+
+`save_queue_soon()` was subscribed to the `queue` and `playing` channels and to
+nothing else — a track starts, a track ends, the queue is edited, playback
+pauses. Never to `time`. So the position was written when playback STARTED and
+then not again until something else changed.
+
+Across an album the loss hides: a track change every few minutes writes a fresh
+snapshot, so at worst the current track restarts. Inside ONE long track nothing
+changes for as long as it lasts, and this library is four-hour DJ sessions in a
+single file. Measured, before the fix:
+
+    clock: 0:22   stored: {"index":0,"time":1}
+    came back at: 0:01
+
+Twenty-two seconds of playing and one second on disk. Scaled to the real case:
+press play, `time: 0` is stored, and two hours later the system takes the app —
+which it does — and it comes back at the beginning, having thrown away two
+hours of listening. That is worse than the silence that started it, because the
+silence is fixed with a tap and the lost place is not.
+
+The position now goes down every fifteen seconds, driven off the `time` channel
+rather than a timer of its own — that channel fires while, and only while,
+something is actually playing, so a paused deck stops asking by itself and
+there is nothing to start or stop. The slot is claimed BEFORE the debounced
+write rather than after it, or each of the four ticks a second would queue its
+own.
+
+`tests/keepplace.mjs` pins it, and it was written to FAIL first: against the
+previous build it reported `after 0:22 of playing, the position on disk is 1s`.
+It plays a 25-second fixture for twenty seconds without touching anything —
+no track change, no pause, because either would write a snapshot and hide the
+bug — then reads the number on disk and reloads to check the deck lands where
+the music was and not past it.
