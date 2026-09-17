@@ -23,6 +23,12 @@ import {
     gobj_play,
     register_c_yuno,
     register_c_timer,
+    db_load_persistent_attrs,
+    db_save_persistent_attrs,
+    db_remove_persistent_attrs,
+    db_list_persistent_attrs,
+    gobj_global_trace_level,
+    gobj_get_gclass_trace_level2,
 } from "@yuneta/gobj-js";
 
 import {register_c_yui_shell} from "@yuneta/gobj-ui/src/c_yui_shell.js";
@@ -64,28 +70,23 @@ start_diag();
  *  The bug they were switched on for is the app RESTARTING by
  *  itself: if a restart also turned the tracing off, the one
  *  event under investigation would be the one event that ends
- *  the investigation. The flags live in localStorage (gobj-ui
- *  owns them; see the Developer sheet), so they are read here
- *  with no import at all, and the panel's own code — a big
- *  module this app otherwise never needs — is fetched only if
- *  something is actually switched on.
+ *  the investigation. The trace levels are the yuno's: it
+ *  persists them and restores them when it is created (gobj-js
+ *  C_YUNO, `trace_levels`). So they are asked of the runtime
+ *  here, and the panel's own code — a big module this app
+ *  otherwise never needs — is fetched only if something is
+ *  actually switched on, to take the traffic into its window.
  ***************************************************************/
-const TRACE_FLAGS = [
-    "trace_automata", "trace_creation", "trace_start_stop",
-    "trace_subscriptions", "trace_i18n", "trace_traffic",
-];
-
 function restore_traces()
 {
-    let wanted = false;
-    for(const key of TRACE_FLAGS) {
-        try {
-            if(Number(JSON.parse(window.localStorage.getItem(key) || "0"))) {
-                wanted = true;
-            }
-        } catch(e) {
-            /*  A key we cannot read is a key that is not set. */
+    let wanted = gobj_global_trace_level() !== 0 ||
+        gobj_get_gclass_trace_level2("C_IEVENT_CLI").length > 0;
+    try {
+        if(Number(JSON.parse(window.localStorage.getItem("trace_i18n") || "0"))) {
+            wanted = true;
         }
+    } catch(e) {
+        /*  A key we cannot read is a key that is not set. */
     }
     if(!wanted) {
         return;
@@ -120,10 +121,17 @@ function main()
         direction the whole layout is built in. */
     setup_locale();
 
-    /*  Start yuneta (no persistence backend — what this app remembers it
-        remembers itself, in IndexedDB; see idb.js). */
+    /*  Start yuneta. What this app remembers it remembers itself, in
+        IndexedDB (see idb.js); the persistence backend here carries only
+        the framework's own persistent attrs -- the yuno's trace levels. */
     gobj_start_up(
-        null, null, null, null, null, null, null
+        null,
+        db_load_persistent_attrs,
+        db_save_persistent_attrs,
+        db_remove_persistent_attrs,
+        db_list_persistent_attrs,
+        null,
+        null
     );
 
     let yuno = gobj_create_yuno(
@@ -149,7 +157,7 @@ function main()
     gobj_start(yuno);
     gobj_play(yuno);
 
-    /*  After the yuno exists: the flags are written onto it. */
+    /*  After the yuno exists: it has restored its trace levels. */
     restore_traces();
 }
 
