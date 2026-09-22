@@ -29,6 +29,7 @@ import {
     db_list_persistent_attrs,
     gobj_global_trace_level,
     gobj_get_gclass_trace_level2,
+    gclass_find_by_name,
 } from "@yuneta/gobj-js";
 
 import {register_c_yui_shell} from "@yuneta/gobj-ui/src/c_yui_shell.js";
@@ -79,8 +80,11 @@ start_diag();
  ***************************************************************/
 function restore_traces()
 {
+    /*  This app opens no websocket and registers no C_IEVENT_CLI: asking
+     *  for its levels anyway logged "gclass NOT FOUND" on every start.  */
     let wanted = gobj_global_trace_level() !== 0 ||
-        gobj_get_gclass_trace_level2("C_IEVENT_CLI").length > 0;
+        (!!gclass_find_by_name("C_IEVENT_CLI") &&
+            gobj_get_gclass_trace_level2("C_IEVENT_CLI").length > 0);
     try {
         if(Number(JSON.parse(window.localStorage.getItem("trace_i18n") || "0"))) {
             wanted = true;
