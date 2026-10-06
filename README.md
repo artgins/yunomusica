@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.30.1** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.32.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -1450,3 +1450,47 @@ It plays a 25-second fixture for twenty seconds without touching anything —
 no track change, no pause, because either would write a snapshot and hide the
 bug — then reads the number on disk and reloads to check the deck lands where
 the music was and not past it.
+
+## The screen locks, and the graph lets go
+
+The next report was narrower: the app comes back as a fresh launch after the
+lock screen. Nothing in the app reloads it — the only `location.reload()` is the
+"reload" button of the new-version banner — and no event can veto a process the
+system has decided to kill. What the app CAN do is weigh less at the moment the
+system is choosing.
+
+The Web Audio tap was the obvious weight. It was "worth fixing on its own" in
+the capture above, and the screen lock is exactly when it is worth nothing: no
+visualizer and no seek waveform is drawn on a locked phone, yet every sample
+still went through an `AudioContext` — a second audio thread and its buffers,
+next to the platform's own media path.
+
+`createMediaElementSource` cannot be undone, so the tap is not removed: the
+**element** is replaced. When the page goes hidden, `untap_for_background()` in
+`music_store.js` builds a fresh `<audio>` on the same object URL, starts it
+**muted** at the same place while the old one goes on sounding, and only when
+the fresh one is really playing does the old one stop and the fresh one jump to
+where the old one got to and unmute. The old element is then released
+(`release()` in `analyser.js`), and with no tap left the context is suspended.
+`attach()` refuses a hidden page, so nothing taps the fresh element behind the
+user's back; the first `play` or `timeupdate` with the page visible takes the
+tap again. A fresh element that will not start in four seconds is thrown away
+and the old one never stopped, and if the track changed, the user paused, or
+the screen came back meanwhile, the move is dropped as well.
+
+The cost is a seek inside data that is already buffered, once per lock while
+something plays, and one blind spot: what plays while the screen is locked is
+not drawn on the seek waveform, which marks it as not heard.
+
+Each move leaves an `untap` line in the black box (`failed=yes` when it was
+given up), and the heartbeat's `graph` field now reads `untapped@suspended`
+while locked. If the app still dies at the lock screen, the boot record's
+`was_graph` says whether it died with the graph or without it.
+
+`tests/locked.mjs` pins it, and was written to fail first. It watches the
+browser from the outside — every `new Audio()` and every
+`createMediaElementSource` is recorded — fakes the lock with
+`visibilityState`, and checks: locked and playing, the sounding element is
+untapped, the context is not running, and the clock went on; visible again, the
+tap and the context are back and the music never stopped; locked and paused,
+the move is silent and the place does not change.

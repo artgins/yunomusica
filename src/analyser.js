@@ -25,6 +25,15 @@
  *         that anything throwing afterwards cannot take the sound with
  *         it. Whatever else fails here, the music keeps playing.
  *
+ *      3. A hidden page takes no tap, and gives back the ones it has.
+ *         With the screen locked nobody draws, and a graph that nobody
+ *         reads is only memory and a second audio thread — at the very
+ *         moment Android is choosing which app to kill. The door cannot
+ *         be opened backwards, so music_store moves the music to a fresh
+ *         element and calls `release()` on the old one; with no tap
+ *         left, the context is suspended. When the page is visible
+ *         again, the next `attach()` resumes it and taps again.
+ *
  *      The escape hatch, for the day a browser makes this a bad trade:
  *
  *          localStorage["yunomusica:viz"] = "off"
@@ -88,6 +97,7 @@ const OFF_KEY = "yunomusica:viz";
 let ctx     = null;
 let active  = null;     // the tap of the element that is sounding
 let taps    = new WeakMap();
+let live    = new Set();    // the taps not yet released
 let dead    = false;    // disabled, or failed once and never retried
 let bands   = null;     // semitone -> [first bin, last bin]
 let smoothing = 0.7;
@@ -140,6 +150,10 @@ function attach(audio)
     if(dead || !audio) {
         return;
     }
+    /*  Nobody is looking. See the header, point 3. */
+    if(document.visibilityState === "hidden") {
+        return;
+    }
     const c = get_ctx();
     if(!c) {
         return;
@@ -166,7 +180,8 @@ function attach(audio)
         playing is seamless; routing one into a suspended context is
         not. */
     c.resume().then(function() {
-        if(!dead && c.state === "running" && !taps.get(audio)) {
+        if(!dead && c.state === "running" && !taps.get(audio) &&
+                document.visibilityState !== "hidden") {
             make_tap(audio);
         }
     }, noop);
@@ -203,6 +218,7 @@ function make_tap(audio)
             wave:     new Uint8Array(analyser.fftSize)
         };
         taps.set(audio, tap);
+        live.add(tap);
         active = tap;
     } catch(e) {
         /*  The element is already routed through `source`, and source
@@ -210,6 +226,43 @@ function make_tap(audio)
             that is lost is the picture. */
         dead = true;
     }
+}
+
+
+/***************************************************************
+ *  Give back the tap of an element that will not sound again.
+ *
+ *  Disconnecting the source SILENCES the element for good: call
+ *  this only once its music has moved to another element, and
+ *  never on one that is still sounding. With no tap left the
+ *  context is suspended, so a locked phone runs no audio graph.
+ ***************************************************************/
+function release(audio)
+{
+    const tap = audio && taps.get(audio);
+    if(!tap) {
+        return;
+    }
+    try {
+        tap.source.disconnect();
+        tap.analyser.disconnect();
+    } catch(e) {
+        /* already gone */
+    }
+    taps.delete(audio);
+    live.delete(tap);
+    if(active === tap) {
+        active = null;
+    }
+    if(!live.size && ctx && ctx.state === "running") {
+        ctx.suspend().catch(noop);
+    }
+}
+
+/*  Whether this element's sound goes through the graph. */
+function tapped(audio)
+{
+    return !!audio && taps.has(audio);
 }
 
 
@@ -356,6 +409,8 @@ function diagnostics()
 
 export {
     attach,
+    release,
+    tapped,
     frame,
     available,
     diagnostics,

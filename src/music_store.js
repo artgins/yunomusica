@@ -17,7 +17,7 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
-import {attach as attach_analyser} from "./analyser.js";
+import {attach as attach_analyser, release as release_tap, tapped} from "./analyser.js";
 import {diag} from "./diag.js";
 
 
@@ -549,6 +549,9 @@ const S = {
     shuffle: false,
     repeat:  false,
     url:     null,
+    audio_ac: null,     // the deck element's listeners, to drop them
+    temp_ac: null,      // the same for the temporary list's element
+    swapping: {},       // slot -> a move to a fresh element is under way
 };
 
 
@@ -1531,32 +1534,40 @@ function get_temp_audio()
 {
     if(!S.temp_audio) {
         S.temp_audio = new Audio();
-        /*  Same channel as the deck's clock: whoever is painting a
-            position repaints, and each asks for the one it owns. */
-        /*  What comes out of here is also something that is sounding,
-            so the visualizer follows it too. */
-        S.temp_audio.addEventListener("play", () => attach_analyser(S.temp_audio));
-        S.temp_audio.addEventListener("timeupdate", () => {
-            attach_analyser(S.temp_audio);
-            emit("time");
-        });
-        /*  ON to the next one. A list that stopped after its first
-            track was not a list. */
-        S.temp_audio.addEventListener("ended", () => temp_next());
-        S.temp_audio.addEventListener("error", () => {
-            let err = S.temp_audio.error;
-            if(!S.temp_audio.src || (err && err.code === 1)) {
-                return;                             // an abort, not a failure
-            }
-            S.notice = "that file could not be read";
-            emit("library");
-            /*  One unreadable file must not end the listening. Step
-                over it, the same as a scan steps over a file it cannot
-                open. */
-            temp_next();
-        });
+        wire_temp_audio(S.temp_audio);
     }
     return S.temp_audio;
+}
+
+function wire_temp_audio(audio)
+{
+    S.temp_ac = new AbortController();
+    const signal = S.temp_ac.signal;
+    const on = (ev, fn) => audio.addEventListener(ev, fn, {signal});
+    /*  Same channel as the deck's clock: whoever is painting a
+        position repaints, and each asks for the one it owns. */
+    /*  What comes out of here is also something that is sounding,
+        so the visualizer follows it too. */
+    on("play", () => attach_analyser(S.temp_audio));
+    on("timeupdate", () => {
+        attach_analyser(S.temp_audio);
+        emit("time");
+    });
+    /*  ON to the next one. A list that stopped after its first
+        track was not a list. */
+    on("ended", () => temp_next());
+    on("error", () => {
+        let err = S.temp_audio.error;
+        if(!S.temp_audio.src || (err && err.code === 1)) {
+            return;                             // an abort, not a failure
+        }
+        S.notice = "that file could not be read";
+        emit("library");
+        /*  One unreadable file must not end the listening. Step
+            over it, the same as a scan steps over a file it cannot
+            open. */
+        temp_next();
+    });
 }
 
 /*  Start the list the user can see, at the row they pressed.
@@ -1826,78 +1837,90 @@ function get_audio()
     if(!S.audio) {
         S.audio = new Audio();
         S.audio.preload = "metadata";
-        /*  The tap is RETRIED here, not only taken on `play`.
-         *
-         *  Taking it needs the AudioContext to be running, and the
-         *  first play is not always the moment that happens: a context
-         *  can still be suspended when the handler runs, and if that
-         *  one attempt is all there is, the visualizer stays blank for
-         *  the rest of the session with no way back. This costs a Map
-         *  lookup four times a second and nothing at all once the tap
-         *  exists. */
-        S.audio.addEventListener("timeupdate", () => {
-            attach_analyser(S.audio);
-            emit("time");
-        });
-        S.audio.addEventListener("ended", () => step(1));
-        /*  The visualizer's tap is taken HERE and nowhere else: it can
-            only be taken while the context is allowed to run, and a
-            `play` handler is the one place we are certainly inside the
-            gesture that granted it. See analyser.js. */
-        S.audio.addEventListener("play",  () => {
-            attach_analyser(S.audio);
-            emit("playing");
-        });
-        S.audio.addEventListener("pause", () => emit("playing"));
-        S.audio.addEventListener("canplay", () => { S.retry_for = 0; });
-        /*  The element asking for bytes that are not coming. On a local
-            file this should never happen, so when it does it is either a
-            disk the system took away or a handle that went stale. */
-        S.audio.addEventListener("stalled", () => diag("stalled", {}));
-        /*  Metadata is the moment the element learns how long the track
-            is, and it arrives well after the src was set — on a phone,
-            not until the file is really being read. Two things wait for
-            it: the total on the transport, which otherwise sits at 0:00
-            for a track nobody has played yet, and the seek of a restored
-            position. `timeupdate` alone did not cover it: it only fires
-            while something is playing, which a restored deck is not. */
-        S.audio.addEventListener("loadedmetadata", function() {
-            apply_resume();
-            emit("time");
-        });
-        S.audio.addEventListener("durationchange", () => emit("time"));
-        S.audio.addEventListener("error", () => {
-            /*  Swapping the source aborts whatever was loading, and an
-                abort is not a broken file. Reporting it would put "that
-                file could not be read" on screen every time the user
-                changed track. */
-            let err = S.audio.error;
-            if(!S.audio.src || (err && err.code === 1)) {   // MEDIA_ERR_ABORTED
-                return;
-            }
-            /*  Worth a line in the black box: "the music stopped" has a
-                media-layer answer and an app-layer one, and they are
-                told apart by whether anything was wrong with the FILE at
-                the moment it went quiet. */
-            diag("audio", {code: (err && err.code) || 0});
-            /*  A File is a snapshot of what was on disk when it was
-                handed over. Re-tag a track, re-encode it, replace it —
-                and the reference we are holding no longer matches, which
-                the browser reports as a load failure. We know how to get
-                a fresh one, so get one before declaring the file
-                unreadable. */
-            const t = S.queue[S.qi];
-            if(t && S.retry_for !== t.uid) {
-                S.retry_for = t.uid;
-                t.file = null;
-                load_current(S.autoplay_intent);
-                return;
-            }
-            S.notice = "that file could not be read";
-            emit("library");
-        });
+        wire_audio(S.audio);
     }
     return S.audio;
+}
+
+/*  The deck element's listeners, on a signal of their own: when the
+    music moves to a fresh element (see untap_for_background) the old
+    one must go quiet in every sense, and its pause must not be heard
+    as the deck pausing. */
+function wire_audio(audio)
+{
+    S.audio_ac = new AbortController();
+    const signal = S.audio_ac.signal;
+    const on = (ev, fn) => audio.addEventListener(ev, fn, {signal});
+    /*  The tap is RETRIED here, not only taken on `play`.
+     *
+     *  Taking it needs the AudioContext to be running, and the
+     *  first play is not always the moment that happens: a context
+     *  can still be suspended when the handler runs, and if that
+     *  one attempt is all there is, the visualizer stays blank for
+     *  the rest of the session with no way back. This costs a Map
+     *  lookup four times a second and nothing at all once the tap
+     *  exists. */
+    on("timeupdate", () => {
+        attach_analyser(S.audio);
+        emit("time");
+    });
+    on("ended", () => step(1));
+    /*  The visualizer's tap is taken HERE and nowhere else: it can
+        only be taken while the context is allowed to run, and a
+        `play` handler is the one place we are certainly inside the
+        gesture that granted it. See analyser.js. */
+    on("play",  () => {
+        attach_analyser(S.audio);
+        emit("playing");
+    });
+    on("pause", () => emit("playing"));
+    on("canplay", () => { S.retry_for = 0; });
+    /*  The element asking for bytes that are not coming. On a local
+        file this should never happen, so when it does it is either a
+        disk the system took away or a handle that went stale. */
+    on("stalled", () => diag("stalled", {}));
+    /*  Metadata is the moment the element learns how long the track
+        is, and it arrives well after the src was set — on a phone,
+        not until the file is really being read. Two things wait for
+        it: the total on the transport, which otherwise sits at 0:00
+        for a track nobody has played yet, and the seek of a restored
+        position. `timeupdate` alone did not cover it: it only fires
+        while something is playing, which a restored deck is not. */
+    on("loadedmetadata", function() {
+        apply_resume();
+        emit("time");
+    });
+    on("durationchange", () => emit("time"));
+    on("error", () => {
+        /*  Swapping the source aborts whatever was loading, and an
+            abort is not a broken file. Reporting it would put "that
+            file could not be read" on screen every time the user
+            changed track. */
+        let err = S.audio.error;
+        if(!S.audio.src || (err && err.code === 1)) {   // MEDIA_ERR_ABORTED
+            return;
+        }
+        /*  Worth a line in the black box: "the music stopped" has a
+            media-layer answer and an app-layer one, and they are
+            told apart by whether anything was wrong with the FILE at
+            the moment it went quiet. */
+        diag("audio", {code: (err && err.code) || 0});
+        /*  A File is a snapshot of what was on disk when it was
+            handed over. Re-tag a track, re-encode it, replace it —
+            and the reference we are holding no longer matches, which
+            the browser reports as a load failure. We know how to get
+            a fresh one, so get one before declaring the file
+            unreadable. */
+        const t = S.queue[S.qi];
+        if(t && S.retry_for !== t.uid) {
+            S.retry_for = t.uid;
+            t.file = null;
+            load_current(S.autoplay_intent);
+            return;
+        }
+        S.notice = "that file could not be read";
+        emit("library");
+    });
 }
 
 function current_track()
@@ -2167,6 +2190,134 @@ function setup_media_session()
 
 
 /***************************************************************
+ *  The screen locks: take the music off the Web Audio graph.
+ *
+ *  The visualizer and the seek waveform read the music through
+ *  an AudioContext, and an element routed into one can never be
+ *  routed out again (analyser.js, point 1). With the screen
+ *  locked nobody reads anything, and the graph only costs memory
+ *  and a second audio thread, which is what Android counts when
+ *  it chooses which app to kill. With the visualizer on, the app
+ *  came back from the lock screen as a fresh launch.
+ *
+ *  So when the page is hidden, the music moves to a fresh,
+ *  untapped element at the same place, and the old element is
+ *  released, which suspends the context. When the page is
+ *  visible again, nothing needs doing here: the next `play` or
+ *  `timeupdate` takes the tap again.
+ *
+ *  The move must not be heard, or at least as little as can be:
+ *  the fresh element starts MUTED while the old one goes on
+ *  sounding, and only when it is really playing does the old one
+ *  stop and the fresh one jump to where the old one got to and
+ *  unmute. What is left is a seek inside data that is already
+ *  buffered. A fresh element that will not start costs nothing:
+ *  it is thrown away, and the old one never stopped.
+ ***************************************************************/
+function setup_background_audio()
+{
+    document.addEventListener("visibilitychange", function() {
+        if(document.visibilityState === "hidden") {
+            untap_for_background("audio");
+            untap_for_background("temp_audio");
+        }
+    });
+}
+
+/*  How long a fresh element may take to get ready before the move is
+    given up. The old element plays on in the meantime. */
+const SWAP_WAIT = 4000;
+
+async function untap_for_background(slot)
+{
+    const old = S[slot];
+    if(!old || !tapped(old) || S.swapping[slot]) {
+        return;
+    }
+    S.swapping[slot] = true;
+    try {
+        await move_to_fresh_element(slot, old);
+    } finally {
+        S.swapping[slot] = false;
+    }
+}
+
+async function move_to_fresh_element(slot, old)
+{
+    const src = old.src;
+    const playing = !old.paused;
+    const fresh = new Audio();
+    fresh.preload = old.preload;
+
+    let ok = true;
+    if(src) {
+        fresh.muted = true;
+        fresh.src = src;
+        /*  Before the metadata this is the start position, which saves
+            a seek once it arrives. */
+        fresh.currentTime = old.currentTime;
+        ok = await within(playing
+            ? fresh.play().then(() => true, () => false)
+            : metadata_of(fresh), SWAP_WAIT);
+    }
+
+    /*  The world can have moved on while that was loading: the track
+        ended or changed, the user paused or played, the screen came
+        back. Any of those, and the old element is still the right one. */
+    if(!ok || S[slot] !== old || old.src !== src || old.paused === playing ||
+            document.visibilityState !== "hidden") {
+        fresh.pause();
+        fresh.removeAttribute("src");
+        fresh.load();
+        if(!ok) {
+            diag("untap", {slot, failed: true});
+        }
+        return;
+    }
+
+    /*  The handover. The old listeners go first, or its pause would be
+        heard as the deck pausing. */
+    S[(slot === "audio") ? "audio_ac" : "temp_ac"].abort();
+    old.pause();
+    if(src) {
+        fresh.currentTime = old.currentTime;
+    }
+    fresh.muted = false;
+    S[slot] = fresh;
+    if(slot === "audio") {
+        wire_audio(fresh);
+    } else {
+        wire_temp_audio(fresh);
+    }
+    release_tap(old);
+    old.removeAttribute("src");
+    old.load();
+    diag("untap", {slot, playing});
+    emit("time");
+}
+
+function within(promise, ms)
+{
+    return Promise.race([
+        promise,
+        new Promise((resolve) => setTimeout(() => resolve(false), ms))
+    ]);
+}
+
+function metadata_of(audio)
+{
+    return new Promise((resolve) => {
+        if(audio.readyState >= 1) {
+            resolve(true);
+            return;
+        }
+        audio.addEventListener("loadedmetadata", () => resolve(true), {once: true});
+        audio.addEventListener("error", () => resolve(false), {once: true});
+    });
+}
+
+
+/***************************************************************
  *      7. Time formatting
  ***************************************************************/
 function fmt_time(s)
@@ -2242,6 +2393,7 @@ export {
     progress,
     queue_position,
     setup_media_session,
+    setup_background_audio,
     fmt_time,
     /*  the temporary list */
     play_temp,

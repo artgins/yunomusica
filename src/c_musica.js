@@ -49,6 +49,7 @@ import {
     subscribe, store_state,
     current_track, is_playing, toggle, step, prev,
     seek_fraction, progress, cover_url, setup_media_session,
+    setup_background_audio,
     cancel_ingest, fmt_time,
     queue_snapshot, restore_queue,
     temp_track, temp_playing, temp_toggle, temp_position,
@@ -197,6 +198,7 @@ function mt_start(gobj)
         $root, so the player docks below it. */
     build_player(gobj);
     setup_media_session();
+    setup_background_audio();
 
     /*  Tell the black box how to describe what the app is doing. It is
         asked, not told, so diag.js stays a leaf: everything records INTO
