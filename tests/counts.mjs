@@ -291,7 +291,7 @@ if(cleared.plays !== 0 || cleared.hearts !== 0) {
  *  name. It has to come back the instant the queue differs from the
  *  list again, or the button is simply broken. */
 const saved_n = await page.locator(".MUS_QROW").count();
-await page.click(".MUS_QHEAD .MUS_QBTN:nth-child(1)");
+await page.click(".MUS_QHEAD .MUS_QSAVE");
 await page.fill(".MUS_NAME_INPUT", "Test list");
 await page.click(".MUS_NAMEROW .is-primary");
 await page.waitForTimeout(700);
@@ -301,7 +301,7 @@ await page.waitForTimeout(700);
     used to go on calling itself a hand-built queue and offering to
     save the same thing again under another name. */
 const just_saved = await page.evaluate(() => ({
-    off:    document.querySelector(".MUS_QHEAD .MUS_QBTN").disabled,
+    off:    document.querySelector(".MUS_QHEAD .MUS_QSAVE").disabled,
     origin: (document.querySelector(".MUS_QORIGIN") || {}).textContent || ""
 }));
 if(!just_saved.off) {
@@ -321,7 +321,7 @@ if(await page.locator(".MUS_CONFIRM_CARD").count()) {
 await route(page, "#/player", 900);
 
 const on_list = await page.evaluate(() => ({
-    off:    document.querySelector(".MUS_QHEAD .MUS_QBTN").disabled,
+    off:    document.querySelector(".MUS_QHEAD .MUS_QSAVE").disabled,
     origin: (document.querySelector(".MUS_QORIGIN") || {}).textContent || ""
 }));
 if(!on_list.off) {
@@ -333,7 +333,7 @@ if(!on_list.off) {
 await page.locator(".MUS_QROW").nth(0).locator(".MUS_IBTN").nth(2).click();
 await page.waitForTimeout(700);
 const touched = await page.evaluate(
-    () => document.querySelector(".MUS_QHEAD .MUS_QBTN").disabled);
+    () => document.querySelector(".MUS_QHEAD .MUS_QSAVE").disabled);
 if(touched) {
     bad.push("editing the queue does not bring \"save as list\" back");
 }

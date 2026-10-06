@@ -104,7 +104,7 @@ console.log("   filas repetidas:", repeated.length ? repeated.join(" · ") : "ni
 
 /*  0b. y con la cola vacía, lo que entra se cuenta */
 await route(page, "#/player", 700);
-await page.click(".MUS_QHEAD .MUS_QBTN:nth-child(2)");
+await page.click(".MUS_QHEAD .MUS_QCLEAR");
 await page.waitForTimeout(500);
 const $yes = page.locator(".MUS_QHEAD .is-danger");
 if(await $yes.count()) {

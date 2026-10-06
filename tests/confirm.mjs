@@ -135,7 +135,7 @@ await page.waitForTimeout(700);
 await page.locator(".MUS_CARD").nth(5).locator(".MUS_IBTN").nth(1).click();   // +
 await page.waitForTimeout(1000);
 await route(page, "#/player", 600);
-await page.click(".MUS_QHEAD .MUS_QBTN:nth-child(2)");                 // vaciar
+await page.click(".MUS_QHEAD .MUS_QCLEAR");                 // vaciar
 await page.waitForTimeout(500);
 const $clear = page.locator(".MUS_QHEAD .is-danger");
 if(await $clear.count()) {
@@ -163,7 +163,7 @@ check(q1 === qa + 2, `«añadir a la cola» la hace crecer sin tirar nada: ${qa}
 console.log("4. con el plato vacío no pregunta");
 
 await route(page, "#/player", 600);
-await page.click(".MUS_QHEAD .MUS_QBTN:nth-child(2)");                 // vaciar
+await page.click(".MUS_QHEAD .MUS_QCLEAR");                 // vaciar
 await page.waitForTimeout(500);
 /*  Emptying asks too — that question is emptyq.mjs's, not this one's. */
 const $yes = page.locator(".MUS_CONFIRM_ACTIONS .is-danger, .MUS_QHEAD .is-danger");

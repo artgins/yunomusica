@@ -929,6 +929,50 @@
     padding-block: 0.75rem 0.6rem;
     background: var(--bulma-scheme-main, #fff);
 }
+/*  The queue's own line: the rare and the destructive at the start,
+    what is used all the time at the end, and the whole width between
+    them. See paint_queue. */
+.MUS_QHEAD .MUS_QACTIONS {
+    flex: 1 1 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+.MUS_QGROUP {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+.MUS_QOFTEN { margin-inline-start: auto; }
+/*  The one that destroys does not wear the accent: nothing about it
+    should invite the thumb. It turns red only under the pointer. */
+.MUS_QCLEAR.button.is-ghost { color: var(--bulma-text-weak, #8a8a8a); }
+.MUS_QCLEAR.button.is-ghost:hover:not([disabled]) { color: var(--bulma-danger, #f14668); }
+/*  On a phone the three that can lose their words do, so the line is
+    one row and the rows below get the screen. The label stays on the
+    button as aria-label and title. */
+@media (max-width: 699px) {
+    .MUS_QICON.button > span:not(.MUS_ICO) { display: none; }
+    .MUS_QICON.button { width: 40px; padding-inline: 0; }
+    .MUS_QHEAD .MUS_QBTN.button { min-height: 40px; }
+    /*  One row, whatever the language. The longest label of the ten
+        ("Показать проигрыватель") does not fit a 360px phone beside
+        three icons; rather than wrap, it gives up its tail. */
+    .MUS_QHEAD .MUS_QACTIONS { flex-wrap: nowrap; column-gap: 1.5rem; min-width: 0; }
+    .MUS_QGROUP { flex-wrap: nowrap; }
+    .MUS_QRARE, .MUS_QICON.button { flex-shrink: 0; }
+    .MUS_QOFTEN { min-width: 0; }
+    .MUS_MAXQ.button { min-width: 0; flex-shrink: 1; }
+    /*  …except while "empty the queue?" is asking: two worded buttons
+        do not fit beside the others, and a question squeezed is worse
+        than one that takes a second row for a moment. */
+    .MUS_QHEAD .MUS_QACTIONS:has(.MUS_QCLEAR_YES) { flex-wrap: wrap; row-gap: 0.5rem; }
+    .MUS_MAXQ.button > span:not(.MUS_ICO) {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
 .MUS_QCOUNT {
     font-size: 0.8rem;
     font-weight: 500;

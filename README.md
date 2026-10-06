@@ -1,6 +1,6 @@
 # yunomúsica
 
-**Version 2.32.0** — live at [yunomusica.com](https://yunomusica.com)
+**Version 2.33.0** — live at [yunomusica.com](https://yunomusica.com)
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
@@ -863,9 +863,34 @@ it — a folder waiting to be authorised, a new build deployed — are not the
 player and must not fold away with it; `tests/deckq.mjs` checks that they
 survive, along with the queue itself.
 
-It is added **after** the "follow playing" toggle on purpose. Both are settings
-rather than actions on the queue, and anything inserted before them moves the
-save and clear buttons, which the suite finds by position.
+### Two ends of one line
+
+The four buttons used to sit in one run, in the order they were written: save,
+clear, follow, maximise. "Vaciar la cola" was one thumb's width from "Guardar
+como lista", and on a phone the run wrapped into two lines that left room for
+**one** row of the queue under them.
+
+Now the line has two ends. The start carries what is rare and what destroys —
+clear, then save. The end, which is where the hand reaches first, carries what
+is used all the time — follow, then **Ver la cola entera**, the only filled
+button, because on a phone it is the one that gives the rows their screen back.
+The full width of the line is between the two groups. In Arabic it is all
+mirrored, which is what "start" and "end" mean.
+
+On a phone the first three show only their icons; each keeps its words as
+`aria-label` and `title`. Every button is a 40 px target, and the line is one
+row in all ten languages at 360 px: the longest label, "Показать
+проигрыватель", gives up its tail with an ellipsis instead of wrapping. The one
+exception is the moment "¿Vaciar la cola?" is asking: two buttons with words do
+not fit beside the others, so the line takes a second row until the question is
+answered, and "save" steps aside meanwhile. "Clear" does not wear the accent
+colour; it turns red only under the pointer.
+
+The suite finds the buttons by class now (`.MUS_QCLEAR`, `.MUS_QSAVE`,
+`.MUS_TOG`, `.MUS_MAXQ`), not by position. `tests/qline.mjs` pins the order,
+the space between the groups, the single row and the 40 px targets on a phone,
+that nothing sticks out of the line, and that every button keeps its words on a
+laptop.
 
 ## Nothing is added twice
 

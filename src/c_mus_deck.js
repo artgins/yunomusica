@@ -1082,84 +1082,109 @@ function paint_queue(gobj)
                         ["span", {class: "MUS_QCOUNT"}, String(queue.length)]
                       ]])
                 : ["span", {}],
+            /*  Two groups, pushed to the two ends of the line.
+             *
+             *  Before, the four sat in one run: "Clear the queue" one
+             *  thumb's width from "Save as list", and on a phone the run
+             *  wrapped into two lines that left room for ONE row of the
+             *  queue. Now the end the hand reaches first (the right, or
+             *  the left in Arabic) carries what is used all the time —
+             *  "maximise the queue" last, filled, because on a phone it
+             *  is the button that gives the rows their screen back — and
+             *  the other end carries what is used rarely and what
+             *  destroys. On a phone the first three keep only their
+             *  icons, so the whole line fits on one row. */
             ["div", {class: "MUS_QACTIONS"}, [
-                /*  Off while this IS a saved list and nothing has been
-                    done to it: there is nothing to save that is not
-                    already saved, and the only thing the button could
-                    produce is a second copy under another name. It
-                    comes back the moment the queue is touched, which
-                    is the moment it starts to differ from the list —
-                    the same instant the line above says "edited". */
-                ["button", {
-                        class: "MUS_QBTN button", type: "button",
-                        ...disabled_if(!queue.length || saved_intact),
-                        ...(saved_intact
-                            ? {title: t("already saved"),
-                               "data-i18n-title": "already saved"}
-                            : {})
-                    },
-                    [ico(P.save, 16), ["span", {i18n: "save as list"}, t("save as list")]],
-                    {click: () => open_naming(gobj)}],
-                /*  Emptying the deck asks first.
-                 *
-                 *  It is one tap next to "save as list", it throws away
-                 *  an order that can represent real work, and unlike
-                 *  taking one track out there is nothing to undo it
-                 *  with. The question is asked in the button itself,
-                 *  the way removing a source asks — a dialog for this
-                 *  would be ceremony, but no question at all is how an
-                 *  evening's queue disappears on a misplaced thumb. */
-                priv.confirm_clear
-                    ? ["button", {class: "MUS_QBTN MUS_QCLEAR_YES button is-danger",
-                                  type: "button", i18n: "empty the queue?"},
-                        t("empty the queue?"),
-                        {click: () => {
-                            priv.confirm_clear = false;
-                            queue_clear();
-                        }}]
-                    : ["button", {class: "MUS_QBTN MUS_QCLEAR button is-ghost",
-                                  type: "button", ...disabled_if(!queue.length)},
-                        [ico(P.trash, 16), ["span", {i18n: "clear queue"}, t("clear queue")]],
-                        {click: () => { priv.confirm_clear = true; paint_queue(gobj); }}],
-                priv.confirm_clear
-                    ? ["button", {class: "MUS_QBTN MUS_QCLEAR_NO button is-ghost",
-                                  type: "button", i18n: "cancel"},
-                        t("cancel"),
-                        {click: () => { priv.confirm_clear = false; paint_queue(gobj); }}]
-                    : ["span", {}],
-                /*  These two last, and never disabled: they are
-                    settings, not actions on the queue. Anything before
-                    them would also move the two buttons above, which the
-                    suite finds by position. */
-                ["button", {
-                        class: "MUS_QBTN MUS_TOG button is-ghost" +
-                            (follow_on() ? " is-on" : ""),
-                        type: "button",
-                        "aria-pressed": follow_on() ? "true" : "false"
-                    },
-                    [ico(P.follow, 16),
-                     ["span", {i18n: "follow playing"}, t("follow playing")]],
-                    {click: () => toggle_follow(gobj)}],
-                /*  The queue, given the whole screen.
-                 *
-                 *  The deck leads with the sleeve, the transport and the
-                 *  seek bar, which is right when you are listening and
-                 *  wrong when you are working ON the queue: on a phone
-                 *  that card is most of the screen and you reorder forty
-                 *  tracks through a slot. This folds it away and leaves
-                 *  the list. Nothing is hidden that is not one tap back,
-                 *  and what is sounding still says so — the rows keep
-                 *  their playing mark. */
-                ["button", {
-                        class: "MUS_QBTN MUS_TOG MUS_MAXQ button is-ghost" +
-                            (priv.maxq ? " is-on" : ""),
-                        type: "button",
-                        "aria-pressed": priv.maxq ? "true" : "false"
-                    },
-                    [ico(priv.maxq ? P.collapse : P.expand, 16),
-                     ["span", {i18n: priv.maxq ? "show the player" : "maximise the queue"},
-                        t(priv.maxq ? "show the player" : "maximise the queue")]],
-                    {click: () => toggle_maxq(gobj)}]
+                /*  Built as one list or the other, with no empty
+                    placeholders: in a flex row each of those still costs
+                    a gap, and at 360px a gap is what the line has. */
+                ["div", {class: "MUS_QGROUP MUS_QRARE"}, priv.confirm_clear
+                    /*  Emptying the deck asks first.
+                     *
+                     *  It throws away an order that can represent real
+                     *  work, and unlike taking one track out there is
+                     *  nothing to undo it with. The question is asked in
+                     *  the button itself, the way removing a source asks
+                     *  — a dialog for this would be ceremony, but no
+                     *  question at all is how an evening's queue
+                     *  disappears on a misplaced thumb. While it asks,
+                     *  "save" steps aside, so the question keeps the
+                     *  line to itself. */
+                    ? [
+                        ["button", {class: "MUS_QBTN MUS_QCLEAR_YES button is-danger",
+                                    type: "button", i18n: "empty the queue?"},
+                            t("empty the queue?"),
+                            {click: () => {
+                                priv.confirm_clear = false;
+                                queue_clear();
+                            }}],
+                        ["button", {class: "MUS_QBTN MUS_QCLEAR_NO button is-ghost",
+                                    type: "button", i18n: "cancel"},
+                            t("cancel"),
+                            {click: () => { priv.confirm_clear = false; paint_queue(gobj); }}]
+                      ]
+                    : [
+                        ["button", {class: "MUS_QBTN MUS_QCLEAR MUS_QICON button is-ghost",
+                                    type: "button", ...disabled_if(!queue.length),
+                                    ...label_attrs("clear queue")},
+                            [ico(P.trash, 16), ["span", {i18n: "clear queue"}, t("clear queue")]],
+                            {click: () => { priv.confirm_clear = true; paint_queue(gobj); }}],
+                        /*  Off while this IS a saved list and nothing has
+                            been done to it: there is nothing to save that
+                            is not already saved, and the only thing the
+                            button could produce is a second copy under
+                            another name. It comes back the moment the
+                            queue is touched, which is the moment it starts
+                            to differ from the list — the same instant the
+                            line above says "edited". */
+                        ["button", {
+                                class: "MUS_QBTN MUS_QSAVE MUS_QICON button is-ghost",
+                                type: "button",
+                                ...disabled_if(!queue.length || saved_intact),
+                                ...label_attrs("save as list"),
+                                ...(saved_intact
+                                    ? {title: t("already saved"),
+                                       "data-i18n-title": "already saved"}
+                                    : {})
+                            },
+                            [ico(P.save, 16), ["span", {i18n: "save as list"}, t("save as list")]],
+                            {click: () => open_naming(gobj)}]
+                      ]],
+                /*  Settings, not actions on the queue, and never
+                    disabled. */
+                ["div", {class: "MUS_QGROUP MUS_QOFTEN"}, [
+                    ["button", {
+                            class: "MUS_QBTN MUS_TOG MUS_QICON button is-ghost" +
+                                (follow_on() ? " is-on" : ""),
+                            type: "button",
+                            "aria-pressed": follow_on() ? "true" : "false",
+                            ...label_attrs("follow playing")
+                        },
+                        [ico(P.follow, 16),
+                         ["span", {i18n: "follow playing"}, t("follow playing")]],
+                        {click: () => toggle_follow(gobj)}],
+                    /*  The queue, given the whole screen.
+                     *
+                     *  The deck leads with the sleeve, the transport and
+                     *  the seek bar, which is right when you are
+                     *  listening and wrong when you are working ON the
+                     *  queue: on a phone that card is most of the screen
+                     *  and you reorder forty tracks through a slot. This
+                     *  folds it away and leaves the list. Nothing is
+                     *  hidden that is not one tap back, and what is
+                     *  sounding still says so — the rows keep their
+                     *  playing mark. */
+                    ["button", {
+                            class: "MUS_QBTN MUS_MAXQ button is-primary" +
+                                (priv.maxq ? " is-on" : ""),
+                            type: "button",
+                            "aria-pressed": priv.maxq ? "true" : "false"
+                        },
+                        [ico(priv.maxq ? P.collapse : P.expand, 16),
+                         ["span", {i18n: priv.maxq ? "show the player" : "maximise the queue"},
+                            t(priv.maxq ? "show the player" : "maximise the queue")]],
+                        {click: () => toggle_maxq(gobj)}]
+                ]]
             ]]
         ]]
     );
@@ -1194,6 +1219,16 @@ function paint_queue(gobj)
     });
     $box.appendChild($rows);
     refresh_language($box, t);
+}
+
+/*  A button that can lose its words on a phone keeps them for the
+    screen reader and for the long press, in every language. */
+function label_attrs(key)
+{
+    return {
+        "aria-label": t(key), "data-i18n-aria-label": key,
+        title: t(key), "data-i18n-title": key
+    };
 }
 
 function queue_row(gobj, track, i, cur, total)

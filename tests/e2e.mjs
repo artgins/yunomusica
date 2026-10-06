@@ -67,7 +67,7 @@ console.log("queue rows after edit:", await page.locator(".MUS_QROW").count());
 await step("04-queue-edited");
 
 /*  save the queue as a named list */
-await page.click(".MUS_QHEAD .MUS_QBTN:nth-child(1)");
+await page.click(".MUS_QHEAD .MUS_QSAVE");
 await page.fill(".MUS_NAME_INPUT", "Test list");
 await page.click(".MUS_NAMEROW .is-primary");
 await page.waitForTimeout(500);

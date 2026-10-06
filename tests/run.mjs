@@ -50,6 +50,7 @@ const TESTS = [
     {name: "offline",   what: "sin red arranca y sigue tocando lo del dispositivo"},
     {name: "covers",    what: "car\u00e1tulas de internet: solo del disco que suena, y con reintento"},
     {name: "emptyq",    what: "vaciar la cola pregunta antes"},
+    {name: "qline",     what: "la l\u00ednea de la cola: vaciar a un lado, ver la cola entera al otro"},
     {name: "deckq",     what: "la cola no repite, lo dice, y puede ocupar la pantalla"},
     {name: "addsrc",    what: "a\u00f1adir fuente no duplica nada, y lee una carpeta cada vez"},
     {name: "storage",   what: "otra pestaña no deja sin almacenamiento"},
