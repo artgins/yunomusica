@@ -27,6 +27,7 @@ import {
     gobj_read_attr, gobj_read_pointer_attr, gobj_write_attr,
     gobj_subscribe_event,
     createElement2, refresh_language,
+    html_markup,
 } from "@yuneta/gobj-js";
 
 import {yui_shell_of, yui_shell_navigate} from "@yuneta/gobj-ui/src/c_yui_shell.js";
@@ -88,7 +89,8 @@ const FOLLOW_SLACK_PX = 24;
 const FOLLOW_SETTLE_MS = 900;
 
 const svg = (path, size) =>
-    `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`;
+    html_markup(
+        `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`);
 
 const P = {
     prev:    "M6 6h2v12H6zm12 0v12l-9-6z",

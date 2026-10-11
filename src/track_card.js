@@ -35,7 +35,7 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
-import {createElement2, refresh_language} from "@yuneta/gobj-js";
+import {createElement2, refresh_language, html_markup} from "@yuneta/gobj-js";
 
 import {
     yui_shell_register_overlay,
@@ -68,7 +68,7 @@ function tr(value)
 
 function svg(path, size)
 {
-    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`;
+    return html_markup(`<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`);
 }
 
 

@@ -31,6 +31,7 @@ import {
     gobj_stop_children,
     gobj_start_tree,
     createElement2, refresh_language,
+    html_markup,
 } from "@yuneta/gobj-js";
 
 import {
@@ -88,7 +89,8 @@ const GCLASS_NAME = "C_MUSICA";
 const DECK_ROUTE = "/player";
 
 const svg = (path, size) =>
-    `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`;
+    html_markup(
+        `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`);
 
 const P = {
     prev:  "M6 6h2v12H6zm12 0v12l-9-6z",

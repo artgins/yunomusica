@@ -18,6 +18,7 @@ import {
     gobj_read_attr, gobj_read_pointer_attr, gobj_write_attr,
     gobj_subscribe_event,
     createElement2, refresh_language,
+    html_markup,
 } from "@yuneta/gobj-js";
 
 import {yui_shell_of, yui_shell_navigate} from "@yuneta/gobj-ui/src/c_yui_shell.js";
@@ -45,7 +46,8 @@ import {t} from "i18next";
 const GCLASS_NAME = "C_MUS_LISTS";
 
 const svg = (path, size) =>
-    `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`;
+    html_markup(
+        `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`);
 
 const P = {
     play:  "M8 5v14l11-7z",

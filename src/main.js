@@ -30,6 +30,7 @@ import {
     gobj_global_trace_level,
     gobj_get_gclass_trace_level2,
     gclass_find_by_name,
+    set_strings_are_text,
 } from "@yuneta/gobj-js";
 
 import {register_c_yui_shell} from "@yuneta/gobj-ui/src/c_yui_shell.js";
@@ -128,6 +129,14 @@ function main()
     /*  Start yuneta. What this app remembers it remembers itself, in
         IndexedDB (see idb.js); the persistence backend here carries only
         the framework's own persistent attrs -- the yuno's trace levels. */
+    /*
+     *  A plain string given to createElement2() is TEXT, never markup:
+     *  markup is said with html_markup() (gobj-js 7.26.3+, gobj-ui
+     *  7.26.10+ pass all theirs that way). A string that starts with
+     *  '<' is logged once -- a datum that used to run as html.
+     */
+    set_strings_are_text(true);
+
     gobj_start_up(
         null,
         db_load_persistent_attrs,
