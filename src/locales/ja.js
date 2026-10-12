@@ -272,6 +272,8 @@ const ja = {
         "show references":      "参照を表示",
         "shown above":          "上に表示済み",
         "you are here":         "現在地",
+        "other routes":         "その他の場所",
+        "app":                  "アプリ",
         /*  The Developer window and the shell's chrome (gobj-ui), read by
          *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
         "machine trace shape":  "マシントレースの形式。オン（既定）：遷移ごとに1行、イベントが先頭、Cカーネルと同じ。オフ：従来の3行形式",
@@ -287,6 +289,11 @@ const ja = {
         "clear":                "消去",
         "yuno monitor":         "yuno モニター - トラフィックとトレース",
         "breadcrumbs":          "パンくずリスト",
+        "toolbar":              "ツールバー",
+        "navigation":           "ナビゲーション",
+        "menu":                 "メニュー",
+        "user menu":            "ユーザーメニュー",
+        "backend connection":   "バックエンドとの接続",
         "ok":                   "OK",
         "yes":                  "はい",
         "no":                   "いいえ",

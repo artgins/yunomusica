@@ -296,6 +296,8 @@ const de = {
         "show references":      "Verweise anzeigen",
         "shown above":          "oben gezeigt",
         "you are here":         "Sie sind hier",
+        "other routes":         "Weitere Stellen",
+        "app":                  "App",
         /*  The Developer window and the shell's chrome (gobj-ui), read by
          *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
         "machine trace shape":  "Form der Maschinen-Trace. An (Standard): eine Zeile pro Übergang, das Ereignis zuerst, wie im C-Kernel. Aus: die alte dreizeilige Form",
@@ -311,6 +313,11 @@ const de = {
         "clear":                "Leeren",
         "yuno monitor":         "Yuno-Monitor - Verkehr & Traces",
         "breadcrumbs":          "Brotkrümelnavigation",
+        "toolbar":              "Symbolleiste",
+        "navigation":           "Navigation",
+        "menu":                 "Menü",
+        "user menu":            "Benutzermenü",
+        "backend connection":   "Verbindung zum Backend",
         "ok":                   "OK",
         "yes":                  "Ja",
         "no":                   "Nein",

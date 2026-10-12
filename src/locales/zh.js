@@ -271,6 +271,8 @@ const zh = {
         "show references":      "显示引用",
         "shown above":          "上面已列出",
         "you are here":         "你在这里",
+        "other routes":         "其他位置",
+        "app":                  "应用",
         /*  The Developer window and the shell's chrome (gobj-ui), read by
          *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
         "machine trace shape":  "状态机跟踪的格式。开启（默认）：每次转换一行，事件在前，与 C 内核相同。关闭：旧的三行格式",
@@ -286,6 +288,11 @@ const zh = {
         "clear":                "清除",
         "yuno monitor":         "yuno 监视器 - 流量与跟踪",
         "breadcrumbs":          "面包屑导航",
+        "toolbar":              "工具栏",
+        "navigation":           "导航",
+        "menu":                 "菜单",
+        "user menu":            "用户菜单",
+        "backend connection":   "后端连接",
         "ok":                   "确定",
         "yes":                  "是",
         "no":                   "否",

@@ -287,6 +287,8 @@ const hi = {
         "show references":      "संदर्भ दिखाएँ",
         "shown above":          "ऊपर दिखाया गया",
         "you are here":         "आप यहाँ हैं",
+        "other routes":         "अन्य जगहें",
+        "app":                  "ऐप",
         /*  The Developer window and the shell's chrome (gobj-ui), read by
          *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
         "machine trace shape":  "मशीन ट्रेस का रूप। चालू (डिफ़ॉल्ट): हर संक्रमण के लिए एक पंक्ति, पहले इवेंट, C कर्नेल की तरह। बंद: पुराना तीन-पंक्ति रूप",
@@ -302,6 +304,11 @@ const hi = {
         "clear":                "साफ़ करें",
         "yuno monitor":         "yuno मॉनिटर - ट्रैफ़िक और ट्रेस",
         "breadcrumbs":          "ब्रेडक्रंब",
+        "toolbar":              "टूलबार",
+        "navigation":           "नेविगेशन",
+        "menu":                 "मेनू",
+        "user menu":            "उपयोगकर्ता मेनू",
+        "backend connection":   "बैकएंड कनेक्शन",
         "ok":                   "ठीक है",
         "yes":                  "हाँ",
         "no":                   "नहीं",

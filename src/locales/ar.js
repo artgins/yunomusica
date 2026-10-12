@@ -325,6 +325,8 @@ const ar = {
         "show references":      "إظهار المراجع",
         "shown above":          "معروض في الأعلى",
         "you are here":         "أنت هنا",
+        "other routes":         "مواضع أخرى",
+        "app":                  "التطبيق",
         /*  The Developer window and the shell's chrome (gobj-ui), read by
          *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
         "machine trace shape":  "شكل تتبع الآلة. مفعّل (افتراضي): سطر واحد لكل انتقال، الحدث أولاً، كما في نواة C. معطّل: الشكل القديم بثلاثة أسطر",
@@ -340,6 +342,11 @@ const ar = {
         "clear":                "مسح",
         "yuno monitor":         "مراقب yuno - حركة المرور والتتبعات",
         "breadcrumbs":          "مسار التنقل",
+        "toolbar":              "شريط الأدوات",
+        "navigation":           "التنقل",
+        "menu":                 "قائمة الخيارات",
+        "user menu":            "قائمة المستخدم",
+        "backend connection":   "الاتصال بالخادم",
         "ok":                   "موافق",
         "yes":                  "نعم",
         "no":                   "لا",

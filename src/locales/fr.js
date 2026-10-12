@@ -298,6 +298,8 @@ const fr = {
         "show references":      "Afficher les références",
         "shown above":          "déjà affiché plus haut",
         "you are here":         "Vous êtes ici",
+        "other routes":         "Autres endroits",
+        "app":                  "App",
         /*  The Developer window and the shell's chrome (gobj-ui), read by
          *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
         "machine trace shape":  "Forme de la trace de la machine. Activé (par défaut) : une ligne par transition, l'événement en premier, comme le noyau C. Désactivé : l'ancienne forme sur trois lignes",
@@ -313,6 +315,11 @@ const fr = {
         "clear":                "Effacer",
         "yuno monitor":         "Moniteur de yunos - trafic et traces",
         "breadcrumbs":          "Fil d'Ariane",
+        "toolbar":              "Barre d’outils",
+        "navigation":           "Navigation",
+        "menu":                 "Menu",
+        "user menu":            "Menu utilisateur",
+        "backend connection":   "Connexion au backend",
         "ok":                   "OK",
         "yes":                  "Oui",
         "no":                   "Non",

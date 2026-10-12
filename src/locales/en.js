@@ -313,6 +313,8 @@ const en = {
         "show references":      "Show references",
         "shown above":          "shown above",
         "you are here":         "You are here",
+        "other routes":         "Other places",
+        "app":                  "App",
         /*  The Developer window and the shell's chrome (gobj-ui), read by
          *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
         "machine trace shape":  "Machine trace shape. On (default): one line per transition, event first, like the C kernel. Off: the legacy three-line shape",
@@ -328,6 +330,11 @@ const en = {
         "clear":                "Clear",
         "yuno monitor":         "Yuno monitor - traffic & traces",
         "breadcrumbs":          "Breadcrumbs",
+        "toolbar":              "Toolbar",
+        "navigation":           "Navigation",
+        "menu":                 "Menu",
+        "user menu":            "User menu",
+        "backend connection":   "Backend connection",
         "ok":                   "OK",
         "yes":                  "Yes",
         "no":                   "No",

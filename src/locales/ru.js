@@ -308,6 +308,8 @@ const ru = {
         "show references":      "Показать ссылки",
         "shown above":          "показано выше",
         "you are here":         "Вы здесь",
+        "other routes":         "Другие места",
+        "app":                  "Приложение",
         /*  The Developer window and the shell's chrome (gobj-ui), read by
          *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
         "machine trace shape":  "Вид трассировки машины. Вкл. (по умолчанию): одна строка на переход, сначала событие, как в ядре C. Выкл.: прежний вид в три строки",
@@ -323,6 +325,11 @@ const ru = {
         "clear":                "Очистить",
         "yuno monitor":         "Монитор юно - трафик и трассировки",
         "breadcrumbs":          "Навигационная цепочка",
+        "toolbar":              "Панель инструментов",
+        "navigation":           "Навигация",
+        "menu":                 "Меню",
+        "user menu":            "Меню пользователя",
+        "backend connection":   "Подключение к бэкенду",
         "ok":                   "ОК",
         "yes":                  "Да",
         "no":                   "Нет",
