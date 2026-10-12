@@ -325,6 +325,25 @@ const ar = {
         "show references":      "إظهار المراجع",
         "shown above":          "معروض في الأعلى",
         "you are here":         "أنت هنا",
+        /*  The Developer window and the shell's chrome (gobj-ui), read by
+         *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
+        "machine trace shape":  "شكل تتبع الآلة. مفعّل (افتراضي): سطر واحد لكل انتقال، الحدث أولاً، كما في نواة C. معطّل: الشكل القديم بثلاثة أسطر",
+        "simple mach":          "آلة بسيطة",
+        "show the payload of the traces": "عرض المحتوى الذي تفرغه التتبعات (ev_kw، المنشورات)",
+        "payload":              "المحتوى",
+        "show this section in the expanded view": "عرض هذا القسم في العرض الموسّع",
+        "expand":               "توسيع",
+        "filter events / payload": "تصفية الأحداث / المحتوى",
+        "clear the filter":     "مسح عامل التصفية",
+        "copy visible traffic to clipboard": "نسخ حركة المرور الظاهرة إلى الحافظة",
+        "clear captured traffic": "مسح حركة المرور الملتقطة",
+        "clear":                "مسح",
+        "yuno monitor":         "مراقب yuno - حركة المرور والتتبعات",
+        "breadcrumbs":          "مسار التنقل",
+        "ok":                   "موافق",
+        "yes":                  "نعم",
+        "no":                   "لا",
+        "gclass":               "GClass",
     },
 };
 

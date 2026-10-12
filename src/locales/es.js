@@ -314,6 +314,25 @@ const es = {
         "show references":      "Mostrar referencias",
         "shown above":          "ya mostrado arriba",
         "you are here":         "Estás aquí",
+        /*  The Developer window and the shell's chrome (gobj-ui), read by
+         *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
+        "machine trace shape":  "Forma de la traza de la máquina. Activado (por defecto): una línea por transición, el evento primero, como el kernel en C. Desactivado: la forma antigua de tres líneas",
+        "simple mach":          "Máquina simple",
+        "show the payload of the traces": "Mostrar el contenido que vuelcan las trazas (ev_kw, publicaciones)",
+        "payload":              "Contenido",
+        "show this section in the expanded view": "Mostrar esta sección en la vista expandida",
+        "expand":               "Expandir",
+        "filter events / payload": "Filtrar eventos / contenido",
+        "clear the filter":     "Quitar el filtro",
+        "copy visible traffic to clipboard": "Copiar el tráfico visible al portapapeles",
+        "clear captured traffic": "Borrar el tráfico capturado",
+        "clear":                "Limpiar",
+        "yuno monitor":         "Monitor de yunos - tráfico y trazas",
+        "breadcrumbs":          "Ruta de navegación",
+        "ok":                   "Aceptar",
+        "yes":                  "Sí",
+        "no":                   "No",
+        "gclass":               "GClass",
     },
 };
 

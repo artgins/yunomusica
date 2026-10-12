@@ -308,6 +308,25 @@ const ru = {
         "show references":      "Показать ссылки",
         "shown above":          "показано выше",
         "you are here":         "Вы здесь",
+        /*  The Developer window and the shell's chrome (gobj-ui), read by
+         *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
+        "machine trace shape":  "Вид трассировки машины. Вкл. (по умолчанию): одна строка на переход, сначала событие, как в ядре C. Выкл.: прежний вид в три строки",
+        "simple mach":          "Простая машина",
+        "show the payload of the traces": "Показывать содержимое, которое выводят трассировки (ev_kw, публикации)",
+        "payload":              "Содержимое",
+        "show this section in the expanded view": "Показывать этот раздел в развёрнутом виде",
+        "expand":               "Развернуть",
+        "filter events / payload": "Фильтр событий / содержимого",
+        "clear the filter":     "Сбросить фильтр",
+        "copy visible traffic to clipboard": "Скопировать видимый трафик в буфер обмена",
+        "clear captured traffic": "Очистить захваченный трафик",
+        "clear":                "Очистить",
+        "yuno monitor":         "Монитор юно - трафик и трассировки",
+        "breadcrumbs":          "Навигационная цепочка",
+        "ok":                   "ОК",
+        "yes":                  "Да",
+        "no":                   "Нет",
+        "gclass":               "GClass",
     },
 };
 

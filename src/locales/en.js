@@ -313,6 +313,25 @@ const en = {
         "show references":      "Show references",
         "shown above":          "shown above",
         "you are here":         "You are here",
+        /*  The Developer window and the shell's chrome (gobj-ui), read by
+         *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
+        "machine trace shape":  "Machine trace shape. On (default): one line per transition, event first, like the C kernel. Off: the legacy three-line shape",
+        "simple mach":          "Simple mach",
+        "show the payload of the traces": "Show the payload the traces dump (ev_kw, publications)",
+        "payload":              "Payload",
+        "show this section in the expanded view": "Show this section in the expanded view",
+        "expand":               "Expand",
+        "filter events / payload": "Filter events / payload",
+        "clear the filter":     "Clear the filter",
+        "copy visible traffic to clipboard": "Copy the visible traffic to the clipboard",
+        "clear captured traffic": "Clear the captured traffic",
+        "clear":                "Clear",
+        "yuno monitor":         "Yuno monitor - traffic & traces",
+        "breadcrumbs":          "Breadcrumbs",
+        "ok":                   "OK",
+        "yes":                  "Yes",
+        "no":                   "No",
+        "gclass":               "GClass",
     },
 };
 

@@ -272,6 +272,25 @@ const ja = {
         "show references":      "参照を表示",
         "shown above":          "上に表示済み",
         "you are here":         "現在地",
+        /*  The Developer window and the shell's chrome (gobj-ui), read by
+         *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
+        "machine trace shape":  "マシントレースの形式。オン（既定）：遷移ごとに1行、イベントが先頭、Cカーネルと同じ。オフ：従来の3行形式",
+        "simple mach":          "シンプルなマシン",
+        "show the payload of the traces": "トレースが出力する内容を表示（ev_kw、パブリケーション）",
+        "payload":              "内容",
+        "show this section in the expanded view": "この項目を展開表示に表示",
+        "expand":               "展開",
+        "filter events / payload": "イベント / 内容で絞り込む",
+        "clear the filter":     "フィルターを解除",
+        "copy visible traffic to clipboard": "表示中のトラフィックをクリップボードにコピー",
+        "clear captured traffic": "取得したトラフィックを消去",
+        "clear":                "消去",
+        "yuno monitor":         "yuno モニター - トラフィックとトレース",
+        "breadcrumbs":          "パンくずリスト",
+        "ok":                   "OK",
+        "yes":                  "はい",
+        "no":                   "いいえ",
+        "gclass":               "GClass",
     },
 };
 

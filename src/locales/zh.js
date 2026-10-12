@@ -271,6 +271,25 @@ const zh = {
         "show references":      "显示引用",
         "shown above":          "上面已列出",
         "you are here":         "你在这里",
+        /*  The Developer window and the shell's chrome (gobj-ui), read by
+         *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
+        "machine trace shape":  "状态机跟踪的格式。开启（默认）：每次转换一行，事件在前，与 C 内核相同。关闭：旧的三行格式",
+        "simple mach":          "简单状态机",
+        "show the payload of the traces": "显示跟踪输出的内容（ev_kw、发布）",
+        "payload":              "内容",
+        "show this section in the expanded view": "在展开视图中显示此部分",
+        "expand":               "展开",
+        "filter events / payload": "筛选事件 / 内容",
+        "clear the filter":     "清除筛选",
+        "copy visible traffic to clipboard": "将可见流量复制到剪贴板",
+        "clear captured traffic": "清除已捕获的流量",
+        "clear":                "清除",
+        "yuno monitor":         "yuno 监视器 - 流量与跟踪",
+        "breadcrumbs":          "面包屑导航",
+        "ok":                   "确定",
+        "yes":                  "是",
+        "no":                   "否",
+        "gclass":               "GClass",
     },
 };
 

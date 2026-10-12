@@ -287,6 +287,25 @@ const hi = {
         "show references":      "संदर्भ दिखाएँ",
         "shown above":          "ऊपर दिखाया गया",
         "you are here":         "आप यहाँ हैं",
+        /*  The Developer window and the shell's chrome (gobj-ui), read by
+         *  validate-locales since this app runs it (REV-CLOUD V18.4)  */
+        "machine trace shape":  "मशीन ट्रेस का रूप। चालू (डिफ़ॉल्ट): हर संक्रमण के लिए एक पंक्ति, पहले इवेंट, C कर्नेल की तरह। बंद: पुराना तीन-पंक्ति रूप",
+        "simple mach":          "सरल मशीन",
+        "show the payload of the traces": "ट्रेस द्वारा डाली गई सामग्री दिखाएँ (ev_kw, प्रकाशन)",
+        "payload":              "सामग्री",
+        "show this section in the expanded view": "इस अनुभाग को विस्तृत दृश्य में दिखाएँ",
+        "expand":               "विस्तार करें",
+        "filter events / payload": "इवेंट / सामग्री छाँटें",
+        "clear the filter":     "फ़िल्टर हटाएँ",
+        "copy visible traffic to clipboard": "दिखाई दे रहा ट्रैफ़िक क्लिपबोर्ड पर कॉपी करें",
+        "clear captured traffic": "कैप्चर किया गया ट्रैफ़िक साफ़ करें",
+        "clear":                "साफ़ करें",
+        "yuno monitor":         "yuno मॉनिटर - ट्रैफ़िक और ट्रेस",
+        "breadcrumbs":          "ब्रेडक्रंब",
+        "ok":                   "ठीक है",
+        "yes":                  "हाँ",
+        "no":                   "नहीं",
+        "gclass":               "GClass",
     },
 };
 
