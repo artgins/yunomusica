@@ -361,6 +361,9 @@ const fr = {
         "traffic payload laid out": "Trafic : contenu déplié",
         "view":                 "Vue",
         "window":               "Fenêtre",
+
+        /*  gobj-ui 7.26.35: a badge said with its item  */
+        "{{name}}, {{n}}": "{{name}}, {{n}}",
     },
 };
 

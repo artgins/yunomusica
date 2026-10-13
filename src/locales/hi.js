@@ -350,6 +350,9 @@ const hi = {
         "traffic payload laid out": "ट्रैफ़िक: सामग्री विस्तृत",
         "view":                 "दृश्य",
         "window":               "विंडो",
+
+        /*  gobj-ui 7.26.35: a badge said with its item  */
+        "{{name}}, {{n}}": "{{name}}, {{n}}",
     },
 };
 

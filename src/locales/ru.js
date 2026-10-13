@@ -371,6 +371,9 @@ const ru = {
         "traffic payload laid out": "Трафик: содержимое развёрнуто",
         "view":                 "Вид",
         "window":               "Окно",
+
+        /*  gobj-ui 7.26.35: a badge said with its item  */
+        "{{name}}, {{n}}": "{{name}}, {{n}}",
     },
 };
 

@@ -377,6 +377,9 @@ const es = {
         "traffic payload laid out": "Tráfico: contenido desplegado",
         "view":                 "Vista",
         "window":               "Ventana",
+
+        /*  gobj-ui 7.26.35: a badge said with its item  */
+        "{{name}}, {{n}}": "{{name}}, {{n}}",
     },
 };
 

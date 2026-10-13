@@ -388,6 +388,9 @@ const ar = {
         "traffic payload laid out": "حركة المرور: المحتوى موسّع",
         "view":                 "العرض",
         "window":               "النافذة",
+
+        /*  gobj-ui 7.26.35: a badge said with its item  */
+        "{{name}}, {{n}}": "{{name}}، {{n}}",
     },
 };
 

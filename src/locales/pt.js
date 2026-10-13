@@ -360,6 +360,9 @@ const pt = {
         "traffic payload laid out": "Tráfego: conteúdo expandido",
         "view":                 "Vista",
         "window":               "Janela",
+
+        /*  gobj-ui 7.26.35: a badge said with its item  */
+        "{{name}}, {{n}}": "{{name}}, {{n}}",
     },
 };
 

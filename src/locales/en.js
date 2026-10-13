@@ -376,6 +376,9 @@ const en = {
         "traffic payload laid out": "Traffic: payload laid out",
         "view":                 "View",
         "window":               "Window",
+
+        /*  gobj-ui 7.26.35: a badge said with its item  */
+        "{{name}}, {{n}}": "{{name}}, {{n}}",
     },
 };
 

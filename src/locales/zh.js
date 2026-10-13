@@ -334,6 +334,9 @@ const zh = {
         "traffic payload laid out": "流量：内容展开",
         "view":                 "视图",
         "window":               "窗口",
+
+        /*  gobj-ui 7.26.35: a badge said with its item  */
+        "{{name}}, {{n}}": "{{name}}，{{n}}",
     },
 };
 

@@ -335,6 +335,9 @@ const ja = {
         "traffic payload laid out": "トラフィック：内容を展開",
         "view":                 "表示形式",
         "window":               "ウィンドウ",
+
+        /*  gobj-ui 7.26.35: a badge said with its item  */
+        "{{name}}, {{n}}": "{{name}}、{{n}}",
     },
 };
 
