@@ -6,6 +6,14 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.14 — 2026-10-13
+
+- gobj-js `^7.26.21` (deploy round): the masking of the twenty-fourth review
+  (yunovatios `REV-CLOUD.md` V24.4.2, V24.4.3) -- after `Bearer` or `Basic`
+  only a word that can be a credential is masked; a JWE and a `name: value`
+  whose name is a secret's are masked; no rule hides a value from the next. No
+  change of the app's own code. Catalogue check and build green.
+
 ## 2.33.13 — 2026-10-13
 
 - gobj-ui `^7.26.42` (deploy round): every change of a badge is said, as text,
