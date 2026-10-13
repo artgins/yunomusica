@@ -1,4 +1,9 @@
 #!/bin/sh
+#
+#   A step that fails stops the deploy: the backup is the rollback point,
+#   and without `set -e` a failed one went on to the rsync.
+#
+set -eu
 
 NODE="yunomusica.com"
 

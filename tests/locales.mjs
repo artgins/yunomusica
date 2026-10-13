@@ -109,12 +109,21 @@ for(const c of CODES) {
 
     English is exempt from the second half and only from that: the keys
     ARE lower-case English, so "edited" being the word "edited" is the
-    catalogue working, not a gap. */
+    catalogue working, not a gap. So is a key that is only FORMAT --
+    placeholders and punctuation, no word to translate: gobj-ui's badge
+    announcement, "{{name}}, {{n}}", is written the same in every
+    language, and the check took it for a gap in nine of them (red from
+    2.33.5 to 2.33.10). */
+function is_only_format(key)
+{
+    return !/\p{L}/u.test(String(key).replace(/\{\{[^}]*\}\}/g, ""));
+}
+
 console.log("3. nada vacío ni sin traducir del todo");
 for(const c of CODES) {
     const wrong = Object.entries(tr[c])
         .filter(([k, v]) => !String(v).trim() ||
-                            (c !== "en" && String(v) === base(k)))
+                            (c !== "en" && String(v) === base(k) && !is_only_format(base(k))))
         .map(([k]) => k);
     check(!wrong.length, `${c}: ${wrong.length ? wrong.join(", ") : "todo con texto"}`);
 }
