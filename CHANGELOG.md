@@ -6,6 +6,12 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.13 — 2026-10-13
+
+- gobj-ui `^7.26.42` (deploy round): every change of a badge is said, as text,
+  and the nav and toolbar items are named by a key. This app mounts no graph,
+  so it needs none of the new keys. Catalogue check and build green.
+
 ## 2.33.12 — 2026-10-13
 
 - `npm audit fix`: `npm install` reported three high vulnerabilities (the
