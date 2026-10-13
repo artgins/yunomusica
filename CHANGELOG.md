@@ -6,6 +6,15 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.12 — 2026-10-13
+
+- `npm audit fix`: `npm install` reported three high vulnerabilities (the
+  deploy round shows every step's output now): `devalue` (svelte, through
+  `vanilla-jsoneditor`), `fast-uri` (ajv, the same) and `source-map-js` (vite
+  and postcss, build only). Raised within their ranges to 5.9.4, 3.1.8 and
+  1.2.2; no `package.json` range moves, the bundle does. Catalogue check and
+  build green.
+
 ## 2.33.11 — 2026-10-13
 
 - gobj-ui `^7.26.41` (deploy round, which tests the app before deploying it
