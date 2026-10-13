@@ -1,6 +1,7 @@
 # yunomúsica
 
-**Version 2.33.0** — live at [yunomusica.com](https://yunomusica.com)
+Live at [yunomusica.com](https://yunomusica.com). The version is the one in
+`package.json`, and [`CHANGELOG.md`](CHANGELOG.md) says what each one changed.
 
 A small, offline SPA for listening to the music already on your phone (or your
 computer). You authorise a folder, it is read **here, on the device** — nothing
