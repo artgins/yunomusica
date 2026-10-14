@@ -6,6 +6,21 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.24 — 2026-10-14
+
+- gobj-ui `^7.26.47`, gobj-js `^7.26.26` (deploy rounds): the gobj-ui 7.26.47 and gobj-js 7.26.26 rounds (the twenty-eighth
+  review): an incomplete date no longer erases a stored time; Enter in a box
+  of a form no longer adds a row or reloads the page; a cancelled cell edit is
+  not a change; the header checkbox is named `select all rows` (new key, added
+  in en/es where the app mounts a form); a stopping shell no longer moves the
+  browser history; a panel that only moves keeps its focus trap; gobj-js
+  refuses values whose text says another thing (NaN, `toJSON`, an `undefined`
+  in an array) and a getter that throws, resets the backoff after a long
+  session and removes a corrupt localStorage entry. The two rounds ran back to
+  back: the version between them was deployed and has no commit. No
+  change of the app's own code (it mounts no form, so no new key). Catalogue
+  check and build green.
+
 ## 2.33.22 — 2026-10-14
 
 - gobj-ui `^7.26.46`, gobj-js `^7.26.25` (deploy rounds): the gobj-ui 7.26.46 and gobj-js 7.26.25 rounds (the twenty-seventh
