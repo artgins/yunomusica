@@ -6,6 +6,15 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.16 — 2026-10-14
+
+- gobj-js `^7.26.22` (deploy round): the gobj-js 7.26.22 round (the twenty-fifth review, parity with the C kernel
+  of 7.26.10): a token in a URL query is masked; an attribute's value is read
+  as its type by the command parser's grammar (a value that is not is not
+  written, and said); and a gobj destroyed under code still running on it is
+  reported with an ERROR. No change of the app's own
+  code. Catalogue check and build green.
+
 ## 2.33.15 — 2026-10-14
 
 - gobj-ui `^7.26.43` (deploy round): the gobj-ui 7.26.43 round (the twenty-fifth review): Undo reverts a form's
