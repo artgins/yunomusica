@@ -6,6 +6,18 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.26 — 2026-10-14
+
+- gobj-ui `^7.26.49`, gobj-js `^7.26.27` (deploy rounds): the gobj-ui 7.26.49 and gobj-js 7.26.27 rounds (the twenty-ninth
+  review): a logout with an overlay up no longer leaves dead Back entries; a
+  focus trap whose panel left is warned; a time cell confirmed unchanged no
+  longer goes back one hour in the repeated autumn hour; a template time field
+  shows its time again; gobj-js no longer throws with the site's data blocked
+  (the app did not start), floors the reconnection retry at 1000 ms, and its
+  walks step over a gobj already destroyed. The two rounds ran back to back:
+  the version between them was deployed and has no commit. No
+  change of the app's own code. Catalogue check and build green.
+
 ## 2.33.24 — 2026-10-14
 
 - gobj-ui `^7.26.47`, gobj-js `^7.26.26` (deploy rounds): the gobj-ui 7.26.47 and gobj-js 7.26.26 rounds (the twenty-eighth
