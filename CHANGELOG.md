@@ -6,6 +6,16 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.31 — 2026-10-14
+
+- gobj-ui `^7.26.53` (deploy round): the gobj-ui 7.26.53 round: a time a view shows as text (the cells of
+  the topic and form tables, the JSON viewer, the axes and legend of the
+  charts) is in the app's language with a 24-hour clock ("Oct 14, 2026,
+  15:05:09") and changes with the language button. (The 7.26.52 round did not
+  reach the app: its build failed on the period picker's keys the validator
+  asked for; 7.26.53 fixes it.) No change of the
+  app's own code.
+
 ## 2.33.29 — 2026-10-14
 
 - gobj-ui `^7.26.51`, gobj-js `^7.26.28` (deploy rounds): the gobj-ui 7.26.51 and gobj-js 7.26.28 rounds (the thirtieth review):
