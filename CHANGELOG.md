@@ -6,6 +6,13 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.18 — 2026-10-14
+
+- gobj-js `^7.26.23` (deploy round): gobj-js 7.26.23: `C_IEVENT_CLI` no longer warns when a session ends
+  (every close was a warning, the clean one of a logout included; it is
+  `EV_ON_CLOSE` now, as in C), and the reason of a failed open is masked. No
+  change of the app's own code. Catalogue check and build green.
+
 ## 2.33.17 — 2026-10-14
 
 - gobj-ui `^7.26.44` (deploy round): gobj-ui 7.26.44: a click on a row of a form's table WROTE its `selectable`
