@@ -6,6 +6,13 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.17 — 2026-10-14
+
+- gobj-ui `^7.26.44` (deploy round): gobj-ui 7.26.44: a click on a row of a form's table WROTE its `selectable`
+  attr with no value instead of reading it (since v1); with gobj-js 7.26.22
+  that was an ERROR and an exception. No change of the app's own
+  code. Catalogue check and build green.
+
 ## 2.33.16 — 2026-10-14
 
 - gobj-js `^7.26.22` (deploy round): the gobj-js 7.26.22 round (the twenty-fifth review, parity with the C kernel
