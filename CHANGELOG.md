@@ -6,6 +6,13 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.27 — 2026-10-14
+
+- gobj-ui `^7.26.50` (deploy round): the gobj-ui 7.26.50 round: a menu item's badge is the v1 pill again,
+  with no ring of the page's colour (in the dark theme it read as a black
+  circle that ate the tone; red and yellow were hard to tell apart). No change of the app's
+  own code.
+
 ## 2.33.26 — 2026-10-14
 
 - gobj-ui `^7.26.49`, gobj-js `^7.26.27` (deploy rounds): the gobj-ui 7.26.49 and gobj-js 7.26.27 rounds (the twenty-ninth
