@@ -6,6 +6,15 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.15 — 2026-10-14
+
+- gobj-ui `^7.26.43` (deploy round): the gobj-ui 7.26.43 round (the twenty-fifth review): Undo reverts a form's
+  tables and the record stays as loaded; nested tables live as long as their
+  row; a table loads in one call; `C_YUI_WINDOW` is a named dialog with
+  Escape and focus; the shell's dialogs are named and reachable from the
+  keyboard; the floating dock no longer covers a full-screen window. No
+  change of the app's own code. Catalogue check and build green.
+
 ## 2.33.14 — 2026-10-13
 
 - gobj-js `^7.26.21` (deploy round): the masking of the twenty-fourth review
