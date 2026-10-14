@@ -6,6 +6,17 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.20 — 2026-10-14
+
+- gobj-ui `^7.26.45`, gobj-js `^7.26.24` (deploy rounds): the gobj-ui 7.26.45 and gobj-js 7.26.24 rounds (the twenty-sixth review):
+  `selectable` is Tabulator's `selectableRowsCheck`; an open cell editor no
+  longer breaks a reload; a window yields Escape to a newer overlay; a session
+  cut uncleanly is a WARNING again and `EV_ON_CLOSE` carries `code`, `reason`
+  and `was_clean`; names written as a form writes them and a URL's password
+  are masked. The two rounds ran back to back: the version between them was
+  deployed and has no commit. No
+  change of the app's own code. Catalogue check and build green.
+
 ## 2.33.18 — 2026-10-14
 
 - gobj-js `^7.26.23` (deploy round): gobj-js 7.26.23: `C_IEVENT_CLI` no longer warns when a session ends
