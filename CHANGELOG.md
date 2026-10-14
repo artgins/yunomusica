@@ -6,6 +6,18 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.22 — 2026-10-14
+
+- gobj-ui `^7.26.46`, gobj-js `^7.26.25` (deploy rounds): the gobj-ui 7.26.46 and gobj-js 7.26.25 rounds (the twenty-seventh
+  review): a stopped shell closes its overlays (their focus traps left later
+  windows without focus after a logout); the checkbox column respects
+  `selectable`; a time column is editable without luxon; `C_IEVENT_CLI`
+  refuses the transport's own events from the server and closes with 4002 on
+  a server fault without resetting the backoff; URLs and queries encoded
+  inside a value are masked. The two rounds ran back to back: the version
+  between them was deployed and has no commit. No
+  change of the app's own code. Catalogue check and build green.
+
 ## 2.33.20 — 2026-10-14
 
 - gobj-ui `^7.26.45`, gobj-js `^7.26.24` (deploy rounds): the gobj-ui 7.26.45 and gobj-js 7.26.24 rounds (the twenty-sixth review):
