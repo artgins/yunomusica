@@ -6,6 +6,18 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.29 — 2026-10-14
+
+- gobj-ui `^7.26.51`, gobj-js `^7.26.28` (deploy rounds): the gobj-ui 7.26.51 and gobj-js 7.26.28 rounds (the thirtieth review):
+  saving a form time field untouched no longer goes back one hour in the
+  repeated autumn hour; the retirement of dead Back entries stays in its
+  document and follows the reader's traversals; `node_uuid()` is stable for the
+  page; a walk gives each gobj once; `gobj_start()` checks `SDF_REQUIRED`
+  attributes (BREAKING; no app declares one); the validator imports the locales
+  in a process of its own. The two rounds ran back to back: the version between
+  them was deployed and has no commit. No
+  change of the app's own code.
+
 ## 2.33.27 — 2026-10-14
 
 - gobj-ui `^7.26.50` (deploy round): the gobj-ui 7.26.50 round: a menu item's badge is the v1 pill again,
