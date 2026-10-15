@@ -6,6 +6,12 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.32 — 2026-10-14
+
+- gobj-ui `^7.26.54` (deploy round): the gobj-ui 7.26.54 round: a table cell editor no longer closes (nor
+  throws a page error in Chromium) when the table redraws on entering the view.
+  No change of the app's own code.
+
 ## 2.33.31 — 2026-10-14
 
 - gobj-ui `^7.26.53` (deploy round): the gobj-ui 7.26.53 round: a time a view shows as text (the cells of
