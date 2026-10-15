@@ -6,6 +6,13 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.35 — 2026-10-15
+
+- gobj-ui `^7.26.57` (deploy round): the gobj-ui 7.26.57 round (the thirty-second review): the topic table
+  closes an open cell editor before it reloads or is destroyed (it threw page
+  errors), and a cell editor also survives `addColumn`,
+  `updateColumnDefinition` and `moveColumn`. No change of the app's own code.
+
 ## 2.33.34 — 2026-10-15
 
 - gobj-ui `^7.26.56`, gobj-js `^7.26.29` (deploy rounds): the gobj-ui 7.26.56 and gobj-js 7.26.29 rounds (the thirty-first
