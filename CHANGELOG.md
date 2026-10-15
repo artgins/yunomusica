@@ -6,6 +6,17 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.33.34 — 2026-10-15
+
+- gobj-ui `^7.26.56`, gobj-js `^7.26.29` (deploy rounds): the gobj-ui 7.26.56 and gobj-js 7.26.29 rounds (the thirty-first
+  review), with the dependencies up to date: i18next ^26.4.5 (26.4.4 fixes a
+  ReDoS on an interpolated value holding an unclosed `$t(`; no locale uses the
+  `$t(` nesting), maplibre-gl ^6.14.0 (fixes; the worker is self-contained
+  since 6.13) and vite ^8.3.4 (build fixes). Also: a time field can clear a
+  value it cannot show, a cell editor survives `setColumns`, and `gobj_play()`
+  fails when its start does. The two rounds ran back to back: the version
+  between them was deployed and has no commit.
+
 ## 2.33.32 — 2026-10-14
 
 - gobj-ui `^7.26.54` (deploy round): the gobj-ui 7.26.54 round: a table cell editor no longer closes (nor
