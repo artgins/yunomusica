@@ -478,8 +478,8 @@ function apply_theme(theme)
 }
 
 /*  The toolbar says what is chosen: a check on the current language and
-    palette, and the theme button wears the theme in force (moon = dark,
-    sun = light). The dropdowns are rebuilt from the shell's config on
+    palette, and the theme button shows the theme it switches TO (the sun
+    while dark, the moon while light). The dropdowns are rebuilt from the shell's config on
     every open, so marking `selected` there is enough. */
 function mark_choice(shell, toolbar_id, key, value)
 {
@@ -502,7 +502,7 @@ function show_choices(gobj)
     mark_choice(shell, "language", "locale", current_locale());
     mark_choice(shell, "palette", "palette", current_palette());
     yui_shell_set_toolbar_item_icon(shell, "theme",
-        current_theme() === "dark" ? "yi-moon" : "yi-sun");
+        current_theme() === "dark" ? "yi-sun" : "yi-moon");
 }
 
 

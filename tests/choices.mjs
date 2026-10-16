@@ -10,8 +10,9 @@
  *        2. The colours menu marks exactly one row, the palette in
  *           force — at start ("auto") and after choosing another, and
  *           still after a reload.
- *        3. The theme button wears the theme in force: the moon in
- *           dark, the sun in light. Up to 2.35.0 it was always the moon.
+ *        3. The theme button shows the theme it switches to: the sun
+ *           in dark, the moon in light. Up to 2.35.0 it was always the
+ *           moon; 2.36.0 showed the theme in force.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
@@ -72,16 +73,16 @@ check("paleta tras elegir Aurora: pal-aurora", same(await marked("palette"), ["p
 
 /*  3. Theme. */
 await set_theme(page, "dark");
-check("tema oscuro: luna", (await theme_icon()) === "yi-moon");
+check("tema oscuro: sol", (await theme_icon()) === "yi-sun");
 await set_theme(page, "light");
-check("tema claro: sol", (await theme_icon()) === "yi-sun");
+check("tema claro: luna", (await theme_icon()) === "yi-moon");
 
 /*  And it all holds across a reload. */
 await page.reload({waitUntil: "networkidle"});
 await page.waitForTimeout(1100);
 check("tras recargar: pal-aurora", same(await marked("palette"), ["pal-aurora"]));
 check("tras recargar: lang-es", same(await marked("language"), ["lang-es"]));
-check("tras recargar: sol", (await theme_icon()) === "yi-sun");
+check("tras recargar: luna", (await theme_icon()) === "yi-moon");
 
 const errors = report(page);
 await browser.close();
