@@ -25,6 +25,8 @@ const de = {
         "palette ice":          "Eis",
         "palette rose":         "Rose",
         "palette leaf":         "Blatt",
+        "palette aurora":       "Polarlicht",
+        "palette dusk":         "Abendrot",
         "language":             "Sprache",
         "help":                 "Hilfe und Credits",
         "more":                 "Mehr",

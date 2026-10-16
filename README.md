@@ -80,7 +80,10 @@ being drawn to mark it; and a key change moves the whole picture through the
 wheel. These two are the only things in the app that do not take their colour
 from the palette — a deliberate exception, and the point of them: colour
 carrying meaning is worth more here than colour carrying the palette. The other
-three still follow the record.
+three still follow the record. Under a multicolour palette the two rules meet:
+every mode draws in the palette's three hues, and the twelve pitch classes are
+laid along those three instead of round the whole wheel, so a note is still
+always the same colour.
 
 **What it is not.** There is no source separation and none is claimed. A snake
 follows a *peak*, which most of the time is a voice or an instrument holding a
@@ -348,16 +351,27 @@ No string interpolates a number. Figures are painted as their own node next to a
 plain noun (`12` + `tracks`), which keeps every language out of the plural-rule
 business — Arabic alone has six forms.
 
-Five **palettes**: gold, ice, rose, leaf, and *from the cover*, which is what the
-app did before there were palettes and stays the default — the accent is tinted
-with the dominant colour of the record playing. Choosing a palette turns that
-tint off; going back to "from the cover" hands it back.
+Seven **palettes**: gold, ice, rose, leaf, aurora, dusk, and *from the cover*,
+which is what the app did before there were palettes and stays the default — the
+accent is tinted with the dominant colour of the record playing. Choosing a
+palette turns that tint off; going back to "from the cover" hands it back.
+
+**Aurora** (teal, violet, rose) and **dusk** (amber, coral, plum) are
+multicolour: one accent all over the screen tires the eye, so three neighbouring
+hues share the roles. The accent keeps the buttons and the nav; the second hue
+takes the play count, the facts and the folders; the third the hearts and the
+toggles that are on; a gradient of the three goes on the play buttons, the seek
+and scan bars and, faintly, on the playing row — and the visualizer draws in all
+three. The hues are neighbours at the same depth, so none of them shouts over
+the rest. Everywhere else the second and third hue ARE the accent and the
+gradients are `none`, so the one-colour palettes did not change.
 
 Each palette is defined **twice**, because a colour that reads well on white is
 rarely the one that reads well on near-black: the dark-scheme block swaps in the
 readable twin and the ink that goes on top of it. Contrast is measured by a test,
-not judged by eye: all ten palette-and-scheme combinations clear 3:1 for the
-accent against the page and 4.5:1 for ink on the accent.
+not judged by eye: all fourteen palette-and-scheme combinations clear 3:1 for the
+accent against the page and 4.5:1 for ink on the accent; in the two multicolour
+ones every hue of the gradient clears it too, because the ink sits on all of it.
 
 ## Also
 
@@ -456,6 +470,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `listplace` | ±10 s does not move the clock, a list played again starts from its first track, or a second reload loses the place |
 | `follow` | the banner scrolls away, or the queue stops following the music |
 | `viz` | the banner draws the wrong note — or tapping the audio silenced it |
+| `multipal` | a multicolour palette is one colour on the deck or in the picture, or paints hues it does not have |
 | `counts` | a skipped track counts as listened to, or the counts vanish on reload |
 | `addsrc` | a folder added twice doubles the library, or two folders are read at once |
 | `templist` | playing from the library asks, stops after one track, or eats the deck |

@@ -46,6 +46,12 @@
  *      picture through the wheel. Colour carrying meaning is worth
  *      more there than colour carrying the palette.
  *
+ *      Under a MULTICOLOUR palette ("aurora", "dusk") both rules meet:
+ *      every mode draws in the palette's three hues, and a note is
+ *      still always the same colour — the twelve pitch classes are
+ *      laid round those three hues instead of round the whole wheel.
+ *      See read_multi().
+ *
  *      Either way the ink is MEASURED against the card before it is
  *      used — see readable(). An accent taken from a pale cover is
  *      near-white, and a near-white line on a near-white card is a
@@ -615,7 +621,9 @@ function accent_of(V)
         }
         const ground = rgb_of(bg || "#ffffff", V.probe);
         V.dark = srgb_lum(ground) < 0.5;
-        V.accent = readable(rgb_of(c, V.probe), ground);
+        const raw = rgb_of(c, V.probe);
+        V.accent = readable(raw, ground);
+        read_multi(css, ground, V.probe, raw, V.accent);
     }
     return V.accent;
 }
@@ -623,6 +631,100 @@ function accent_of(V)
 function rgba(c, a)
 {
     return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")";
+}
+
+
+/***************************************************************
+ *  The three hues of a multicolour palette, or null.
+ *
+ *  Under "aurora" and "dusk" the rest of the deck is drawn in
+ *  three hues, and a picture in one of them was the one thing
+ *  left that read as a single colour, sixty times a second. So
+ *  under those palettes the hue that each mode used to take from
+ *  the pitch wheel, or from the accent, is taken from these
+ *  three instead — measured against the card like the accent.
+ *
+ *  Module-wide rather than per picture: there is one document
+ *  and one palette, and pitch_colour() is called from places
+ *  that do not hold a picture.
+ ***************************************************************/
+let MULTI = null;
+
+/*  `raw` is the accent as the stylesheet has it, `first` as it is drawn.
+    The comparison is on the RAW colours: under "from the cover" the
+    other two hues are the accent too, and comparing them with the
+    accent after readable() had moved it made a pale cover look like
+    three colours — three greys. */
+function read_multi(css, ground, probe, raw, first)
+{
+    const two = css.getPropertyValue("--mus-accent-2").trim();
+    const three = css.getPropertyValue("--mus-accent-3").trim();
+    const b = rgb_of(two || "#000", probe);
+    const c = rgb_of(three || "#000", probe);
+    if(!two || !three || (same_rgb(b, raw) && same_rgb(c, raw))) {
+        MULTI = null;
+        return;
+    }
+    MULTI = in_order([first, readable(b, ground), readable(c, ground)]);
+}
+
+/*  The three hues as a PATH: the one that lies between the other two
+    goes in the middle. Mixing the two ends of it straight is what has to
+    be avoided — rose into teal, in RGB, passes through grey. */
+function in_order(h)
+{
+    const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    let best = null;
+    let cost = Infinity;
+    for(let m = 0; m < 3; m++) {
+        const ends = h.filter((x, i) => i !== m);
+        const k = d(ends[0], h[m]) + d(h[m], ends[1]);
+        if(k < cost) {
+            cost = k;
+            best = [ends[0], h[m], ends[1]];
+        }
+    }
+    return best;
+}
+
+function same_rgb(a, b)
+{
+    return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+}
+
+function mix_rgb(a, b, k)
+{
+    return [
+        Math.round(a[0] + (b[0] - a[0]) * k),
+        Math.round(a[1] + (b[1] - a[1]) * k),
+        Math.round(a[2] + (b[2] - a[2]) * k)
+    ];
+}
+
+/*  Along the three hues and back again: `pos` in [0, 1). The pitch
+    classes are a circle, so their colours have to be one too — B must
+    sit next to C — and going back the way it came is how a path of
+    three hues closes without mixing its two ends. */
+function loop_rgb(pos)
+{
+    const x = (((pos % 1) + 1) % 1) * 2;
+    return span_rgb(x <= 1 ? x : 2 - x);
+}
+
+/*  Across the three hues once, left to right: `pos` in [0, 1]. For
+    things that are a line, not a circle. */
+function span_rgb(pos)
+{
+    const x = Math.max(0, Math.min(1, pos)) * 2;
+    const i = Math.min(1, Math.floor(x));
+    return mix_rgb(MULTI[i], MULTI[i + 1], x - i);
+}
+
+/*  The ink of a pitch class: its palette hue under a multicolour
+    palette, the accent otherwise. */
+function pc_rgb(pc, c)
+{
+    return MULTI ? loop_rgb(pc / 12) : c;
 }
 
 
@@ -700,6 +802,15 @@ function draw(V)
  ***************************************************************/
 function pitch_colour(pc, v, dark, a)
 {
+    if(MULTI) {
+        /*  The palette's hue for this note; the energy lifts it out of
+            the card, as the lightness does on the wheel below. */
+        const base = loop_rgb(pc / 12);
+        const lit = dark
+            ? mix_rgb(base, [255, 255, 255], 0.28 * v)
+            : mix_rgb(base, [0, 0, 0], 0.22 * (1 - v));
+        return rgba(lit, a);
+    }
     const h = (((pc * 30 + 20) % 360) + 360) % 360;
     /*  Soft rather than poster-bright: the ask was for something
         restful, and a fully saturated line at 60 frames a second is
@@ -1019,7 +1130,7 @@ function draw_notes(V, f, c)
                 an exact band of pixels with a hard edge. */
             const y0 = Math.round(V.h - (i + 1) * rh);
             const y1 = Math.round(V.h - i * rh);
-            rc.fillStyle = rgba(c, a);
+            rc.fillStyle = rgba(pc_rgb(i % 12, c), a);
             rc.fillRect(x, y0, step, Math.max(1, y1 - y0));
         }
     }
@@ -1144,7 +1255,15 @@ function draw_wave(V, f, c)
         a stroke this long costs more than a second pass. */
     const points = Math.min(V.w, span);
     const draw_line = function(width, alpha) {
-        g.strokeStyle = rgba(c, alpha);
+        if(MULTI) {
+            const grad = g.createLinearGradient(0, 0, V.w, 0);
+            grad.addColorStop(0, rgba(MULTI[0], alpha));
+            grad.addColorStop(0.5, rgba(MULTI[1], alpha));
+            grad.addColorStop(1, rgba(MULTI[2], alpha));
+            g.strokeStyle = grad;
+        } else {
+            g.strokeStyle = rgba(c, alpha);
+        }
         g.lineWidth = width;
         g.lineJoin = "round";
         g.lineCap = "round";
@@ -1236,10 +1355,10 @@ function draw_chroma(V, f, c)
         const y = cy + Math.sin(ang) * ring;
         g.beginPath();
         g.arc(x, y, (1.2 + 2.6 * v) * V.dpr, 0, Math.PI * 2);
-        g.fillStyle = rgba(c, 0.28 + 0.72 * v);
+        g.fillStyle = rgba(pc_rgb(pc, c), 0.28 + 0.72 * v);
         g.fill();
         if(label) {
-            g.fillStyle = rgba(c, 0.35 + 0.65 * v);
+            g.fillStyle = rgba(pc_rgb(pc, c), 0.35 + 0.65 * v);
             g.fillText(NOTE_NAMES[pc],
                 cx + Math.cos(ang) * R * 1.06,
                 cy + Math.sin(ang) * R * 1.06);
@@ -1258,7 +1377,7 @@ function draw_chroma_row(V, f, c)
         const x = slot * (k + 0.5);
         g.beginPath();
         g.arc(x, cy, Math.max(1, rmax * (0.18 + 0.82 * v)), 0, Math.PI * 2);
-        g.fillStyle = rgba(c, 0.25 + 0.75 * v);
+        g.fillStyle = rgba(pc_rgb(FIFTHS[k], c), 0.25 + 0.75 * v);
         g.fill();
     }
 }
@@ -1482,7 +1601,7 @@ function wave_paint(W)
             half = Math.max(W.h * 0.05, lv * W.h * 0.46);
             alpha = before ? 0.92 : 0.42;
         }
-        g.fillStyle = rgba(c, alpha);
+        g.fillStyle = rgba(MULTI ? span_rgb(x / W.w) : c, alpha);
         g.fillRect(x, mid - half, bw, half * 2);
     }
 

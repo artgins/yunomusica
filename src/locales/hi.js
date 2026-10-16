@@ -25,6 +25,8 @@ const hi = {
         "palette ice":          "बर्फ़ीला",
         "palette rose":         "गुलाबी",
         "palette leaf":         "पत्ती",
+        "palette aurora":       "ध्रुवीय ज्योति",
+        "palette dusk":         "सांझ",
         "language":             "भाषा",
         "help":                 "मदद और श्रेय",
         "more":                 "और",

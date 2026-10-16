@@ -157,6 +157,38 @@ function tone(hz, seconds)
     return readFileSync(path);
 }
 
+/*  A chord progression: several pitch classes at once, which is what
+    a multicolour palette needs to show it is one. A pure tone lights one
+    semitone and so one hue, and a picture of one hue says nothing about
+    whether the others are there. Four chords of four seconds, each three
+    notes plus the octave of its root. */
+function chords(seconds)
+{
+    let path = join(TMP, `chords-${seconds}s-${TONE_GAIN_DB}db.mp3`);
+    if(!existsSync(path)) {
+        const prog = [
+            [261.63, 329.63, 392.00, 523.25],     // C  E  G  C
+            [220.00, 261.63, 329.63, 440.00],     // A  C  E  A
+            [174.61, 220.00, 261.63, 349.23],     // F  A  C  F
+            [196.00, 246.94, 293.66, 392.00]      // G  B  D  G
+        ];
+        /*  Each chord gated to its four seconds of every sixteen. */
+        const expr = prog.map((ch, i) =>
+            `between(mod(t,16),${i * 4},${i * 4 + 4})*(` +
+            ch.map((hz) => `sin(2*PI*${hz}*t)`).join("+") + ")/4"
+        ).join("+");
+        execFileSync("ffmpeg", ["-v", "quiet", "-y",
+            /*  A comma separates filters in a filtergraph, so the ones
+                inside the expression have to be escaped. */
+            "-f", "lavfi", "-i", `aevalsrc=${expr.replace(/,/g, "\\,")}:s=44100:d=${seconds}`,
+            "-af", `volume=${TONE_GAIN_DB - 3}dB`,
+            "-b:a", "128k",
+            "-write_xing", "0", "-id3v2_version", "0",
+            path]);
+    }
+    return readFileSync(path);
+}
+
 /*  A cover with almost no colour in it.
  *
  *  The accent is taken from the cover, and the visualizer draws in the
@@ -283,6 +315,15 @@ function build_tones()
             {title: n.title, artist: "sine", album: "Test Tones",
              genre: "test", year: 2026, track: n.track}, pale);
     });
+}
+
+/*  `chords`: one track of chords — see chords(). */
+function build_chords()
+{
+    write_track(join(ROOT, "chords", "Test Chords", "01 - Progression.mp3"),
+        chords(32),
+        {title: "Progression", artist: "sine", album: "Test Chords",
+         genre: "test", year: 2026, track: 1}, null);
 }
 
 
@@ -448,6 +489,7 @@ function ensure_fixtures(force)
     if(!existsSync(join(ROOT, "longtracks"))) { build_longtracks(); built.push("longtracks"); }
     if(!existsSync(join(ROOT, "mimusica")))   { build_mimusica();   built.push("mimusica"); }
     if(!existsSync(join(ROOT, "tones")))      { build_tones();      built.push("tones"); }
+    if(!existsSync(join(ROOT, "chords")))     { build_chords();     built.push("chords"); }
     if(!existsSync(join(ROOT, "messy")))      { build_messy();      built.push("messy"); }
     if(!existsSync(join(ROOT, "noisy")))      { build_noisy();      built.push("noisy"); }
 
@@ -457,6 +499,7 @@ function ensure_fixtures(force)
         longtracks: join(ROOT, "longtracks"),
         mimusica:   join(ROOT, "mimusica"),
         tones:      join(ROOT, "tones"),
+        chords:     join(ROOT, "chords"),
         messy:      join(ROOT, "messy"),
         noisy:      join(ROOT, "noisy"),
         built:      built

@@ -29,6 +29,8 @@ const ar = {
         "palette ice":          "جليدي",
         "palette rose":         "وردي",
         "palette leaf":         "أخضر",
+        "palette aurora":       "الشفق القطبي",
+        "palette dusk":         "الغروب",
         "language":             "اللغة",
         "help":                 "المساعدة وحقوق العمل",
         "more":                 "المزيد",

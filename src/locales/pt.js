@@ -25,6 +25,8 @@ const pt = {
         "palette ice":          "Gelo",
         "palette rose":         "Rosa",
         "palette leaf":         "Folha",
+        "palette aurora":       "Aurora",
+        "palette dusk":         "Entardecer",
         "language":             "Idioma",
         "help":                 "Ajuda e créditos",
         "more":                 "Mais",

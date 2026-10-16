@@ -93,7 +93,11 @@
                         {"id": "pal-rose", "name": "palette rose",
                          "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "rose"}}},
                         {"id": "pal-leaf", "name": "palette leaf",
-                         "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "leaf"}}}
+                         "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "leaf"}}},
+                        {"id": "pal-aurora", "name": "palette aurora",
+                         "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "aurora"}}},
+                        {"id": "pal-dusk", "name": "palette dusk",
+                         "action": {"type": "event", "event": "EV_SET_PALETTE", "kw": {"palette": "dusk"}}}
                     ]
                 }
             },

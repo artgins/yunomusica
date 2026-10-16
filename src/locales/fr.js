@@ -25,6 +25,8 @@ const fr = {
         "palette ice":          "Glace",
         "palette rose":         "Rose",
         "palette leaf":         "Feuille",
+        "palette aurora":       "Aurore",
+        "palette dusk":         "Crépuscule",
         "language":             "Langue",
         "help":                 "Aide et crédits",
         "more":                 "Plus",

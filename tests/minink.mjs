@@ -1,7 +1,7 @@
 /***********************************************************************
  *          minink.mjs
  *
- *      The mini-player's play button, in all five palettes and both
+ *      The mini-player's play button, in all seven palettes and both
  *      schemes.
  *
  *      It gets its own test because it is the one accented surface the
@@ -25,7 +25,9 @@ const PALETTES = [
     ["gold", "Oro"],
     ["ice",  "Hielo"],
     ["rose", "Rosa"],
-    ["leaf", "Hoja"]
+    ["leaf", "Hoja"],
+    ["aurora", "Aurora"],
+    ["dusk", "Atardecer"]
 ];
 
 const browser = await launch();
@@ -74,7 +76,7 @@ for(const [pal, label] of PALETTES) {
     }
 }
 
-console.log(bad ? `>>> ${bad} casos` : "botón del mini-reproductor: legible en las 10 combinaciones");
+console.log(bad ? `>>> ${bad} casos` : "botón del mini-reproductor: legible en las 14 combinaciones");
 const errs = report(page);
 await browser.close();
 process.exit(bad + errs ? 1 : 0);

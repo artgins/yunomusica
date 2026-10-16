@@ -36,6 +36,8 @@ const en = {
         "palette ice":          "Ice",
         "palette rose":         "Rose",
         "palette leaf":         "Leaf",
+        "palette aurora":       "Aurora",
+        "palette dusk":         "Dusk",
         "language":             "Language",
         "help":                 "Help and credits",
         "more":                 "More",

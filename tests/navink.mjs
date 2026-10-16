@@ -1,7 +1,7 @@
 /***********************************************************************
  *          navink.mjs
  *
- *      The active nav item and the primary buttons, in all five
+ *      The active nav item and the primary buttons, in all seven
  *      palettes and both schemes: legible, and painted in the SAME ink
  *      as each other. Two accented surfaces disagreeing about whether
  *      their ink is black or white is the thing that looks broken even
@@ -20,7 +20,9 @@ const PALETTES = [
     ["gold", "Oro"],
     ["ice",  "Hielo"],
     ["rose", "Rosa"],
-    ["leaf", "Hoja"]
+    ["leaf", "Hoja"],
+    ["aurora", "Aurora"],
+    ["dusk", "Atardecer"]
 ];
 
 const browser = await launch();
@@ -61,7 +63,7 @@ for(const [pal, label] of PALETTES) {
     }
 }
 
-console.log(bad ? `>>> ${bad} casos` : "nav y botones: misma tinta y legibles en las 10 combinaciones");
+console.log(bad ? `>>> ${bad} casos` : "nav y botones: misma tinta y legibles en las 14 combinaciones");
 const errs = report(page);
 await browser.close();
 process.exit(bad + errs ? 1 : 0);

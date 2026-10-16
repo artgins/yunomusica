@@ -25,6 +25,8 @@ const zh = {
         "palette ice":          "冰蓝",
         "palette rose":         "玫瑰",
         "palette leaf":         "叶绿",
+        "palette aurora":       "极光",
+        "palette dusk":         "晚霞",
         "language":             "语言",
         "help":                 "帮助与致谢",
         "more":                 "更多",

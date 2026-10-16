@@ -25,6 +25,8 @@ const ja = {
         "palette ice":          "アイス",
         "palette rose":         "ローズ",
         "palette leaf":         "リーフ",
+        "palette aurora":       "オーロラ",
+        "palette dusk":         "夕焼け",
         "language":             "言語",
         "help":                 "ヘルプとクレジット",
         "more":                 "その他",

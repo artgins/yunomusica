@@ -60,6 +60,7 @@ const TESTS = [
     {name: "resume",    what: "al volver, la canción trae su duración y suena"},
     {name: "follow",    what: "el banner no scrollea y la cola sigue a la música"},
     {name: "viz",       what: "el banner dibuja la nota que suena, y sigue sonando"},
+    {name: "multipal",  what: "paletas multicolor: tres tonos en el deck y en el visualizador, legibles"},
     {name: "counts",    what: "escuchas y corazones: se cuentan, se ordenan en Listas y aguantan una recarga"},
     {name: "locked",    what: "con la pantalla bloqueada suena sin Web Audio, y al volver se recupera"},
     {name: "keepplace", what: "el sitio dentro de una pista larga sobrevive a que maten la app"},

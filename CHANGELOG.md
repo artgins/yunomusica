@@ -6,6 +6,23 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.35.0 — 2026-10-16
+
+- **Two multicolour palettes**, "Aurora" (teal, violet, rose) and "Dusk"
+  (amber, coral, plum), next to the five one-colour ones. Three
+  neighbouring hues share the roles instead of one hue doing all of them:
+  the accent keeps the buttons and the nav, the second hue takes the play
+  count, the facts and the folders, the third the hearts and shuffle /
+  repeat / follow, and a gradient of the three goes on the play buttons,
+  the seek and scan bars and, faintly, the playing row. Every hue clears
+  5:1 with its ink and with the card in both schemes. The one-colour
+  palettes look exactly as before.
+- **The visualizer follows them.** Under a multicolour palette every mode
+  draws in its three hues — the notes, the bars, the wave, the chroma
+  lamps and the envelope in the scrub bar — and a note is still always
+  the same colour. New test `multipal`, on a new chord-progression
+  fixture: a pure tone is one hue in any palette and could not show it.
+
 ## 2.34.0 — 2026-10-16
 
 - **Ten seconds back and forward** on the deck's transport, either side of

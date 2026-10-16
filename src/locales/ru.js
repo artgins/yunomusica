@@ -25,6 +25,8 @@ const ru = {
         "palette ice":          "Лёд",
         "palette rose":         "Роза",
         "palette leaf":         "Лист",
+        "palette aurora":       "Сияние",
+        "palette dusk":         "Закат",
         "language":             "Язык",
         "help":                 "Справка и авторы",
         "more":                 "Ещё",

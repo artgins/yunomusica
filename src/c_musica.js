@@ -424,7 +424,7 @@ function keep_place(gobj)
 
 
 
-const PALETTES = {auto: 1, gold: 1, ice: 1, rose: 1, leaf: 1};
+const PALETTES = {auto: 1, gold: 1, ice: 1, rose: 1, leaf: 1, aurora: 1, dusk: 1};
 
 /*  "auto" means the accent follows the cover art, which is what the app
     did before there were palettes — so it stays the default. */
