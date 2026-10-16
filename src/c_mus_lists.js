@@ -29,7 +29,7 @@ import {
 } from "./playlists_store.js";
 
 import {
-    subscribe, queue_add, set_queue_origin, find_track,
+    subscribe, queue_add, play_list, find_track,
 } from "./music_store.js";
 import {confirm_replace} from "./confirm_replace.js";
 import {subscribe_stats, ranked, split_key, clear_counts} from "./stats_store.js";
@@ -422,12 +422,13 @@ function build_list_row(gobj, p)
                 if(!answer) {
                     return;
                 }
-                queue_add(r.tracks, answer);
-                /*  Order matters: "replace" detaches the queue from
-                    whatever it was, so the list is stamped on after.
-                    Appending leaves the deck as whatever it already was. */
+                /*  Replacing puts THE LIST on the deck, and it comes back
+                    where it was left (play_list). Appending leaves the deck
+                    as whatever it already was. */
                 if(answer === "replace") {
-                    set_queue_origin(p.id, p.name);
+                    play_list(r.tracks, p.id, p.name);
+                } else {
+                    queue_add(r.tracks, answer);
                 }
                 if(shell) {
                     yui_shell_navigate(shell, "/player");

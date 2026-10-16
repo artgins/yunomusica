@@ -63,6 +63,7 @@ const TESTS = [
     {name: "counts",    what: "escuchas y corazones: se cuentan, se ordenan en Listas y aguantan una recarga"},
     {name: "locked",    what: "con la pantalla bloqueada suena sin Web Audio, y al volver se recupera"},
     {name: "keepplace", what: "el sitio dentro de una pista larga sobrevive a que maten la app"},
+    {name: "listplace", what: "\u00b110 s, cada lista vuelve a su sitio, y dos recargas no lo pierden"},
     {name: "devmenu",   what: "el men\u00fa: desarrollo, mapa del sitio y ayuda, y un registro que sobrevive"},
     {name: "e2e",       what: "recorrido completo + recarga"}
 ];

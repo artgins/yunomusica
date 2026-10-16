@@ -41,6 +41,8 @@ const ar = {
         "next":                 "التالي",
         "shuffle":              "عشوائي",
         "repeat":               "تكرار",
+        "back 10 seconds":      "رجوع 10 ثوانٍ",
+        "forward 10 seconds":   "تقدّم 10 ثوانٍ",
         "back":                 "رجوع",
         "close":                "إغلاق",
         "cancel":               "إلغاء",

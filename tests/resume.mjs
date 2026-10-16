@@ -204,6 +204,16 @@ check("pide autorizar la carpeta", await bar.count() > 0);
 check("sin posición de una pista que no está cargada", secs(cur_pend) === 0);
 check("sin aviso de archivo ilegible", await phone.locator(".MUS_NOTICE").count() === 0);
 
+/*  And once more, still without the permission. The first launch stored
+    the deck 1.5 s after it was restored, and it stored the clock of an
+    element that had loaded nothing: 0. This second launch then came back
+    at the start of the track — the place was lost by the launch BEFORE
+    it. A new version loaded, or the phone killing the app, is exactly
+    this. */
+await phone.reload({waitUntil: "networkidle"});
+await phone.waitForTimeout(2500);
+console.log(`4b. y otra vez sin permiso: ${await phone.locator(".MUS_TCUR").textContent()}`);
+
 /*  Authorise: that alone must bring the track back, position and all. */
 await bar.locator(".MUS_QBTN").click();
 await phone.waitForTimeout(2500);

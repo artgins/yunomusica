@@ -39,6 +39,8 @@ const es = {
         "next":                 "Siguiente",
         "shuffle":              "Aleatorio",
         "repeat":               "Repetir",
+        "back 10 seconds":      "Atrás 10 segundos",
+        "forward 10 seconds":   "Adelante 10 segundos",
         "back":                 "Volver",
         "close":                "Cerrar",
         "cancel":               "Cancelar",

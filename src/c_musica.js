@@ -52,7 +52,7 @@ import {
     seek_fraction, progress, cover_url, setup_media_session,
     setup_background_audio,
     cancel_ingest, fmt_time,
-    queue_snapshot, restore_queue,
+    restore_queue, store_deck, set_deck_ready,
     temp_track, temp_playing, temp_toggle, temp_position,
     back_to_deck, temp_next, queue_add, last_said, clear_said,
     temp_progress, seek_temp_fraction,
@@ -68,7 +68,7 @@ import {load_playlists} from "./playlists_store.js";
 import {load_stats} from "./stats_store.js";
 import {create_visualizer} from "./visualizer.js";
 import {diagnostics as viz_diagnostics} from "./analyser.js";
-import {pref_get, pref_set} from "./idb.js";
+import {pref_get} from "./idb.js";
 import {diag_watch} from "./diag.js";
 
 import {switch_locale, current_locale} from "./locales/locales.js";
@@ -328,14 +328,18 @@ async function boot(gobj)
     start_update_watch();
     start_install_watch();
 
-    await load_playlists();
-    await load_stats();
-    await load_sources();
+    try {
+        await load_playlists();
+        await load_stats();
+        await load_sources();
 
-    /*  The deck as it was left: which list, which track, how far in. */
-    let snap = await pref_get("queue", null);
-    if(snap) {
-        restore_queue(snap);
+        /*  The deck as it was left: which list, which track, how far in. */
+        let snap = await pref_get("queue", null);
+        if(snap) {
+            restore_queue(snap);
+        }
+    } finally {
+        set_deck_ready();
     }
 
     /*  The welcome first, the install question after it — never both at
@@ -371,7 +375,7 @@ function save_queue_soon(gobj)
     priv.save_timer = setTimeout(function() {
         priv.save_timer = 0;
         priv.saved_at = Date.now();
-        pref_set("queue", queue_snapshot());
+        store_deck();
     }, 1500);
 }
 
@@ -614,11 +618,11 @@ function build_player(gobj)
     /*  The position moves without any event worth storing on, and the
         tab can go away at any moment. */
     window.addEventListener("pagehide", function() {
-        pref_set("queue", queue_snapshot());
+        store_deck();
     });
     document.addEventListener("visibilitychange", function() {
         if(document.visibilityState === "hidden") {
-            pref_set("queue", queue_snapshot());
+            store_deck();
         }
     });
 

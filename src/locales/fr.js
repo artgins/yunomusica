@@ -37,6 +37,8 @@ const fr = {
         "next":                 "Suivant",
         "shuffle":              "Aléatoire",
         "repeat":               "Répéter",
+        "back 10 seconds":      "Reculer de 10 secondes",
+        "forward 10 seconds":   "Avancer de 10 secondes",
         "back":                 "Retour",
         "close":                "Fermer",
         "cancel":               "Annuler",

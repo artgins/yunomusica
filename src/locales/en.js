@@ -49,6 +49,8 @@ const en = {
         "next":                 "Next",
         "shuffle":              "Shuffle",
         "repeat":               "Repeat",
+        "back 10 seconds":      "Back 10 seconds",
+        "forward 10 seconds":   "Forward 10 seconds",
         "back":                 "Back",
         "close":                "Close",
         "cancel":               "Cancel",

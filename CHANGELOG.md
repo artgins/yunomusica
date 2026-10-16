@@ -6,6 +6,26 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.34.0 — 2026-10-16
+
+- **Ten seconds back and forward** on the deck's transport, either side of
+  play. Seven buttons do not fit a 360px phone at 48px, so the transport
+  shrinks them with its own width instead of taking a second line from the
+  banner.
+- **A saved list remembers where it was left.** Leaving it (another list, an
+  album played over the deck, the queue emptied) and playing it again goes
+  back to its track and second, across reloads too.
+- **The place survives a second reload.** The first snapshot after start up
+  stored the clock of an element that had not loaded the track yet (on a
+  phone it waits for the folder to be authorised): 0. The next launch — a
+  new version, a kill — came back at the start of the track. A position
+  still waiting to be applied is now the position that is stored; nothing is
+  stored before the stored deck has been read back; and the "reload" of the
+  new-version bar waits for the write.
+- **The play count stands out** — filled in the accent — and on a phone it
+  no longer lies over the title: the counts moved to the artist's line, and
+  a long title ends in an ellipsis instead of running under them.
+
 ## 2.33.39 — 2026-10-15
 
 - gobj-js `^7.27.0`, gobj-ui `^7.27.0` (deploy rounds): gobj-js and gobj-ui 7.27.0, whose number follows SDK 7.27.0 (no change of

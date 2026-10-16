@@ -37,6 +37,8 @@ const hi = {
         "next":                 "अगला",
         "shuffle":              "बेतरतीब",
         "repeat":               "दोहराएँ",
+        "back 10 seconds":      "10 सेकंड पीछे",
+        "forward 10 seconds":   "10 सेकंड आगे",
         "back":                 "वापस",
         "close":                "बंद करें",
         "cancel":               "रद्द करें",

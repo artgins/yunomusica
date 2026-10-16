@@ -37,6 +37,8 @@ const de = {
         "next":                 "Nächster",
         "shuffle":              "Zufall",
         "repeat":               "Wiederholen",
+        "back 10 seconds":      "10 Sekunden zurück",
+        "forward 10 seconds":   "10 Sekunden vor",
         "back":                 "Zurück",
         "close":                "Schließen",
         "cancel":               "Abbrechen",

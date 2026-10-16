@@ -37,6 +37,8 @@ const zh = {
         "next":                 "下一首",
         "shuffle":              "随机播放",
         "repeat":               "循环播放",
+        "back 10 seconds":      "后退 10 秒",
+        "forward 10 seconds":   "前进 10 秒",
         "back":                 "返回",
         "close":                "关闭",
         "cancel":               "取消",

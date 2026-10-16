@@ -37,6 +37,8 @@ const ru = {
         "next":                 "Следующий",
         "shuffle":              "Вперемешку",
         "repeat":               "Повтор",
+        "back 10 seconds":      "Назад на 10 секунд",
+        "forward 10 seconds":   "Вперёд на 10 секунд",
         "back":                 "Назад",
         "close":                "Закрыть",
         "cancel":               "Отмена",

@@ -16,7 +16,7 @@ three domain stores.
 ## The four screens
 
 **Player** (home) — the first thing you see is the transport: play/pause,
-previous, next, shuffle, repeat, the cover, the title of what is sounding and
+previous, next, ten seconds back and forward, shuffle, repeat, the cover, the title of what is sounding and
 the seek bar. Below it, **the queue**: what you loaded, in the order you want
 it. Reorder it and take tracks out without stopping the music. It is the deck,
 and it says whether what is playing is a **saved list** (by name, and whether
@@ -240,7 +240,14 @@ Browsing never changes what is sounding. Every other rule follows from that one:
 
 The queue survives a reload: which tracks, which list they came from, which one
 was playing and how many seconds in. It is restored **paused** — a page that
-starts making noise on its own is worse than one that restores nothing.
+starts making noise on its own is worse than one that restores nothing. The
+"reload" of the new-version bar stores the place first and only then reloads.
+
+**A saved list remembers where it was left.** Leave it — for another list, an
+album played over the deck, an emptied queue — and play it again: it comes
+back on the track it was on, at the second it was at, not on its first track.
+Heard to the end, it starts again from the top. The places travel with the
+stored deck, so they survive a reload too.
 
 **"Save as list" goes off while the deck IS a saved list, untouched.** There is
 nothing to save that is not already saved, and the only thing the button could
@@ -446,6 +453,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `fitmobile` | something runs off the side of a phone |
 | `preview` | the listening strip is unreadable, or its clock is the queue's |
 | `resume` | the track you come back to has no duration and does not sound |
+| `listplace` | ±10 s does not move the clock, a list played again starts from its first track, or a second reload loses the place |
 | `follow` | the banner scrolls away, or the queue stops following the music |
 | `viz` | the banner draws the wrong note — or tapping the audio silenced it |
 | `counts` | a skipped track counts as listened to, or the counts vanish on reload |

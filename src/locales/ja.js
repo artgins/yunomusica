@@ -37,6 +37,8 @@ const ja = {
         "next":                 "次へ",
         "shuffle":              "シャッフル",
         "repeat":               "リピート",
+        "back 10 seconds":      "10秒戻る",
+        "forward 10 seconds":   "10秒進む",
         "back":                 "戻る",
         "close":                "閉じる",
         "cancel":               "キャンセル",

@@ -19,6 +19,7 @@
  ***********************************************************************/
 import {attach as attach_analyser, release as release_tap, tapped} from "./analyser.js";
 import {diag} from "./diag.js";
+import {pref_set} from "./idb.js";
 
 
 /***************************************************************
@@ -526,6 +527,12 @@ const S = {
         threw together?" is not a question the user should have to guess. */
     origin:  null,      // {list_id, name} while it is a saved list
     edited:  false,     // …and whether it has been changed since
+    /*  Where each saved list was left: list_id -> {source_id, path,
+        time, at}. A list is a thing of its own, so going back to it
+        goes back to where it was, not to its first track. */
+    places:  {},
+    /*  Nothing is stored until the stored deck has been read back. */
+    deck_ready: false,
     said:    null,      // {added, already} — what the last add did, for the shell
     /*  THE TEMPORARY LIST.
      *
@@ -1406,6 +1413,8 @@ function queue_add(list, mode)
     }
     const offered = list.length;
     if(mode === "replace") {
+        /*  The list being left keeps its place, for when it comes back. */
+        note_place();
         /*  Nothing to compare against — the deck is being thrown away —
             but a list handed in with repeats inside it still gets them
             taken out. */
@@ -1496,6 +1505,7 @@ function queue_move(from, to)
 
 function queue_clear()
 {
+    note_place();
     S.queue = [];
     S.qi = -1;
     S.origin = null;
@@ -1511,6 +1521,91 @@ function queue_play_at(i)
     }
     S.qi = i;
     load_current(true);
+}
+
+
+/***************************************************************
+ *      A saved list remembers where it was left
+ *
+ *  A list has an identity of its own: it is "my Sunday list",
+ *  not whatever the deck happens to hold. Leaving it for
+ *  another one and coming back used to start it again from the
+ *  first track, which for a list of long sessions is an hour
+ *  of music to find again by hand.
+ *
+ *  So the place is noted whenever the deck stops being that
+ *  list (another list, an album played from the library, the
+ *  queue emptied) and on every snapshot, which also carries it
+ *  across a reload. It is kept by (source, path) like
+ *  everything else stored here, so an edited list still finds
+ *  its track.
+ ***************************************************************/
+const MAX_PLACES = 50;
+
+function note_place()
+{
+    if(!S.origin) {
+        return;
+    }
+    let t = S.queue[S.qi];
+    if(!t) {
+        return;
+    }
+    let time = deck_time();
+    if(S.audio && S.loaded_uid === t.uid && S.audio.ended) {
+        /*  The track was heard to its end: the place is the start of
+            the next one — or, past the last, the start of the list. */
+        t = S.queue[S.qi + 1];
+        time = 0;
+        if(!t) {
+            delete S.places[S.origin.list_id];
+            return;
+        }
+    }
+    S.places[S.origin.list_id] = {
+        source_id: t.source_id, path: t.path, time: time, at: Date.now()
+    };
+    /*  Lists get deleted, and their places are not worth keeping for
+        ever. The oldest go first. */
+    let ids = Object.keys(S.places);
+    if(ids.length > MAX_PLACES) {
+        ids.sort((a, b) => S.places[a].at - S.places[b].at);
+        for(const id of ids.slice(0, ids.length - MAX_PLACES)) {
+            delete S.places[id];
+        }
+    }
+}
+
+/*  Put a saved list on the deck and play it from where it was left.
+    `list` is the list resolved against the library (see
+    playlists_store.resolve). */
+function play_list(list, list_id, name)
+{
+    if(!list || !list.length) {
+        return 0;
+    }
+    note_place();
+    S.queue = dedupe([...list], null);
+    S.origin = (list_id && name) ? {list_id: list_id, name: name} : null;
+    S.edited = false;
+
+    let i = 0;
+    let p = list_id ? S.places[list_id] : null;
+    if(p) {
+        let k = S.queue.findIndex((t) =>
+            t.source_id === p.source_id && t.path === p.path);
+        if(k >= 0) {
+            i = k;
+            /*  Cued like a restored deck: the seek waits for the
+                metadata (apply_resume). */
+            S.resume_at = p.time || 0;
+            S.resume_uid = S.queue[k].uid;
+        }
+    }
+    S.qi = i;
+    emit("queue");
+    load_current(true);
+    return S.queue.length;
 }
 
 
@@ -1742,13 +1837,61 @@ function temp_tracks()
  ***************************************************************/
 function queue_snapshot()
 {
+    note_place();
     return {
         origin: S.origin,
         edited: S.edited,
         index:  S.qi,
-        time:   (S.audio && isFinite(S.audio.currentTime)) ? S.audio.currentTime : 0,
+        time:   deck_time(),
         items:  S.queue.map((t) => ({source_id: t.source_id, path: t.path})),
+        places: S.places,
     };
+}
+
+/*  How far into the deck's track the music is — the number a snapshot
+ *  must store.
+ *
+ *  Reading the element alone LOST the place. A restored deck is cued, not
+ *  seeked: until the track's metadata arrives (and on a phone that waits
+ *  for the folder to be authorised) the element stands at 0. The first
+ *  snapshot after start up was written 1.5 s later and stored that 0 over
+ *  the real position, so a second reload — a new version, a kill — came
+ *  back to the start of the track. A position still waiting to be applied
+ *  is the position. */
+function deck_time()
+{
+    const t = S.queue[S.qi];
+    if(!t) {
+        return 0;
+    }
+    if(S.resume_at && S.resume_uid === t.uid) {
+        return S.resume_at;
+    }
+    /*  The element still holds the previous track while the next one
+        resolves; its clock is not this track's. */
+    if(S.audio && S.loaded_uid === t.uid && isFinite(S.audio.currentTime)) {
+        return S.audio.currentTime;
+    }
+    return 0;
+}
+
+/*  Write the deck down. Every writer goes through here, and none of them
+ *  writes before boot has read the stored deck back: a library of eight
+ *  thousand files takes seconds to restore, and a "playing" emitted in
+ *  the meantime used to store the EMPTY deck over the real one — the
+ *  queue, the track and the place, all gone at the next launch. */
+function store_deck()
+{
+    if(!S.deck_ready) {
+        return Promise.resolve();
+    }
+    return pref_set("queue", queue_snapshot());
+}
+
+/*  Boot has restored the deck (or found none): from now on it is stored. */
+function set_deck_ready()
+{
+    S.deck_ready = true;
 }
 
 /*  Restored PAUSED and cued at the stored position: coming back to a
@@ -1756,6 +1899,9 @@ function queue_snapshot()
     at all — and browsers block it anyway without a gesture. */
 function restore_queue(snap)
 {
+    if(snap && snap.places && typeof snap.places === "object") {
+        S.places = snap.places;
+    }
     if(!snap || !snap.items || !snap.items.length) {
         return 0;
     }
@@ -2089,6 +2235,19 @@ function prev()
     }
 }
 
+/*  Back or forward by a number of seconds, on the deck's track. Past
+    the end it lands just short of it, so the track ends the way it
+    always does and the queue moves on. */
+function seek_by(seconds)
+{
+    const audio = get_audio();
+    const dur = audio.duration;
+    if(!audio.src || !isFinite(dur) || dur <= 0) {
+        return;
+    }
+    audio.currentTime = Math.max(0, Math.min(dur - 0.25, audio.currentTime + seconds));
+}
+
 function seek_fraction(fraction)
 {
     const audio = get_audio();
@@ -2378,6 +2537,7 @@ export {
     queue_move,
     queue_clear,
     queue_play_at,
+    play_list,
     /*  playback */
     get_audio,
     current_track,
@@ -2386,6 +2546,7 @@ export {
     step,
     prev,
     seek_fraction,
+    seek_by,
     set_shuffle,
     get_shuffle,
     set_repeat,
@@ -2409,6 +2570,8 @@ export {
     seek_temp_fraction,
     /*  the deck across a reload */
     queue_snapshot,
+    store_deck,
+    set_deck_ready,
     restore_queue,
     reload_current,
 };

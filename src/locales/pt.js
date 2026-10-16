@@ -37,6 +37,8 @@ const pt = {
         "next":                 "Seguinte",
         "shuffle":              "Aleatório",
         "repeat":               "Repetir",
+        "back 10 seconds":      "Recuar 10 segundos",
+        "forward 10 seconds":   "Avançar 10 segundos",
         "back":                 "Voltar",
         "close":                "Fechar",
         "cancel":               "Cancelar",

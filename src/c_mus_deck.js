@@ -42,6 +42,7 @@ import {
     current_track, is_playing, toggle, step, prev,
     seek_fraction, set_shuffle, get_shuffle, set_repeat, get_repeat,
     progress, fmt_time, queue_position,
+    seek_by, store_deck,
 } from "./music_store.js";
 
 import {
@@ -87,6 +88,11 @@ const FOLLOW_SLACK_PX = 24;
     does. Without a window in which they are ignored, our own scroll
     re-arms the idle timer and the deck follows itself for ever. */
 const FOLLOW_SETTLE_MS = 900;
+
+/*  How far the two skip buttons jump. Ten seconds is enough to get past
+    a spoken intro or to hear a passage again, and small enough that two
+    taps are still a precise gesture. */
+const SKIP_SECONDS = 10;
 
 const svg = (path, size) =>
     html_markup(
@@ -875,8 +881,10 @@ function update_transport(gobj)
         tog_button("MUS_SHUFFLE", P.shuffle, 20, "shuffle", get_shuffle(),
             () => { set_shuffle(!get_shuffle()); paint_now(gobj); }),
         ctl_button("MUS_TPREV", P.prev, 26, "previous", () => prev()),
+        skip_button("MUS_TBACK", false, "back 10 seconds"),
         ctl_button("MUS_TPLAY is-primary", playing ? P.pause : P.play, 30,
             playing ? "pause" : "play", () => toggle()),
+        skip_button("MUS_TFWD", true, "forward 10 seconds"),
         ctl_button("MUS_TNEXT", P.next, 26, "next", () => step(1)),
         tog_button("MUS_REPEAT", P.repeat, 20, "repeat", get_repeat(),
             () => { set_repeat(!get_repeat()); paint_now(gobj); })
@@ -906,7 +914,7 @@ function paint_bars(gobj)
                 ]],
                 ["button", {class: "MUS_QBTN button is-primary", type: "button",
                             i18n: "reload"},
-                    t("reload"), {click: () => location.reload()}]
+                    t("reload"), {click: () => reload_keeping_place()}]
             ]]));
     }
 
@@ -967,6 +975,21 @@ function paint_bars(gobj)
     }
 }
 
+/*  The new version is loaded by a reload, and a reload is a page going
+    away: the write on `pagehide` is started there but nothing waits for
+    it, so the place could come back up to fifteen seconds old, or not at
+    all. Here the reload is ours, so it waits for the write. */
+function reload_keeping_place()
+{
+    const go = () => location.reload();
+    /*  A storage that does not answer must not keep the new version
+        out: after a second and a half the reload goes ahead anyway. */
+    Promise.race([
+        store_deck(),
+        new Promise((resolve) => setTimeout(resolve, 1500))
+    ]).then(go, go);
+}
+
 function ctl_button(cls, path, size, key, on_click)
 {
     return ["button", {
@@ -977,6 +1000,28 @@ function ctl_button(cls, path, size, key, on_click)
             title: t(key),
             "data-i18n-title": key
         }, svg(path, size), {click: on_click}];
+}
+
+/*  Back or forward by SKIP_SECONDS: a round arrow with the number inside
+    it, the glyph every player uses for this. Only the arrow is mirrored
+    in a right-to-left layout — a mirrored "10" is not a number. */
+const ARC = "M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z";
+
+function skip_button(cls, forward, key)
+{
+    let flip = forward ? ' transform="matrix(-1 0 0 1 24 0)"' : "";
+    return ["button", {
+            class: "MUS_TBTN MUS_TSKIP " + cls,
+            type: "button",
+            "aria-label": t(key),
+            "data-i18n-aria-label": key,
+            title: t(key),
+            "data-i18n-title": key
+        }, html_markup(
+            `<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">` +
+            `<g class="MUS_TSKIP_ARC"><path${flip} d="${ARC}"/></g>` +
+            `<text x="12" y="16.2" text-anchor="middle" font-size="7.2" font-weight="700">${SKIP_SECONDS}</text></svg>`),
+        {click: () => seek_by(forward ? SKIP_SECONDS : -SKIP_SECONDS)}];
 }
 
 function tog_button(cls, path, size, key, on, on_click)
@@ -1246,17 +1291,27 @@ function queue_row(gobj, track, i, cur, total)
                 The NAME is a button, though, and it opens the track's
                 card — the whole title over as many lines as it takes,
                 which on a phone is the only place a long one can be
-                read at all. */
+                read at all.
+
+                The counts ride on the artist's line, not beside the
+                title. Beside it, on a phone, they and the four buttons
+                left the title five letters — and before that they sat on
+                top of it. The title gets the whole line. */
             ["div", {class: "MUS_QPLAY"}, [
                 ["span", {class: "MUS_QNUM"}, String(i + 1)],
-                ["button", {
-                        class: "MUS_QMETA", type: "button",
-                        "aria-haspopup": "dialog"
-                    }, [
-                    ["span", {class: "MUS_T1"}, track.title],
-                    ["span", {class: "MUS_T2"}, track.artist]
-                ], {click: () => open_track(yui_shell_of(gobj), track)}],
-                track_counts(track)
+                ["div", {class: "MUS_QTXT"}, [
+                    ["button", {
+                            class: "MUS_QMETA", type: "button",
+                            "aria-haspopup": "dialog"
+                        }, [
+                        ["span", {class: "MUS_T1"}, track.title]
+                    ], {click: () => open_track(yui_shell_of(gobj), track)}],
+                    ["div", {class: "MUS_QSUB"}, [
+                        ["span", {class: "MUS_T2"}, track.artist,
+                            {click: () => open_track(yui_shell_of(gobj), track)}],
+                        track_counts(track)
+                    ]]
+                ]]
             ]],
             ["div", {class: "MUS_QCTL"}, [
                 icon_button(P.play, 16, "play this", true,
