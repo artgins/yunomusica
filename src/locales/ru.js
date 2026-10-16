@@ -19,6 +19,8 @@ const ru = {
         "add folder":           "Добавить папку",
         "add files":            "Добавить файлы",
         "theme":                "Светлая / тёмная тема",
+        "to dark theme":        "Переключить на тёмную тему",
+        "to light theme":       "Переключить на светлую тему",
         "colours":              "Цвет",
         "palette auto":         "По обложке",
         "palette gold":         "Золото",

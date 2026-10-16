@@ -19,6 +19,8 @@ const fr = {
         "add folder":           "Ajouter un dossier",
         "add files":            "Ajouter des fichiers",
         "theme":                "Thème clair / sombre",
+        "to dark theme":        "Passer au thème sombre",
+        "to light theme":       "Passer au thème clair",
         "colours":              "Couleur",
         "palette auto":         "D'après la pochette",
         "palette gold":         "Or",

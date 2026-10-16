@@ -479,7 +479,8 @@ function apply_theme(theme)
 
 /*  The toolbar says what is chosen: a check on the current language and
     palette, and the theme button shows the theme it switches TO (the sun
-    while dark, the moon while light). The dropdowns are rebuilt from the shell's config on
+    while dark, the moon while light), and says so in its tooltip and its
+    name. The dropdowns are rebuilt from the shell's config on
     every open, so marking `selected` there is enough. */
 function mark_choice(shell, toolbar_id, key, value)
 {
@@ -501,8 +502,20 @@ function show_choices(gobj)
     let shell = gobj.priv.shell;
     mark_choice(shell, "language", "locale", current_locale());
     mark_choice(shell, "palette", "palette", current_palette());
-    yui_shell_set_toolbar_item_icon(shell, "theme",
-        current_theme() === "dark" ? "yi-sun" : "yi-moon");
+    let dark = current_theme() === "dark";
+    yui_shell_set_toolbar_item_icon(shell, "theme", dark ? "yi-sun" : "yi-moon");
+
+    /*  The keys go in the data-i18n-* attributes too, so a language
+        switch re-translates them rather than putting back "theme". */
+    let $c = gobj_read_attr(shell, "$container");
+    let $btn = $c && $c.querySelector('[data-toolbar-item-id="theme"]');
+    if($btn) {
+        let key = dark ? "to light theme" : "to dark theme";
+        $btn.setAttribute("title", t(key));
+        $btn.setAttribute("data-i18n-title", key);
+        $btn.setAttribute("aria-label", t(key));
+        $btn.setAttribute("data-i18n-aria-label", key);
+    }
 }
 
 

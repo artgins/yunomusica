@@ -19,6 +19,8 @@ const zh = {
         "add folder":           "添加文件夹",
         "add files":            "添加文件",
         "theme":                "浅色 / 深色主题",
+        "to dark theme":        "切换到深色主题",
+        "to light theme":       "切换到浅色主题",
         "colours":              "颜色",
         "palette auto":         "跟随封面",
         "palette gold":         "金色",

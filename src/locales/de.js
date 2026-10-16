@@ -19,6 +19,8 @@ const de = {
         "add folder":           "Ordner hinzufügen",
         "add files":            "Dateien hinzufügen",
         "theme":                "Helles / dunkles Design",
+        "to dark theme":        "Zum dunklen Design wechseln",
+        "to light theme":       "Zum hellen Design wechseln",
         "colours":              "Farbe",
         "palette auto":         "Nach dem Cover",
         "palette gold":         "Gold",

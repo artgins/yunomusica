@@ -23,6 +23,8 @@ const ar = {
         "add folder":           "إضافة مجلد",
         "add files":            "إضافة ملفات",
         "theme":                "سمة فاتحة / داكنة",
+        "to dark theme":        "التبديل إلى السمة الداكنة",
+        "to light theme":       "التبديل إلى السمة الفاتحة",
         "colours":              "اللون",
         "palette auto":         "حسب الغلاف",
         "palette gold":         "ذهبي",

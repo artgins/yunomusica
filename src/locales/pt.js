@@ -19,6 +19,8 @@ const pt = {
         "add folder":           "Adicionar pasta",
         "add files":            "Adicionar ficheiros",
         "theme":                "Tema claro / escuro",
+        "to dark theme":        "Mudar para tema escuro",
+        "to light theme":       "Mudar para tema claro",
         "colours":              "Cor",
         "palette auto":         "Pela capa",
         "palette gold":         "Ouro",

@@ -6,6 +6,12 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.36.2 — 2026-10-16
+
+- **The theme button's tooltip says where it goes** — "Switch to light
+  theme" while dark, "Switch to dark theme" while light — in all ten
+  languages, and its accessible name says the same.
+
 ## 2.36.1 — 2026-10-16
 
 - **The theme button shows the theme it switches to** — the sun while
