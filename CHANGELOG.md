@@ -6,6 +6,13 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.36.0 — 2026-10-16
+
+- **The toolbar says what is chosen.** The language and colours menus put
+  a check on the choice in force, at start and after every switch, and the
+  theme button wears the theme in force — the moon in dark, the sun in
+  light — where it was always the moon. New test `choices`.
+
 ## 2.35.0 — 2026-10-16
 
 - **Two multicolour palettes**, "Aurora" (teal, violet, rose) and "Dusk"

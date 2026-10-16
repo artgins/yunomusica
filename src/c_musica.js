@@ -38,6 +38,7 @@ import {
     yui_shell_set_translator,
     yui_shell_language_changed,
     yui_shell_navigate,
+    yui_shell_set_toolbar_item_icon,
 } from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 /*  The site map draws the WHOLE navigation surface — toolbar, menu,
@@ -189,6 +190,7 @@ function mt_start(gobj)
     apply_theme(current_theme());
     apply_palette(current_palette());
     gobj_start_tree(priv.shell);
+    show_choices(gobj);
 
     /*  The shell and the nav emit their labels as i18n KEYS and are only
         translated by a refresh pass. At start up nobody has run one yet,
@@ -473,6 +475,34 @@ function apply_theme(theme)
         /*  Private mode: the theme still applies for this page load. */
     }
     return v;
+}
+
+/*  The toolbar says what is chosen: a check on the current language and
+    palette, and the theme button wears the theme in force (moon = dark,
+    sun = light). The dropdowns are rebuilt from the shell's config on
+    every open, so marking `selected` there is enough. */
+function mark_choice(shell, toolbar_id, key, value)
+{
+    let config = gobj_read_attr(shell, "config");
+    let items = (config && config.toolbar && config.toolbar.items) || [];
+    for(let it of items) {
+        if(it.id !== toolbar_id || !it.action || !Array.isArray(it.action.items)) {
+            continue;
+        }
+        for(let sub of it.action.items) {
+            let kw = (sub.action && sub.action.kw) || {};
+            sub.selected = kw[key] === value;
+        }
+    }
+}
+
+function show_choices(gobj)
+{
+    let shell = gobj.priv.shell;
+    mark_choice(shell, "language", "locale", current_locale());
+    mark_choice(shell, "palette", "palette", current_palette());
+    yui_shell_set_toolbar_item_icon(shell, "theme",
+        current_theme() === "dark" ? "yi-moon" : "yi-sun");
 }
 
 
@@ -1114,13 +1144,15 @@ function clear_accent()
 function ac_toggle_theme(gobj, event, kw, src)
 {
     apply_theme(current_theme() === "dark" ? "light" : "dark");
+    show_choices(gobj);
     return 0;
 }
 
-/*  The language menu items carry their code in the action kw. */
+/*  The palette menu items carry their code in the action kw. */
 function ac_set_palette(gobj, event, kw, src)
 {
     apply_palette((kw && kw.palette) || "auto");
+    show_choices(gobj);
     /*  Leaving "from the cover" means the tint has to stop overriding
         the choice; entering it means the current cover should take
         over again straight away. */
@@ -1136,6 +1168,7 @@ function ac_set_locale(gobj, event, kw, src)
         return 0;
     }
     switch_locale(code);
+    show_choices(gobj);
 
     /*  The shell re-translates every node that carries its key and then
         publishes EV_LANGUAGE_CHANGED, which the views listen to so they
