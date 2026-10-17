@@ -6,6 +6,12 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.36.3 — 2026-10-17
+
+- **The developer window wears the bug** (gobj-ui `^7.27.10`), the
+  debugging icon of VS Code, IntelliJ and Xcode, as in every other app: its
+  `>_` was also the command console and the TTY of gui_agent.
+
 ## 2.36.2 — 2026-10-16
 
 - **The theme button's tooltip says where it goes** — "Switch to light
