@@ -6,6 +6,10 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.36.8 — 2026-10-17
+
+- gobj-ui `^7.27.13` (deploy round).
+
 ## 2.36.7 — 2026-10-17
 
 - gobj-ui `^7.27.12` (deploy round).
