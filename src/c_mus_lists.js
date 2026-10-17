@@ -50,9 +50,10 @@ const svg = (path, size) =>
         `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`);
 
 const P = {
-    play:  "M8 5v14l11-7z",
-    plus:  "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z",
-    trash: "M9 3h6l1 2h4v2H4V5h4zM6 9h12l-1 12H7z",
+    play:    "M8 5v14l11-7z",
+    enqueue: "M14 10H3v2h11v-2zm0-4H3v2h11V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM3 16h7v-2H3v2z",
+    trash:   "M9 3h6l1 2h4v2H4V5h4zM6 9h12l-1 12H7z",
+    clear:   "M16 11h-1V3c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v8H8c-2.76 0-5 2.24-5 5v7h18v-7c0-2.76-2.24-5-5-5zm3 10h-2v-3c0-.55-.45-1-1-1s-1 .45-1 1v3h-2v-3c0-.55-.45-1-1-1s-1 .45-1 1v3H9v-3c0-.55-.45-1-1-1s-1 .45-1 1v3H5v-5c0-1.65 1.35-3 3-3h8c1.65 0 3 1.35 3 3v5z",
 };
 
 function ico(path, size)
@@ -290,7 +291,7 @@ function build_ranked(gobj, $c, by, title_key, empty_key, hint_key)
                     }
                 }}],
             ["button", {class: "MUS_QBTN button", type: "button"},
-                [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
+                [ico(P.enqueue, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
                 {click: () => queue_add(all, "append")}],
 
             /*  Emptying the list means putting its counts back to
@@ -328,7 +329,7 @@ function clear_button(gobj, by)
                 title: t("hearts are not touched"),
                 "data-i18n-title": "hearts are not touched"
             },
-            [ico(P.trash, 15),
+            [ico(P.clear, 15),
              ["span", {i18n: "clear the counts"}, t("clear the counts")]],
             {click: () => { gobj.priv.clearing = by; render(gobj); }}]];
     }
@@ -393,7 +394,7 @@ function track_rows(gobj, items)
                         "data-i18n-aria-label": "add to queue",
                         title: t("add to queue"),
                         "data-i18n-title": "add to queue"
-                    }, svg(P.plus, 16),
+                    }, svg(P.enqueue, 16),
                     {click: () => queue_add([track], "append")}]
             ]]));
     }
@@ -436,7 +437,7 @@ function build_list_row(gobj, p)
             }}],
         ["button", {class: "MUS_QBTN button", type: "button",
                     ...disabled_if(!playable)},
-            [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
+            [ico(P.enqueue, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
             {click: () => queue_add(r.tracks, "append")}]
     ];
 

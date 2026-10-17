@@ -62,10 +62,10 @@ const svg = (path, size) =>
 const P = {
     folder:  "M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z",
     file:    "M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zm0 7V3.5L18.5 9z",
-    plus:    "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z",
+    enqueue: "M14 10H3v2h11v-2zm0-4H3v2h11V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM3 16h7v-2H3v2z",
     refresh: "M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z",
     trash:   "M9 3h6l1 2h4v2H4V5h4zM6 9h12l-1 12H7z",
-    lock:    "M12 2a5 5 0 0 0-5 5v3H5v12h14V10h-2V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 1 1 6 0v3z",
+    key:     "M21 10h-8.35A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H13l2 2 2-2 2 2 4-4.04L21 10zM7 15c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z",
 };
 
 function ico(path, size)
@@ -586,7 +586,7 @@ function build_source_row(gobj, s)
     }
     if(needs_auth) {
         actions.push(["button", {class: "MUS_QBTN button is-primary", type: "button"},
-            [ico(P.lock, 15), ["span", {i18n: "authorise"}, t("authorise")]],
+            [ico(P.key, 15), ["span", {i18n: "authorise"}, t("authorise")]],
             {click: () => authorize(s.id)}]);
     } else {
         if(s.rescannable) {
@@ -596,7 +596,7 @@ function build_source_row(gobj, s)
         }
         actions.push(["button", {class: "MUS_QBTN button", type: "button",
                                  ...disabled_if(!s.count)},
-            [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
+            [ico(P.enqueue, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
             {click: () => queue_add(tracks_of_source(s.id), "append")}]);
     }
     /*  ASK BEFORE REMOVING.

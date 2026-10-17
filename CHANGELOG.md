@@ -6,6 +6,26 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.36.4 — 2026-10-17
+
+- **Each icon says what its button does, as the market draws it** (Material
+  Icons, the set YouTube Music speaks):
+    - **Library** is a shelf of albums (`library_music`): it wore the menu's
+      hamburger, which is also the site map's and the app menu's.
+    - **Lists** are lines and a note (`queue_music`), the playlist: a tag says
+      "label".
+    - **Add to queue** is lines and a plus (`playlist_add`), not a bare plus.
+    - **Move up / down** in the queue are arrows with a shaft (one step through
+      a sequence): the small triangles read as a dropdown or a sort.
+    - **Clear the queue** and **clear the counts** are the broom: they empty,
+      they do not delete. The bin stays for deleting a list or removing a
+      source.
+    - **Authorise** a folder is the key (granting access), not the padlock.
+    - **Back** is the arrow with a shaft, not the chevron.
+    - **Language** is the same `yi-language` as every other app, and the
+      **site map** the site map.
+- The unused `.mi-info` rule is gone, with `.mi-tag` and `.mi-globe`.
+
 ## 2.36.3 — 2026-10-17
 
 - **The developer window wears the bug** (gobj-ui `^7.27.10`), the

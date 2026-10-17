@@ -61,11 +61,11 @@ const svg = (path, size) =>
         `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`);
 
 const P = {
-    play:   "M8 5v14l11-7z",
-    plus:   "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z",
-    back:   "M15.5 4.5 8 12l7.5 7.5 1.4-1.4L10.8 12l6.1-6.1z",
-    folder: "M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z",
-    file:   "M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zm0 7V3.5L18.5 9z",
+    play:    "M8 5v14l11-7z",
+    enqueue: "M14 10H3v2h11v-2zm0-4H3v2h11V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM3 16h7v-2H3v2z",
+    back:    "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z",
+    folder:  "M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z",
+    file:    "M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zm0 7V3.5L18.5 9z",
 };
 
 function ico(path, size)
@@ -539,7 +539,7 @@ function track_buttons(t_, list)
                 "data-i18n-aria-label": "add to queue",
                 title: t("add to queue"),
                 "data-i18n-title": "add to queue"
-            }, svg(P.plus, 16),
+            }, svg(P.enqueue, 16),
             {click: (ev) => { ev.stopPropagation(); queue_add([t_], "append"); }}]
     ]];
 }
@@ -568,7 +568,7 @@ function verb_buttons(gobj, get_tracks)
                 "data-i18n-aria-label": "add to queue",
                 title: t("add to queue"),
                 "data-i18n-title": "add to queue"
-            }, svg(P.plus, 16),
+            }, svg(P.enqueue, 16),
             {click: (ev) => { ev.stopPropagation(); queue_add(get_tracks(), "append"); }}]
     ]];
 }
@@ -729,7 +729,7 @@ function render_tree(gobj, $content)
                         [ico(P.play, 15), ["span", {i18n: "play all"}, t("play all")]],
                         {click: () => play_temp(ordered, 0)}],
                     ["button", {class: "MUS_QBTN button", type: "button"},
-                        [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
+                        [ico(P.enqueue, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
                         {click: () => queue_add(ordered, "append")}]
                 ]]
             ]]
@@ -921,7 +921,7 @@ function render_detail(gobj, $content)
                         [ico(P.play, 15), ["span", {i18n: "play all"}, t("play all")]],
                         {click: () => play_temp(ordered, 0)}],
                     ["button", {class: "MUS_QBTN button", type: "button"},
-                        [ico(P.plus, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
+                        [ico(P.enqueue, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
                         {click: () => queue_add(ordered, "append")}]
                 ]]
             ]]

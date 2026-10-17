@@ -94,11 +94,11 @@ const svg = (path, size) =>
         `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`);
 
 const P = {
-    prev:  "M6 6h2v12H6zm12 0v12l-9-6z",
-    next:  "M16 6h2v12h-2zM6 6l9 6-9 6z",
-    play:  "M8 5v14l11-7z",
-    pause: "M6 5h4v14H6zm8 0h4v14h-4z",
-    plus:  "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z",
+    prev:    "M6 6h2v12H6zm12 0v12l-9-6z",
+    next:    "M16 6h2v12h-2zM6 6l9 6-9 6z",
+    play:    "M8 5v14l11-7z",
+    pause:   "M6 5h4v14H6zm8 0h4v14h-4z",
+    enqueue: "M14 10H3v2h11v-2zm0-4H3v2h11V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM3 16h7v-2H3v2z",
 };
 
 
@@ -1003,7 +1003,7 @@ function paint_temp(gobj, track)
     }
     /*  Keeping what you are hearing is the whole reason the temporary
         list exists: hear it first, decide after. */
-    $ctl.appendChild(ibtn("add to queue", P.plus, () => queue_add([track], "append")));
+    $ctl.appendChild(ibtn("add to queue", P.enqueue, () => queue_add([track], "append")));
 
     /*  The way back, in words. The deck did not go anywhere. */
     $ctl.appendChild(createElement2(
