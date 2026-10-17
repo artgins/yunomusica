@@ -6,6 +6,12 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.36.5 — 2026-10-17
+
+- **Help** wears the **?**, as in Google, Apple and Microsoft apps: it wore the
+  **ⓘ**, which they keep for "About". Every Yuneta app now says it the same
+  way.
+
 ## 2.36.4 — 2026-10-17
 
 - **Each icon says what its button does, as the market draws it** (Material
