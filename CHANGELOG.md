@@ -6,6 +6,14 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.36.9 — 2026-10-17
+
+- **Maximise the queue / show the player** wear the arrows of a panel growing
+  to the whole screen and back (Material `open_in_full` / `close_fullscreen`,
+  as Material, YouTube and Google Docs draw it): the two small triangles read
+  as a dropdown or a sort, the same reason move up / down lost theirs. Icon
+  only.
+
 ## 2.36.8 — 2026-10-17
 
 - gobj-ui `^7.27.13` (deploy round).
