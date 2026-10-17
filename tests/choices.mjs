@@ -10,10 +10,11 @@
  *        2. The colours menu marks exactly one row, the palette in
  *           force — at start ("auto") and after choosing another, and
  *           still after a reload.
- *        3. The theme button shows the theme it switches to: the sun
- *           in dark, the moon in light. Up to 2.35.0 it was always the
- *           moon; 2.36.0 showed the theme in force. Its tooltip and
- *           its name say the same, in the language in force.
+ *        3. The theme button shows the theme in force, as in every app:
+ *           the moon in dark, the sun in light. Its tooltip and its
+ *           name say where a press goes, in the language in force. Up
+ *           to 2.35.0 it was always the moon; 2.36.1-2.36.12 showed
+ *           the theme it switches to.
  *
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
@@ -84,10 +85,10 @@ check("paleta tras elegir Aurora: pal-aurora", same(await marked("palette"), ["p
 
 /*  3. Theme. */
 await set_theme(page, "dark");
-check("tema oscuro: sol", (await theme_icon()) === "yi-sun");
+check("tema oscuro: luna", (await theme_icon()) === "yi-moon");
 check("tema oscuro: «Cambiar a tema claro»", (await theme_tip()) === "Cambiar a tema claro");
 await set_theme(page, "light");
-check("tema claro: luna", (await theme_icon()) === "yi-moon");
+check("tema claro: sol", (await theme_icon()) === "yi-sun");
 check("tema claro: «Cambiar a tema oscuro»", (await theme_tip()) === "Cambiar a tema oscuro");
 
 /*  In another language, the tooltip follows: a language switch must not
@@ -107,7 +108,7 @@ await page.reload({waitUntil: "networkidle"});
 await page.waitForTimeout(1100);
 check("tras recargar: pal-aurora", same(await marked("palette"), ["pal-aurora"]));
 check("tras recargar: lang-es", same(await marked("language"), ["lang-es"]));
-check("tras recargar: luna", (await theme_icon()) === "yi-moon");
+check("tras recargar: sol", (await theme_icon()) === "yi-sun");
 check("tras recargar: «Cambiar a tema oscuro»", (await theme_tip()) === "Cambiar a tema oscuro");
 
 const errors = report(page);

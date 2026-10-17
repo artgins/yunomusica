@@ -503,7 +503,7 @@ function show_choices(gobj)
     mark_choice(shell, "language", "locale", current_locale());
     mark_choice(shell, "palette", "palette", current_palette());
     let dark = current_theme() === "dark";
-    yui_shell_set_toolbar_item_icon(shell, "theme", dark ? "yi-sun" : "yi-moon");
+    yui_shell_set_toolbar_item_icon(shell, "theme", dark ? "yi-moon" : "yi-sun");
 
     /*  The keys go in the data-i18n-* attributes too, so a language
         switch re-translates them rather than putting back "theme". */

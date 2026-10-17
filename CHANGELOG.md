@@ -6,6 +6,14 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.36.13 — 2026-10-18
+
+- **The theme button shows the theme in force** again — the moon in dark,
+  the sun in light — as in every Yuneta app, where the toolbar says what is
+  in force (with a menu or without). Its tooltip and accessible name still
+  say where a press goes ("Switch to light theme"). Undoes the icon of
+  2.36.1.
+
 ## 2.36.12 — 2026-10-18
 
 - gobj-ui `^7.27.17` (deploy round).
