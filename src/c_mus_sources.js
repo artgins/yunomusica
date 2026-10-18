@@ -19,9 +19,11 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {new_id, named, named_for} from "./a11y.js";
+import {view_trace, store_trace} from "./trace.js";
 import {
     SDATA, SDATA_END, data_type_t,
-    gclass_create, log_error,
+    gclass_create, log_error, log_warning,
     gobj_parent,
     gobj_read_attr, gobj_read_pointer_attr, gobj_write_attr,
     gobj_subscribe_event,
@@ -54,6 +56,8 @@ import {t} from "i18next";
  *              Constants
  ***************************************************************/
 const GCLASS_NAME = "C_MUS_SOURCES";
+
+const SOURCES_ROUTE = "/sources";
 
 const svg = (path, size) =>
     html_markup(
@@ -99,6 +103,8 @@ let PRIVATE_DATA = {
     diag_open:     false,   // the diagnostics panel is unfolded
     diag_text:     "",      // its last readout, kept across re-renders
     confirming:    "",      // id of the source awaiting a remove confirmation
+    shown:         true,    // on screen: created by the route that shows it
+    dirty:         false,   // something changed while it was hidden
 };
 
 let __gclass__ = null;
@@ -135,24 +141,45 @@ function mt_start(gobj)
         asked when it is come back to. */
     priv.confirming = "";
 
-    priv.unsub_sources = subscribe_sources(() => render(gobj));
+    /*  Straight from the stores' callbacks, which is cheap and is fine
+        because it is traced (view_trace, trace.js). Kept alive, so this
+        hears them while hidden too: hidden, it only notes that it is out
+        of date, and the route that shows it renders it. */
+    priv.unsub_sources = subscribe_sources(function() {
+        view_trace(GCLASS_NAME, "sources", "changed");
+        repaint(gobj);
+    });
     /*  A scan feeds the library, and the per-source track count comes
-        from there, so repaint on the library channel too — and on
-        "loading", which is what carries how far a scan has got. The
-        store emits that on a 120 ms clock, so this is cheap. */
+        from there, so repaint on the library channel too. "loading"
+        carries how far a scan has got, every 120 ms: that moves a count
+        and a bar, written in place — a rebuild that often swallowed taps
+        (the press and the release landing on two different buttons) and
+        shut the diagnostics. */
     priv.unsub_music = subscribe(function(channel) {
-        if(channel === "library" || channel === "loading") {
-            render(gobj);
+        if(channel === "loading") {
+            view_trace(GCLASS_NAME, "music", channel, true);
+            if(!priv.shown || paint_progress(gobj)) {
+                priv.dirty = priv.dirty || !priv.shown;
+                return;
+            }
+            repaint(gobj);
+        } else if(channel === "library") {
+            view_trace(GCLASS_NAME, "music", channel);
+            repaint(gobj);
         }
     });
 
     /*  The cover hunt reports its own progress, and it runs long enough
         that a line saying how far it has got is worth repainting for. */
-    priv.unsub_covers = subscribe_covers(() => render(gobj));
+    priv.unsub_covers = subscribe_covers(function() {
+        view_trace(GCLASS_NAME, "covers", "progress");
+        repaint(gobj);
+    });
 
     let shell = yui_shell_of(gobj);
     if(shell) {
         gobj_subscribe_event(shell, "EV_LANGUAGE_CHANGED", {}, gobj);
+        gobj_subscribe_event(shell, "EV_ROUTE_CHANGED", {}, gobj);
     }
 
     render(gobj);
@@ -208,6 +235,7 @@ function render(gobj)
     if(!$c) {
         return;
     }
+    priv.dirty = false;
     clear($c);
 
     $c.appendChild(build_header());
@@ -255,7 +283,7 @@ function build_diagnostics(gobj)
         ["details", {class: "MUS_DIAG"}, [
             ["summary", {class: "MUS_DIAG_SUM", i18n: "diagnostics"}, t("diagnostics")],
             ["div", {class: "MUS_DIAG_ACTIONS"}, [
-                ["button", {class: "MUS_QBTN button is-ghost", type: "button", i18n: "copy"},
+                ["button", {class: "MUS_QBTN button is-ghost", type: "button", i18n: "copy", ...named("copy")},
                     t("copy"), {click: (ev) => copy_diag(ev, $body)}]
             ]],
             $body
@@ -300,17 +328,30 @@ function copy_diag(ev, $body)
     /*  Captured NOW: by the time the clipboard promise settles the event
         has been dispatched and currentTarget is null. */
     let $b = ev.currentTarget;
+    /*  "✓" for a moment, then its own label back — by its key: the
+        text on the button may be "✓" still, from a press a moment ago. */
     let done = () => {
-        let old = $b.textContent;
+        store_trace(GCLASS_NAME, "diagnostics copied");
         $b.textContent = "✓";
-        setTimeout(() => { $b.textContent = old; }, 1200);
+        setTimeout(function() {
+            $b.textContent = t($b.getAttribute("data-i18n") || "copy");
+        }, 1200);
     };
     if(navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, () => {});
+        navigator.clipboard.writeText(text).then(done, function(e) {
+            /*  Refused: selected instead, to copy by hand. */
+            log_warning(`${GCLASS_NAME}: the clipboard refused: ${(e && e.name) || e}`);
+            select_by_hand($body);
+        });
         return;
     }
-    /*  No clipboard API (or no permission): select it so the user can
-        copy it by hand rather than being told nothing happened. */
+    select_by_hand($body);
+}
+
+/*  No clipboard API (or no permission): select it so the user can copy
+    it by hand rather than being told nothing happened. */
+function select_by_hand($body)
+{
     let r = document.createRange();
     r.selectNodeContents($body);
     let sel = window.getSelection();
@@ -326,10 +367,10 @@ function build_header()
             ["h2", {class: "MUS_SECTITLE", i18n: "authorised sources"},
                 t("authorised sources")],
             ["div", {class: "MUS_QACTIONS"}, [
-                ["button", {class: "MUS_QBTN button is-primary", type: "button"},
+                ["button", {class: "MUS_QBTN button is-primary", type: "button", ...named("add a folder")},
                     [ico(P.folder, 16), ["span", {i18n: "add a folder"}, t("add a folder")]],
                     {click: () => add_dir()}],
-                ["button", {class: "MUS_QBTN button", type: "button"},
+                ["button", {class: "MUS_QBTN button", type: "button", ...named("add loose files")},
                     [ico(P.file, 16), ["span", {i18n: "add loose files"}, t("add loose files")]],
                     {click: () => add_files()}]
             ]]
@@ -362,14 +403,14 @@ function build_notice()
     let actions = [];
     if(n.pending) {
         actions.push(["button", {class: "MUS_QBTN button is-danger", type: "button",
-                                 i18n: "remove it and add this"},
+                                 i18n: "remove it and add this", ...named("remove it and add this")},
             t("remove it and add this"), {click: () => accept_notice()}]);
         actions.push(["button", {class: "MUS_QBTN button is-ghost", type: "button",
-                                 i18n: "cancel"},
+                                 i18n: "cancel", ...named("cancel")},
             t("cancel"), {click: () => dismiss_notice()}]);
     } else {
         actions.push(["button", {class: "MUS_QBTN button is-ghost", type: "button",
-                                 i18n: "understood"},
+                                 i18n: "understood", ...named("understood")},
             t("understood"), {click: () => dismiss_notice()}]);
     }
 
@@ -444,7 +485,7 @@ function build_covers_switch(gobj)
     if(st.on && st.missed) {
         children.push(
             ["button", {class: "MUS_QBTN MUS_COVOPT_RETRY button is-ghost",
-                        type: "button", i18n: "retry the ones that failed"},
+                        type: "button", i18n: "retry the ones that failed", ...named("retry the ones that failed")},
                 t("retry the ones that failed"),
                 {click: () => retry_covers(true)}]);
     }
@@ -512,10 +553,14 @@ function build_explainer()
 function build_source_row(gobj, s)
 {
     let needs_auth = (s.permission !== "granted");
+    /*  Every button of the row is named by the source too: "Rescan" on
+        three rows is three buttons nobody can tell apart by ear. */
+    const tid = new_id();
+    const named_for_src = (key) => named_for(key, tid);
     let kind_key = (s.kind === "dir") ? "folder" : "files";
 
     let $meta = ["div", {class: "MUS_SRCMETA"}, [
-        ["div", {class: "MUS_T1"}, s.name],
+        ["div", {class: "MUS_T1", id: tid}, s.name],
         ["div", {class: "MUS_T2"}, [
             ["span", {i18n: kind_key}, t(kind_key)],
             ["span", {class: "MUS_SEP"}, "·"],
@@ -535,9 +580,9 @@ function build_source_row(gobj, s)
             ["span", {i18n: "reading"}, t("reading")]
         ];
         if(total) {
-            line.push(["span", {}, String(store_state.loaded)]);
+            line.push(["span", {class: "MUS_SRCPROGRESS_DONE"}, String(store_state.loaded)]);
             line.push(["span", {class: "MUS_SEP"}, "/"]);
-            line.push(["span", {}, String(total)]);
+            line.push(["span", {class: "MUS_SRCPROGRESS_TOTAL"}, String(total)]);
         }
         $state = ["div", {class: "MUS_SRCSTATE MUS_SRCPROGRESS", role: "status"}, [
             ["div", {class: "MUS_SRCPROGRESS_LINE"}, line],
@@ -574,7 +619,7 @@ function build_source_row(gobj, s)
      *  walks folders, so this is a door to that, opened at this source's
      *  root, rather than a second browser grown inside Sources. */
     if(!needs_auth && s.count) {
-        actions.push(["button", {class: "MUS_QBTN button", type: "button"},
+        actions.push(["button", {class: "MUS_QBTN button", type: "button", ...named_for_src("look inside")},
             [ico(P.folder, 15), ["span", {i18n: "look inside"}, t("look inside")]],
             {click: () => {
                 open_in_library({source_id: s.id, name: s.name});
@@ -585,17 +630,17 @@ function build_source_row(gobj, s)
             }}]);
     }
     if(needs_auth) {
-        actions.push(["button", {class: "MUS_QBTN button is-primary", type: "button"},
+        actions.push(["button", {class: "MUS_QBTN button is-primary", type: "button", ...named_for_src("authorise")},
             [ico(P.key, 15), ["span", {i18n: "authorise"}, t("authorise")]],
             {click: () => authorize(s.id)}]);
     } else {
         if(s.rescannable) {
-            actions.push(["button", {class: "MUS_QBTN button", type: "button"},
+            actions.push(["button", {class: "MUS_QBTN button", type: "button", ...named_for_src("rescan")},
                 [ico(P.refresh, 15), ["span", {i18n: "rescan"}, t("rescan")]],
                 {click: () => scan(s.id, true)}]);
         }
         actions.push(["button", {class: "MUS_QBTN button", type: "button",
-                                 ...disabled_if(!s.count)},
+                                 ...disabled_if(!s.count), ...named_for_src("add to queue")},
             [ico(P.enqueue, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
             {click: () => queue_add(tracks_of_source(s.id), "append")}]);
     }
@@ -608,13 +653,13 @@ function build_source_row(gobj, s)
      *  modal to dismiss, and the answer is where the finger already is. */
     if(gobj.priv.confirming === s.id) {
         actions.push(["button", {class: "MUS_QBTN button is-danger", type: "button",
-                                 i18n: "remove this source?"}, t("remove this source?"),
+                                 i18n: "remove this source?", ...named_for_src("remove this source?")}, t("remove this source?"),
             {click: async () => {
                 gobj.priv.confirming = "";
                 await remove_source(s.id);
             }}]);
         actions.push(["button", {class: "MUS_QBTN button is-ghost", type: "button",
-                                 i18n: "cancel"}, t("cancel"),
+                                 i18n: "cancel", ...named_for_src("cancel")}, t("cancel"),
             {click: () => { gobj.priv.confirming = ""; render(gobj); }}]);
     } else {
         actions.push(["button", {
@@ -653,6 +698,53 @@ function ac_language_changed(gobj, event, kw, src)
     return 0;
 }
 
+/*  Shown again: what changed while it was hidden is drawn now. */
+function ac_route_changed(gobj, event, kw, src)
+{
+    let priv = gobj.priv;
+    priv.shown = ((kw && (kw.base || kw.route)) || "") === SOURCES_ROUTE;
+    if(priv.shown && priv.dirty) {
+        render(gobj);
+    }
+    return 0;
+}
+
+/*  On screen, now; hidden, when the route shows it again. */
+function repaint(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.shown) {
+        priv.dirty = true;
+        return;
+    }
+    render(gobj);
+}
+
+/*  How far a scan has got, written into the row that says so. False
+    when there is no such row, or it has not got the shape the numbers
+    need (a total that arrived after the walk): then it is rebuilt. */
+function paint_progress(gobj)
+{
+    let $p = gobj.priv.$content && gobj.priv.$content.querySelector(".MUS_SRCPROGRESS");
+    if(!$p || !store_state.loading) {
+        return false;
+    }
+    let total = store_state.total || 0;
+    let $done = $p.querySelector(".MUS_SRCPROGRESS_DONE");
+    let $total = $p.querySelector(".MUS_SRCPROGRESS_TOTAL");
+    let $fill = $p.querySelector(".MUS_BAR_FILL");
+    if(!$fill || (total && (!$done || !$total))) {
+        return false;
+    }
+    if(total) {
+        $done.textContent = String(store_state.loaded);
+        $total.textContent = String(total);
+    }
+    $fill.classList.toggle("is-indeterminate", !total);
+    $fill.style.width = total ? Math.round((store_state.loaded / total) * 100) + "%" : "";
+    return true;
+}
+
 
 
 
@@ -675,11 +767,13 @@ function create_gclass(gclass_name)
 
     const states = [
         ["ST_IDLE", [
-            ["EV_LANGUAGE_CHANGED", ac_language_changed, null]
+            ["EV_LANGUAGE_CHANGED", ac_language_changed, null],
+            ["EV_ROUTE_CHANGED",    ac_route_changed,    null]
         ]]
     ];
     const event_types = [
-        ["EV_LANGUAGE_CHANGED", 0]
+        ["EV_LANGUAGE_CHANGED", 0],
+        ["EV_ROUTE_CHANGED",    0]
     ];
 
     __gclass__ = gclass_create(

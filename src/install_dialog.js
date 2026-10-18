@@ -22,6 +22,8 @@ import {createElement2, refresh_language} from "@yuneta/gobj-js";
 import {
     yui_shell_register_overlay,
     yui_shell_overlay_dismissed,
+    yui_shell_push_escape,
+    yui_shell_pop_escape,
 } from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {pref_get, pref_set} from "./idb.js";
@@ -97,10 +99,12 @@ function open_install(shell_gobj)
             $open.parentNode.removeChild($open);
         }
         $open = null;
+        yui_shell_pop_escape(shell_gobj, on_escape);
         if(overlay && !from_history) {
             yui_shell_overlay_dismissed(shell_gobj, overlay);
         }
     };
+    const on_escape = () => answered();
 
     /*  However this ends — installed, refused, Escape, Back — the app
         has now had its turn, and it does not get a second one today:
@@ -153,6 +157,10 @@ function open_install(shell_gobj)
 
     /*  Back button and Escape, courtesy of the shell. */
     overlay = yui_shell_register_overlay(shell_gobj, () => answered(true));
+    /*  The overlay buys the Back button; Escape is the shell's to route
+        (its own stack, LIFO), asked for while this is up and given back
+        when it goes. Without it Escape did nothing here. */
+    yui_shell_push_escape(shell_gobj, "modal", on_escape, () => answered(true));
     refresh_language($backdrop, t);
 
     let $go = $backdrop.querySelector(".MUS_INSTALL_GO");

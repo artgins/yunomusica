@@ -38,6 +38,7 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {store_trace} from "./trace.js";
 
 /*  The journal: an array of {t, e, d} — when, what, details. */
 const KEY_LOG = "yunomusica_diag";
@@ -127,6 +128,8 @@ function write_journal(arr)
  ***************************************************************/
 function diag(e, d)
 {
+    /*  Every line of the journal is also a line of the trace. */
+    store_trace("diag", e, d);
     try {
         let arr = read_journal();
         arr.push({t: Date.now(), e: e, d: d || {}});
@@ -237,6 +240,7 @@ function diag_watch(fn)
 
 function beat()
 {
+    store_trace("diag", "heartbeat");
     let state = {};
     if(probe) {
         try {

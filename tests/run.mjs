@@ -37,6 +37,7 @@ const PORT = Number(new URL(process.env.YUNOMUSICA_URL || "http://localhost:4321
 const TESTS = [
     {name: "fallback",  what: "idioma de entrada y dirección"},
     {name: "locales",   what: "los diez cat\u00e1logos completos, sin huecos ni marcadores perdidos"},
+    {name: "rescan",    what: "reescanear deja la cola como estaba, menos lo que se fue"},
     {name: "plural",    what: "una pista y tres pistas, en los diez idiomas"},
     {name: "navink",    what: "tinta del nav y de los botones primarios"},
     {name: "minink",    what: "tinta del botón del mini-reproductor"},
@@ -67,6 +68,8 @@ const TESTS = [
     {name: "listplace", what: "\u00b110 s, cada lista vuelve a su sitio, y dos recargas no lo pierden"},
     {name: "choices",   what: "la barra dice lo elegido: idioma, paleta y tema"},
     {name: "devmenu",   what: "el men\u00fa: desarrollo, mapa del sitio y ayuda, y un registro que sobrevive"},
+    {name: "a11y",      what: "Escape cierra los diálogos, cada botón de fila lleva su fila, la ficha guarda el foco"},
+    {name: "trace",     what: "lo que pasa fuera de la máquina no es un punto ciego"},
     {name: "e2e",       what: "recorrido completo + recarga"}
 ];
 

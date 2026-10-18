@@ -11,6 +11,8 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {new_id, named, named_for} from "./a11y.js";
+import {view_trace} from "./trace.js";
 import {
     SDATA, SDATA_END, data_type_t,
     gclass_create, log_error,
@@ -44,6 +46,8 @@ import {t} from "i18next";
  *              Constants
  ***************************************************************/
 const GCLASS_NAME = "C_MUS_LISTS";
+
+const LISTS_ROUTE = "/lists";
 
 const svg = (path, size) =>
     html_markup(
@@ -87,6 +91,8 @@ let PRIVATE_DATA = {
     confirming:  "",        // id of the list awaiting a delete confirmation
     open_id:     "",        // id of the list whose songs are unfolded
     clearing:    "",        // which ranked list is asking "are you sure?"
+    shown:         true,    // on screen: created by the route that shows it
+    dirty:         false,   // something changed while it was hidden
 };
 
 let __gclass__ = null;
@@ -119,21 +125,33 @@ function mt_start(gobj)
 {
     let priv = gobj.priv;
 
-    priv.unsub_lists = subscribe_playlists(() => render(gobj));
+    /*  Straight from the stores' callbacks, which is cheap and is fine
+        because it is traced (view_trace, trace.js). Kept alive, so this
+        hears them while hidden too: hidden, it only notes that it is out
+        of date, and the route that shows it renders it. */
+    priv.unsub_lists = subscribe_playlists(function() {
+        view_trace(GCLASS_NAME, "playlists", "changed");
+        repaint(gobj);
+    });
     /*  How many entries resolve depends on the library, so a source
         coming or going changes what this view has to say. */
     priv.unsub_music = subscribe(function(channel) {
         if(channel === "library") {
-            render(gobj);
+            view_trace(GCLASS_NAME, "music", channel);
+            repaint(gobj);
         }
     });
     /*  The two lists below the saved ones ARE the counts, so they are
         rebuilt whenever a count moves. */
-    priv.unsub_stats = subscribe_stats(() => render(gobj));
+    priv.unsub_stats = subscribe_stats(function() {
+        view_trace(GCLASS_NAME, "stats", "counts");
+        repaint(gobj);
+    });
 
     let shell = yui_shell_of(gobj);
     if(shell) {
         gobj_subscribe_event(shell, "EV_LANGUAGE_CHANGED", {}, gobj);
+        gobj_subscribe_event(shell, "EV_ROUTE_CHANGED", {}, gobj);
     }
 
     render(gobj);
@@ -185,6 +203,7 @@ function clear($node)
 function render(gobj)
 {
     let priv = gobj.priv;
+    priv.dirty = false;
     let $c = priv.$content;
     if(!$c) {
         return;
@@ -377,23 +396,21 @@ function track_rows(gobj, items)
                 ]]));
             continue;
         }
+        const tid = new_id();
         $rows.appendChild(createElement2(
             ["li", {class: "MUS_RANK"}, [
                 ["span", {class: "MUS_RANKN"}, String(item.n)],
                 ["button", {
                         class: "MUS_RANKMAIN", type: "button",
-                        "aria-haspopup": "dialog"
+                        "aria-haspopup": "dialog", ...named_for("open the card", tid)
                     }, [
-                    ["span", {class: "MUS_T1"}, track.title],
+                    ["span", {class: "MUS_T1", id: tid}, track.title],
                     ["span", {class: "MUS_T2"}, track.artist]
                 ], {click: () => open_track(yui_shell_of(gobj), track)}],
-                track_counts(track),
+                track_counts(track, tid),
                 ["button", {
                         class: "MUS_IBTN", type: "button",
-                        "aria-label": t("add to queue"),
-                        "data-i18n-aria-label": "add to queue",
-                        title: t("add to queue"),
-                        "data-i18n-title": "add to queue"
+                        ...named_for("add to queue", tid)
                     }, svg(P.enqueue, 16),
                     {click: () => queue_add([track], "append")}]
             ]]));
@@ -524,6 +541,28 @@ function ac_language_changed(gobj, event, kw, src)
     return 0;
 }
 
+/*  Shown again: what changed while it was hidden is drawn now. */
+function ac_route_changed(gobj, event, kw, src)
+{
+    let priv = gobj.priv;
+    priv.shown = ((kw && (kw.base || kw.route)) || "") === LISTS_ROUTE;
+    if(priv.shown && priv.dirty) {
+        render(gobj);
+    }
+    return 0;
+}
+
+/*  On screen, now; hidden, when the route shows it again. */
+function repaint(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.shown) {
+        priv.dirty = true;
+        return;
+    }
+    render(gobj);
+}
+
 
 
 
@@ -546,11 +585,13 @@ function create_gclass(gclass_name)
 
     const states = [
         ["ST_IDLE", [
-            ["EV_LANGUAGE_CHANGED", ac_language_changed, null]
+            ["EV_LANGUAGE_CHANGED", ac_language_changed, null],
+            ["EV_ROUTE_CHANGED",    ac_route_changed,    null]
         ]]
     ];
     const event_types = [
-        ["EV_LANGUAGE_CHANGED", 0]
+        ["EV_LANGUAGE_CHANGED", 0],
+        ["EV_ROUTE_CHANGED",    0]
     ];
 
     __gclass__ = gclass_create(

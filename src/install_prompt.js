@@ -26,6 +26,8 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {log_warning} from "@yuneta/gobj-js";
+import {traced, trace_emit, store_trace} from "./trace.js";
 
 const listeners = new Set();
 
@@ -45,6 +47,7 @@ function subscribe_install(fn)
 
 function emit()
 {
+    trace_emit("install_prompt", "install");
     for(const fn of listeners) {
         try {
             fn("install");
@@ -120,6 +123,7 @@ async function do_install()
         const choice = await ev.userChoice;
         outcome = choice ? choice.outcome : null;
     } catch(e) {
+        log_warning(`install_prompt: the install prompt failed: ${(e && e.name) || e}`);
         emit();
         return null;
     }
@@ -158,12 +162,14 @@ function install_bar_due()
 function start_install_watch()
 {
     window.addEventListener("yunomusica:installable", function() {
+        store_trace("install_prompt", "installable");
         S.bar_gone = false;         // a fresh offer deserves a fresh bar
         emit();
     });
     /*  Installed from the browser menu, or from our dialog. Either way
         the offer is over and every trace of it goes. */
     window.addEventListener("appinstalled", function() {
+        store_trace("install_prompt", "appinstalled");
         S.installed = true;
         window.__yunomusica_install = null;
         emit();
@@ -171,12 +177,19 @@ function start_install_watch()
 }
 
 
+
+/*  What the interface calls, traced (see trace.js): the store's own
+    calls to these stay untraced. */
+const __t_start_install_watch = traced("install_prompt", "start_install_watch", start_install_watch);
+const __t_do_install = traced("install_prompt", "do_install", do_install);
+const __t_dismiss_install_bar = traced("install_prompt", "dismiss_install_bar", dismiss_install_bar);
+
 export {
     subscribe_install,
-    start_install_watch,
+    __t_start_install_watch as start_install_watch,
     can_install,
     is_installed,
-    do_install,
+    __t_do_install as do_install,
     install_bar_due,
-    dismiss_install_bar,
+    __t_dismiss_install_bar as dismiss_install_bar,
 };

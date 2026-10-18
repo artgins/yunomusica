@@ -18,6 +18,8 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {new_id, named, named_for} from "./a11y.js";
+import {view_trace, store_trace} from "./trace.js";
 import {
     SDATA, SDATA_END, data_type_t,
     gclass_create, log_error,
@@ -53,6 +55,8 @@ import {t} from "i18next";
  *              Constants
  ***************************************************************/
 const GCLASS_NAME = "C_MUS_VIEW";
+
+const LIBRARY_ROUTE = "/library";
 
 const VIEWS = ["artists", "albums", "genres", "folders", "all"];
 
@@ -112,6 +116,9 @@ let PRIVATE_DATA = {
     $chips:   null,
     $content: null,
     search_timer: 0,
+    shown:    true,     // on screen: created by the route that shows it
+    dirty:    false,    // something changed while it was hidden
+    drew_loading: false, // the last render was the "reading" screen
 };
 
 let __gclass__ = null;
@@ -148,10 +155,24 @@ function mt_start(gobj)
 {
     let priv = gobj.priv;
 
+    /*  Straight from the store's callbacks, which is cheap and is fine
+        because it is traced (view_trace, trace.js). Kept alive, so this
+        hears the stores while hidden too: hidden, it only notes that it
+        is out of date, and the route that shows it renders it. */
     priv.unsub = subscribe(function(channel) {
         if(channel === "library" || channel === "loading") {
-            render(gobj);
+            /*  "loading" comes every 120 ms of a scan, and only the empty
+                screen draws it: with a library on screen it changes
+                nothing — rebuilding for it threw away the row under the
+                finger ten times a second. Once, it ends the "reading"
+                screen. */
+            if(channel === "loading" && has_library() && !priv.drew_loading) {
+                return;
+            }
+            view_trace(GCLASS_NAME, "music", channel);
+            repaint(gobj);
         } else if(channel === "playing") {
+            view_trace(GCLASS_NAME, "music", channel);
             highlight_current(gobj);
         }
     });
@@ -159,7 +180,10 @@ function mt_start(gobj)
     /*  A heart given from a row, or a play counted while this screen is
         up, changes a chip on it — two numbers, not a list. Re-rendering
         would throw away the button the finger is still on. */
-    priv.unsub_st = subscribe_stats(() => paint_counts(gobj));
+    priv.unsub_st = subscribe_stats(function() {
+        view_trace(GCLASS_NAME, "stats", "counts");
+        paint_counts(gobj);
+    });
 
     /*  Fuentes sends the user here to look inside a folder. */
     apply_open_request(gobj);
@@ -168,7 +192,10 @@ function mt_start(gobj)
         carry their answer. A pick that adds nothing changes nothing in
         the library, so the library channel never fires and the screen
         would sit there as if the button had not been pressed. */
-    priv.unsub_src = subscribe_sources(() => render(gobj));
+    priv.unsub_src = subscribe_sources(function() {
+        view_trace(GCLASS_NAME, "sources", "changed");
+        repaint(gobj);
+    });
 
     let shell = yui_shell_of(gobj);
     if(shell) {
@@ -257,13 +284,13 @@ function build_ui(gobj)
             placeholder: t("search placeholder"),
             "data-i18n-placeholder": "search placeholder",
             autocomplete: "off",
-            "aria-label": t("search"),
-            "data-i18n-aria-label": "search"
+            ...named("search")
         }, null, {
             input: function(ev) {
                 clearTimeout(priv.search_timer);
                 let value = ev.target.value.trim();
                 priv.search_timer = setTimeout(function() {
+                    store_trace(GCLASS_NAME, "search", value);
                     priv.search = value;
                     priv.detail = null;     // a search leaves any drill-down
                     priv.tree = null;
@@ -357,6 +384,7 @@ function render(gobj)
     if(!$content) {
         return;
     }
+    priv.dirty = false;
     revalidate_detail(gobj);
     clear($content);
     paint_chips(gobj);
@@ -369,6 +397,7 @@ function render(gobj)
         $header.style.display = has_library() ? "" : "none";
     }
 
+    priv.drew_loading = !has_library() && !!store_state.loading;
     if(!has_library()) {
         $content.appendChild(store_state.loading ? build_loading() : build_empty());
         refresh_language($content, t);
@@ -409,7 +438,7 @@ function paint_chips(gobj)
                 class: "MUS_CHIP" + (on ? " is-on" : ""),
                 type: "button",
                 "aria-selected": on ? "true" : "false",
-                i18n: v
+                i18n: v, ...named(v)
             }, t(v), {
                 click: () => {
                     priv.view = v;
@@ -434,10 +463,10 @@ function build_empty()
         ["p", {class: "MUS_EMPTY_LEAD", i18n: "load something to start"},
             t("load something to start")],
         ["div", {class: "MUS_QACTIONS"}, [
-            ["button", {class: "MUS_QBTN button is-primary", type: "button"},
+            ["button", {class: "MUS_QBTN button is-primary", type: "button", ...named("add a folder")},
                 [ico(P.folder, 16), ["span", {i18n: "add a folder"}, t("add a folder")]],
                 {click: () => add_dir()}],
-            ["button", {class: "MUS_QBTN button", type: "button"},
+            ["button", {class: "MUS_QBTN button", type: "button", ...named("add loose files")},
                 [ico(P.file, 16), ["span", {i18n: "add loose files"}, t("add loose files")]],
                 {click: () => add_files()}]
         ]]
@@ -458,7 +487,7 @@ function build_empty()
                 t(n.kind, {name: n.name, other: n.other, count: n.skipped})],
             ["div", {class: "MUS_SRCNOTE_ACTIONS"}, [
                 ["button", {class: "MUS_QBTN button is-ghost", type: "button",
-                            i18n: "understood"},
+                            i18n: "understood", ...named("understood")},
                     t("understood"), {click: () => dismiss_notice()}]
             ]]
         ]]);
@@ -511,7 +540,7 @@ function cover_spec(key, cls, fallback)
  *
  *  Neither happens now. It sounds on the temporary list, the deck waits
  *  paused exactly where it was, and the strip carries the way back. */
-function track_buttons(t_, list)
+function track_buttons(t_, list, tid)
 {
     const context = () => {
         const l = (list && list.length) ? list : [t_];
@@ -522,10 +551,7 @@ function track_buttons(t_, list)
         ["button", {
                 class: "MUS_IBTN",
                 type: "button",
-                "aria-label": t("play"),
-                "data-i18n-aria-label": "play",
-                title: t("play"),
-                "data-i18n-title": "play"
+                ...named_for("play", tid)
             }, svg(P.play, 16),
             {click: (ev) => {
                 ev.stopPropagation();
@@ -535,12 +561,12 @@ function track_buttons(t_, list)
         ["button", {
                 class: "MUS_IBTN",
                 type: "button",
-                "aria-label": t("add to queue"),
-                "data-i18n-aria-label": "add to queue",
-                title: t("add to queue"),
-                "data-i18n-title": "add to queue"
+                ...named_for("add to queue", tid)
             }, svg(P.enqueue, 16),
-            {click: (ev) => { ev.stopPropagation(); queue_add([t_], "append"); }}]
+            {click: (ev) => {
+                ev.stopPropagation();
+                queue_add([t_], "append");
+            }}]
     ]];
 }
 
@@ -549,27 +575,27 @@ function track_buttons(t_, list)
     first, with a three-way dialog standing between the user and the
     sound. Nothing is thrown away any more, so nothing is asked: the
     album sounds on the temporary list and the deck waits. */
-function verb_buttons(gobj, get_tracks)
+function verb_buttons(gobj, get_tracks, tid)
 {
     return ["div", {class: "MUS_ROWCTL"}, [
         ["button", {
                 class: "MUS_IBTN",
                 type: "button",
-                "aria-label": t("play"),
-                "data-i18n-aria-label": "play",
-                title: t("play"),
-                "data-i18n-title": "play"
+                ...named_for("play", tid)
             }, svg(P.play, 16),
-            {click: (ev) => { ev.stopPropagation(); play_temp(get_tracks(), 0); }}],
+            {click: (ev) => {
+                ev.stopPropagation();
+                play_temp(get_tracks(), 0);
+            }}],
         ["button", {
                 class: "MUS_IBTN",
                 type: "button",
-                "aria-label": t("add to queue"),
-                "data-i18n-aria-label": "add to queue",
-                title: t("add to queue"),
-                "data-i18n-title": "add to queue"
+                ...named_for("add to queue", tid)
             }, svg(P.enqueue, 16),
-            {click: (ev) => { ev.stopPropagation(); queue_add(get_tracks(), "append"); }}]
+            {click: (ev) => {
+                ev.stopPropagation();
+                queue_add(get_tracks(), "append");
+            }}]
     ]];
 }
 
@@ -599,18 +625,20 @@ function track_row(gobj, t_, list, showNum)
         truncated as before; and it existed on this screen and not on
         the deck, so the same tap did different things depending on
         where you were. */
+    /*  The title's node names every control of the row (see a11y.js). */
+    const tid = new_id();
     let children = [
         left,
         ["button", {
                 class: "MUS_ROWMAIN",
                 type: "button",
-                "aria-haspopup": "dialog"
+                "aria-haspopup": "dialog", ...named_for("open the card", tid)
             }, [
-            ["span", {class: "MUS_T1"}, t_.title],
+            ["span", {class: "MUS_T1", id: tid}, t_.title],
             ["span", {class: "MUS_T2"}, subtitle]
         ], {click: () => open_track(yui_shell_of(gobj), t_)}],
-        track_counts(t_),
-        track_buttons(t_, list)
+        track_counts(t_, tid),
+        track_buttons(t_, list, tid)
     ];
 
     return ["div", {class: "MUS_ROWWRAP"}, [
@@ -651,10 +679,11 @@ function render_groups(gobj, $content, view)
                 which is capitalised in the languages that capitalise. */
             sub.push(...count_pair(n, "n albums"));
         }
+        const tid = new_id();
         return ["div", {class: "MUS_ROW"}, [
             cover_spec(g.tracks[0].key, "MUS_ART" + (round ? " is-round" : ""), fallback),
-            ["button", {class: "MUS_ROWMAIN", type: "button"}, [
-                ["span", {class: "MUS_T1"}, display_name(g.name)],
+            ["button", {class: "MUS_ROWMAIN", type: "button", ...named_for("show what is in it", tid)}, [
+                ["span", {class: "MUS_T1", id: tid}, display_name(g.name)],
                 ["span", {class: "MUS_T2"}, sub]
             ], {
                 click: () => {
@@ -663,7 +692,7 @@ function render_groups(gobj, $content, view)
                     render(gobj);
                 }
             }],
-            verb_buttons(gobj, () => ordered_detail({kind: view, tracks: g.tracks}))
+            verb_buttons(gobj, () => ordered_detail({kind: view, tracks: g.tracks}), tid)
         ]];
     });
 
@@ -725,10 +754,10 @@ function render_tree(gobj, $content)
                 /*  Play takes the whole subtree, in tree order, which is
                     what choosing a folder has always meant here. */
                 ["div", {class: "MUS_QACTIONS"}, [
-                    ["button", {class: "MUS_QBTN button is-primary", type: "button"},
+                    ["button", {class: "MUS_QBTN button is-primary", type: "button", ...named("play all")},
                         [ico(P.play, 15), ["span", {i18n: "play all"}, t("play all")]],
                         {click: () => play_temp(ordered, 0)}],
-                    ["button", {class: "MUS_QBTN button", type: "button"},
+                    ["button", {class: "MUS_QBTN button", type: "button", ...named("add to queue")},
                         [ico(P.enqueue, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
                         {click: () => queue_add(ordered, "append")}]
                 ]]
@@ -739,10 +768,11 @@ function render_tree(gobj, $content)
     for(const d of level.dirs) {
         const inside = [...d.tracks].sort(
             (a, b) => collator.compare(a.folder, b.folder) || by_track_no(a, b));
+        const tid = new_id();
         rows.push(["div", {class: "MUS_ROW MUS_DIRROW"}, [
             ico(P.folder, 22),
-            ["button", {class: "MUS_ROWMAIN", type: "button"}, [
-                ["span", {class: "MUS_T1"}, d.name],
+            ["button", {class: "MUS_ROWMAIN", type: "button", ...named_for("open folder", tid)}, [
+                ["span", {class: "MUS_T1", id: tid}, d.name],
                 ["span", {class: "MUS_T2"}, count_pair(inside.length, "n tracks")]
             ], {
                 click: () => {
@@ -751,7 +781,7 @@ function render_tree(gobj, $content)
                     render(gobj);
                 }
             }],
-            verb_buttons(gobj, () => inside)
+            verb_buttons(gobj, () => inside, tid)
         ]]);
     }
     if(rows.length) {
@@ -800,7 +830,7 @@ function build_crumbs(gobj)
     const segs = all.slice(Math.max(0, base - 1));
 
     let bits = [
-        ["button", {class: "MUS_CRUMB", type: "button"},
+        ["button", {class: "MUS_CRUMB", type: "button", ...named("all sources")},
             [ico(P.back, 15), ["span", {i18n: "sources"}, t("sources")]],
             {click: () => {
                 priv.tree = null;
@@ -814,7 +844,9 @@ function build_crumbs(gobj)
     segs.slice(0, -1).forEach(function(seg, i) {
         const upto = (head ? head + "/" : "") + segs.slice(0, i + 1).join("/");
         bits.push(["span", {class: "MUS_SEP"}, "/"]);
-        bits.push(["button", {class: "MUS_CRUMB", type: "button"}, seg,
+        const tid = new_id();
+        bits.push(["button", {class: "MUS_CRUMB", type: "button", ...named_for("open folder", tid)},
+            [["span", {id: tid}, seg]],
             {click: () => {
                 priv.tree = {...priv.tree, path: upto};
                 scroll_top(gobj);
@@ -917,10 +949,10 @@ function render_detail(gobj, $content)
                 ["h3", {class: "MUS_DTITLE"}, display_name(d.name)],
                 ["p", {class: "MUS_DMETA"}, meta],
                 ["div", {class: "MUS_QACTIONS"}, [
-                    ["button", {class: "MUS_QBTN button is-primary", type: "button"},
+                    ["button", {class: "MUS_QBTN button is-primary", type: "button", ...named("play all")},
                         [ico(P.play, 15), ["span", {i18n: "play all"}, t("play all")]],
                         {click: () => play_temp(ordered, 0)}],
-                    ["button", {class: "MUS_QBTN button", type: "button"},
+                    ["button", {class: "MUS_QBTN button", type: "button", ...named("add to queue")},
                         [ico(P.enqueue, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
                         {click: () => queue_add(ordered, "append")}]
                 ]]
@@ -1036,11 +1068,26 @@ function ac_language_changed(gobj, event, kw, src)
     other route leaves the screen untouched. */
 function ac_route_changed(gobj, event, kw, src)
 {
+    let priv = gobj.priv;
+    priv.shown = ((kw && (kw.base || kw.route)) || "") === LIBRARY_ROUTE;
     if(apply_open_request(gobj)) {
         scroll_top(gobj);
         render(gobj);
+    } else if(priv.shown && priv.dirty) {
+        render(gobj);
     }
     return 0;
+}
+
+/*  On screen, now; hidden, when the route shows it again. */
+function repaint(gobj)
+{
+    let priv = gobj.priv;
+    if(!priv.shown) {
+        priv.dirty = true;
+        return;
+    }
+    render(gobj);
 }
 
 

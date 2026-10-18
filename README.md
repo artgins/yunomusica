@@ -25,10 +25,9 @@ you have changed it since) or a queue put together by hand.
 The banner is where the record gets *looked* at. The cover sits in it and also
 behind it, blurred into a wash of its own colour; under the title a line cycles
 through what else is known — year, genre, track number, where this one sits in
-the queue. This is the one screen that fades anything: covers crossfade, the
-title lifts in, the facts change on their own. Everywhere else the DOM is
-swapped outright, which is right for a list being edited under a finger, and
-`prefers-reduced-motion` turns all of it into a cut.
+the queue. Nothing fades or slides, here or anywhere: covers, title and facts
+change at once, as every state change in a Yuneta GUI does (the facts still
+take turns on their own, every few seconds).
 
 ### What is sounding, drawn from the sound
 

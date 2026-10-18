@@ -43,6 +43,8 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {log_warning} from "@yuneta/gobj-js";
+import {traced, trace_emit, store_trace} from "./trace.js";
 import {STORE_COVERS, idb_all, idb_put, idb_del, pref_get, pref_set} from "./idb.js";
 import {
     subscribe, albums_missing_cover, add_cover, current_track, cover_url
@@ -97,6 +99,7 @@ function subscribe_covers(fn)
 
 function emit()
 {
+    trace_emit("covers_online", "covers");
     for(const fn of listeners) {
         try {
             fn();
@@ -219,11 +222,18 @@ async function get(url, as)
     try {
         const r = await fetch(url, {signal: ctl.signal, mode: "cors",
                                     credentials: "omit", cache: "no-store"});
+        store_trace("covers_online", "answer", {status: r.status, host: new URL(url).host});
         if(!r.ok) {
-            return null;
+            if(r.status !== 404) {
+                log_warning(`covers_online: ${new URL(url).host} answered ${r.status}`);
+            }
+            return null;            // 404: no cover there, which is an answer
         }
         return as === "blob" ? await r.blob() : await r.json();
     } catch(e) {
+        /*  Offline, a captive portal (the abort), a refused CORS: no
+            cover this time, said once in the console. */
+        log_warning(`covers_online: ${new URL(url).host} unreachable: ${(e && e.name) || e}`);
         return null;
     } finally {
         clearTimeout(timer);
@@ -388,7 +398,8 @@ function schedule()
         should ask about the record you stopped on, not about the four
         you passed through. */
     debounce = setTimeout(function() {
-        hunt_current().catch((e) => console.warn("covers_online:", e && e.message));
+        store_trace("covers_online", "hunt timer");
+        hunt_current().catch((e) => log_warning(`covers_online: the hunt failed: ${(e && e.message) || e}`));
     }, 1500);
 }
 
@@ -430,19 +441,30 @@ async function start_covers_online()
 
     /*  Coming back onto a network is exactly when the cover that was
         skipped on a plane can be fetched. */
-    window.addEventListener("online", schedule);
+    window.addEventListener("online", function() {
+        store_trace("covers_online", "online");
+        schedule();
+    });
 
     emit();
     schedule();
 }
 
 
+
+/*  What the interface calls, traced (see trace.js): the store's own
+    calls to these stay untraced. */
+const __t_start_covers_online = traced("covers_online", "start_covers_online", start_covers_online);
+const __t_set_covers_online = traced("covers_online", "set_covers_online", set_covers_online);
+const __t_hide_cover_retry = traced("covers_online", "hide_cover_retry", hide_cover_retry);
+const __t_retry_covers = traced("covers_online", "retry_covers", retry_covers);
+
 export {
-    start_covers_online,
-    set_covers_online,
+    __t_start_covers_online as start_covers_online,
+    __t_set_covers_online as set_covers_online,
     cover_missed_now,
-    hide_cover_retry,
-    retry_covers,
+    __t_hide_cover_retry as hide_cover_retry,
+    __t_retry_covers as retry_covers,
     covers_online_on,
     covers_online_state,
     subscribe_covers,

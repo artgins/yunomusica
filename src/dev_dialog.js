@@ -22,7 +22,10 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
-import {createElement2, refresh_language} from "@yuneta/gobj-js";
+import {
+    createElement2, refresh_language, log_error, log_warning,
+    gobj_command, gobj_yuno, gobj_get_gclass_trace_level2,
+} from "@yuneta/gobj-js";
 
 import {yui_shell_show_modal} from "@yuneta/gobj-ui/src/shell_modals.js";
 
@@ -33,6 +36,51 @@ import {
 
 import {t} from "i18next";
 
+
+/*  A control's four name attributes: title and aria-label, translated,
+    with their keys. */
+function named(key)
+{
+    return {
+        title: t(key), "data-i18n-title": key,
+        "aria-label": t(key), "data-i18n-aria-label": key,
+    };
+}
+
+/*  The app's trace levels: [level of C_MUSICA, label key, title key]
+    (see trace.js). gobj-ui's panel has chips for the framework's levels
+    and none for an app's. */
+const APP_TRACES = [
+    ["stores",      "the stores",        "trace the stores"],
+    ["stores-time", "the stores' clock", "trace the stores' clock"],
+];
+export const APP_TRACE_I18N_KEYS = [
+    "the stores", "trace the stores", "the stores' clock", "trace the stores' clock",
+];
+const APP_GCLASS = "C_MUSICA";
+
+/*  Set through the yuno's own command, as gobj-ui's chips do: the yuno
+    keeps the levels across launches. */
+function toggle_app_trace(level, $row)
+{
+    let on = gobj_get_gclass_trace_level2(APP_GCLASS).includes(level);
+    let r = gobj_command(gobj_yuno(), "set-gclass-trace",
+        {gclass_name: APP_GCLASS, level: level, set: on ? 0 : 1}, gobj_yuno());
+    if(!r || r.result < 0) {
+        log_error(`dev_dialog: set-gclass-trace ${level}: ${r ? r.comment : "no answer"}`);
+    }
+    paint_app_traces($row);
+}
+
+function paint_app_traces($row)
+{
+    let levels = gobj_get_gclass_trace_level2(APP_GCLASS);
+    for(const $b of $row.querySelectorAll(".MUS_DEV_CHIP")) {
+        let on = levels.includes($b.getAttribute("data-level"));
+        $b.classList.toggle("is-on", on);
+        $b.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+}
 
 /*  The open sheet, so a second tap on the menu closes it instead of
     stacking a second one. */
@@ -55,19 +103,32 @@ function open_developer(shell)
     let $body = createElement2(["div", {class: "MUS_DEV"}, []]);
 
     let $log_pane = build_log_pane();
-    let $trace_pane = createElement2(
-        ["div", {class: "MUS_DEV_PANE MUS_DEV_TRACES", hidden: "hidden"}, [
+    let $apptraces = createElement2(
+        ["div", {class: "MUS_DEV_APPTRACES"}, APP_TRACES.map(([level, key, title]) =>
+            ["button", {class: "MUS_DEV_CHIP button is-small", type: "button",
+                        "data-level": level, i18n: /* i18n: APP_TRACE_I18N_KEYS */ key,
+                        ...named(title)},
+                t(/* i18n: APP_TRACE_I18N_KEYS */ key),
+                {click: () => toggle_app_trace(level, $apptraces)}])]);
+    let $trace_panel = createElement2(
+        ["div", {class: "MUS_DEV_TRACES_PANEL"}, [
             ["p", {class: "MUS_DEV_WAIT", i18n: "loading"}, t("loading")]
         ]]
     );
+    let $trace_pane = createElement2(
+        ["div", {class: "MUS_DEV_PANE MUS_DEV_TRACES", hidden: "hidden"}, [
+            $apptraces, $trace_panel
+        ]]
+    );
+    paint_app_traces($apptraces);
 
     let $tabs = createElement2(
         ["div", {class: "MUS_DEV_TABS", role: "tablist"}, [
             ["button", {class: "MUS_DEV_TAB is-on", type: "button",
-                        "data-pane": "log", i18n: "session log"},
+                        "data-pane": "log", i18n: "session log", ...named("session log")},
                 t("session log")],
             ["button", {class: "MUS_DEV_TAB", type: "button",
-                        "data-pane": "traces", i18n: "traces"},
+                        "data-pane": "traces", i18n: "traces", ...named("traces")},
                 t("traces")]
         ]]
     );
@@ -91,7 +152,7 @@ function open_developer(shell)
         $trace_pane.hidden = (want !== "traces");
         if(want === "traces" && !loaded_traces) {
             loaded_traces = true;
-            load_traces($trace_pane);
+            load_traces($trace_panel);
         }
     });
 
@@ -106,7 +167,7 @@ function open_developer(shell)
                 try {
                     dispose_traces();
                 } catch(e) {
-                    /* nothing */
+                    log_error(`dev_dialog: the traces panel failed to close: ${(e && e.stack) || e}`);
                 }
                 dispose_traces = null;
             }
@@ -140,6 +201,7 @@ function load_traces($pane)
         $pane.appendChild(panel.$el);
         dispose_traces = panel.dispose;
     }).catch(function(err) {
+        log_warning(`dev_dialog: the traces panel did not load: ${(err && err.message) || err}`);
         clear($pane);
         $pane.appendChild(createElement2(
             ["p", {class: "MUS_DEV_WAIT"}, String((err && err.message) || err)]
@@ -162,15 +224,18 @@ function build_log_pane()
 
     let $bar = createElement2(
         ["div", {class: "MUS_DEV_BAR"}, [
-            ["button", {class: "MUS_DEV_BTN button is-small", type: "button",
-                        i18n: "copy"},
+            ["button", {class: "MUS_DEV_BTN MUS_DEV_COPY button is-small", type: "button",
+                        i18n: "copy", ...named("copy")},
                 t("copy"), {click: (ev) => copy_report(ev.currentTarget)}],
-            ["button", {class: "MUS_DEV_BTN button is-small", type: "button",
-                        i18n: "refresh"},
+            ["button", {class: "MUS_DEV_BTN MUS_DEV_REFRESH button is-small", type: "button",
+                        i18n: "refresh", ...named("refresh")},
                 t("refresh"), {click: () => paint(true)}],
-            ["button", {class: "MUS_DEV_BTN button is-small", type: "button",
-                        i18n: "clear log"},
-                t("clear log"), {click: () => { diag_clear(); paint(true); }}]
+            ["button", {class: "MUS_DEV_BTN MUS_DEV_CLEAR button is-small", type: "button",
+                        i18n: "clear log", ...named("clear log")},
+                t("clear log"), {click: () => {
+                    diag_clear();
+                    paint(true);
+                }}]
         ]]
     );
 
@@ -243,7 +308,11 @@ function build_verdict()
         if(death.was_heap !== null) {
             out.push(["p", {class: "MUS_DEV_FACT"}, [
                 ["span", {i18n: "memory in use"}, t("memory in use")],
-                ["span", {class: "MUS_DEV_VAL"}, death.was_heap + " MB"]
+                ["span", {class: "MUS_DEV_VAL"}, [
+                    ["span", {}, String(death.was_heap)],
+                    " ",    // a real space: read, copied and heard as "812 MB"
+                    ["span", {class: "MUS_UNIT", i18n: "unit mb"}, t("unit mb")]
+                ]]
             ]]);
         }
     }
@@ -274,16 +343,27 @@ function build_verdict()
 function copy_report($btn)
 {
     let text = diag_report();
+    /*  Back to its own label, by its key: the text on the button may be
+        "Copied" still, from a press a moment ago. */
     let done = function() {
-        let was = $btn.textContent;
         $btn.textContent = t("copied");
-        setTimeout(() => { $btn.textContent = was; }, 1500);
+        setTimeout(function() {
+            $btn.textContent = t($btn.getAttribute("data-i18n") || "copy");
+        }, 1500);
+    };
+    let by_hand = function() {
+        if(fallback(text)) {
+            done();
+        }
     };
     if(navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, () => fallback(text));
+        navigator.clipboard.writeText(text).then(done, function(e) {
+            log_warning(`dev_dialog: the clipboard refused: ${(e && e.name) || e}`);
+            by_hand();
+        });
         return;
     }
-    fallback(text);
+    by_hand();
 }
 
 function fallback(text)
@@ -295,12 +375,17 @@ function fallback(text)
     $ta.style.opacity = "0";
     document.body.appendChild($ta);
     $ta.select();
+    let ok = false;
     try {
-        document.execCommand("copy");
+        ok = document.execCommand("copy");
     } catch(e) {
-        /* nothing: the text is selected, the user can take it */
+        ok = false;
     }
     document.body.removeChild($ta);
+    if(!ok) {
+        log_warning("dev_dialog: the report could not be copied");
+    }
+    return ok;
 }
 
 

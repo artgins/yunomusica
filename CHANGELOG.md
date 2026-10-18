@@ -6,6 +6,65 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.0 — 2026-10-18
+
+The fixes found reviewing yunovídeo, which inherited this code.
+
+- **A rescan leaves the queue as it was.** It used to take that source's
+  tracks off the queue, stop the one sounding and, the queue left empty, pour
+  the whole folder onto it in walk order. Now the queue keeps its tracks,
+  order and place; only what left the folder leaves it. New test: `rescan`.
+- **Escape closes the dialogs** — the welcome, the install question, the
+  replace question and a track's card. Registering them as shell overlays
+  bought the Back button and not Escape, which is a stack of its own.
+- **What happens outside the machine is no blind spot.** The stores are plain
+  modules and the screens repaint straight from their callbacks — cheap, and
+  low-level by nature — but none of it showed in the trace. Now the calls
+  into the stores, the channels they emit, the browser callbacks they answer
+  (the audio elements, the write timer, the picker, the cover hunt, the black
+  box) and every screen's repaint from a store callback ("C_MUS_DECK ←
+  music:playing") are lines of the trace under C_MUSICA's user level
+  `stores` (the clock under `stores-time`), switched from the developer
+  sheet's Traces tab and kept across launches. So are the user's gestures
+  (one capture listener: "click MUS_QMETA «Aqualung»") and the screens' own
+  timers (facts, follow, search, the visualizer's start and stop). New test:
+  `trace`.
+- **Hidden screens draw nothing.** Library, Lists and Sources are kept alive
+  and went on rebuilding while hidden; now they note that they are out of date
+  and render when shown. The library no longer rebuilds ten times a second
+  during a scan when it has a library on screen, and Sources writes the
+  scan's progress in place — a rebuild that often swallowed taps.
+- **Every row's buttons are named by the row** for a screen reader — "Play
+  this one Aqualung", "Give a heart Aqualung" — instead of the same words 350
+  times (`aria-labelledby`, as gobj-ui names a control with its badge). And
+  the controls that had no title or aria-label have both now: the row titles,
+  the chips, the search box, the mini-player, the scan's Stop, the queue's
+  line, the empty screens, the source rows, the developer sheet. New test:
+  `a11y`.
+- **The track card keeps the focus** on the heart button that was pressed.
+- **No silent failures**: play() refusals, unreadable tags, unreachable
+  files, seeks, permission queries, the folder picker, a scan that threw, the
+  cover lookups, the install prompt, the developer traces — all logged. An
+  IndexedDB write answers when its transaction completes, so a quota refusal
+  is a failure and not a success; the database's open failures are logged.
+  The developer sheet's Copy no longer sticks on "Copied", and says when the
+  copy failed.
+- **Nothing fades or slides, anywhere** — the Yuneta GUI rule, now without the
+  exception the deck's banner had: covers, the background wash, the title and
+  the facts change at once (the next cover still decodes behind the current
+  one, so the cut never goes through a blank frame); the queue jumps to what
+  is sounding instead of gliding; the scan ring is still, a read with no total
+  yet is a hatched bar; the "added" note and the list chevron appear at once.
+  Only the visualizer moves: it is a picture of the sound, not an animation.
+- Names with `&` or `<` are no longer HTML-escaped in messages; "MB" says its
+  unit in the language in force; the service worker precaches from the
+  server, never from the HTTP cache; a first deploy to a new host no longer
+  stops at the backup.
+- `package-lock.json` is committed (it was ignored, so two builds of the same
+  commit could get different libraries within the `^` ranges), and the chunk
+  size warning is set to 700 kB (it warned on every build at Vite's 500 kB,
+  so nobody read it; now it speaks if the bundle grows by a third).
+
 ## 2.36.17 — 2026-10-18
 
 - gobj-ui `^7.27.21` (deploy round).

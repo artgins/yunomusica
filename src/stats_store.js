@@ -35,6 +35,7 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {traced, trace_emit, store_trace} from "./trace.js";
 import {STORE_STATS, idb_all, idb_put, idb_del} from "./idb.js";
 import {subscribe, progress, current_track} from "./music_store.js";
 
@@ -77,6 +78,7 @@ function subscribe_stats(fn)
 
 function emit()
 {
+    trace_emit("stats_store", "stats");
     for(const fn of listeners) {
         try {
             fn("stats");
@@ -196,6 +198,7 @@ function touch(key)
         return;
     }
     S.timer = setTimeout(function() {
+        store_trace("stats_store", "write timer");
         S.timer = 0;
         const keys = Array.from(S.dirty);
         S.dirty.clear();
@@ -451,18 +454,30 @@ async function load_stats()
 }
 
 
+
+/*  What the interface calls, traced (see trace.js): the store's own
+    calls to these stay untraced. */
+const __t_load_stats = traced("stats_store", "load_stats", load_stats);
+const __t_heart = traced("stats_store", "heart", heart);
+const __t_heart_reset = traced("stats_store", "heart_reset", heart_reset);
+const __t_stats_reset = traced("stats_store", "stats_reset", stats_reset);
+const __t_clear_counts = traced("stats_store", "clear_counts", clear_counts);
+const __t_drop_source_stats = traced("stats_store", "drop_source_stats", drop_source_stats);
+const __t_start_counting = traced("stats_store", "start_counting", start_counting);
+const __t_stop_counting = traced("stats_store", "stop_counting", stop_counting);
+
 export {
-    load_stats,
+    __t_load_stats as load_stats,
     subscribe_stats,
     stats_of,
     stats_total,
     ranked,
     split_key,
-    heart,
-    heart_reset,
-    stats_reset,
-    clear_counts,
-    drop_source_stats,
-    start_counting,
-    stop_counting,
+    __t_heart as heart,
+    __t_heart_reset as heart_reset,
+    __t_stats_reset as stats_reset,
+    __t_clear_counts as clear_counts,
+    __t_drop_source_stats as drop_source_stats,
+    __t_start_counting as start_counting,
+    __t_stop_counting as stop_counting,
 };

@@ -26,6 +26,8 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {log_warning, log_error} from "@yuneta/gobj-js";
+import {traced, trace_emit, store_trace} from "./trace.js";
 import {
     STORE_SOURCES, STORE_FILES, STORE_TAGS, STORE_COVERS,
     idb_all, idb_get, idb_put, idb_del, idb_del_prefix, idb_get_prefix,
@@ -34,7 +36,7 @@ import {
 } from "./idb.js";
 import {diag} from "./diag.js";
 import {
-    ingest, begin_read, drop_source_tracks, cancel_ingest,
+    ingest, begin_read, drop_source_tracks, unlist_source_tracks, relink_source, cancel_ingest,
     tags_of_source, covers_snapshot, prime_covers, is_audio,
     restore_tracks, set_file_resolver,
     queue_length, queue_add, tracks_of_source, reload_current,
@@ -66,6 +68,7 @@ function subscribe_sources(fn)
 
 function emit()
 {
+    trace_emit("sources_store", "sources");
     for(const fn of listeners) {
         try {
             fn("sources");
@@ -203,6 +206,7 @@ async function query_permission(source)
     try {
         return await source.handle.queryPermission({mode: "read"});
     } catch(e) {
+        log_warning(`sources_store: queryPermission failed on ${source.name}: ${(e && e.name) || e}`);
         return "denied";
     }
 }
@@ -249,6 +253,7 @@ async function authorize(id)
     try {
         state = await source.handle.requestPermission({mode: "read"});
     } catch(e) {
+        log_warning(`sources_store: requestPermission failed: ${(e && e.name) || e}`);
         state = "denied";
     }
     rt(id).permission = state;
@@ -814,7 +819,10 @@ async function add_dir()
     try {
         handle = await window.showDirectoryPicker({id: "musica", mode: "read", startIn: "music"});
     } catch(e) {
-        return "";                  // the user closed the picker
+        if(!e || e.name !== "AbortError") {
+            log_warning(`sources_store: the folder picker failed: ${(e && e.name) || e}`);
+        }
+        return "";                  // the user closed the picker (AbortError)
     }
     return await add_dir_handle(handle);
 }
@@ -923,6 +931,7 @@ function pick_with_input(as_dir)
             precisely where the app looked dead. While the picker is
             still open the bar is behind it anyway. */
         let armed = setTimeout(function() {
+            store_trace("sources_store", "picker still open");
             if(S.preparing !== true) {
                 S.preparing = true;
                 emit();
@@ -930,6 +939,7 @@ function pick_with_input(as_dir)
         }, 400);
         const on_focus = function() {};
         const cancelled = function() {
+            store_trace("sources_store", "picker cancelled");
             cleanup();
             resolve("");
         };
@@ -944,6 +954,7 @@ function pick_with_input(as_dir)
             el.removeEventListener("cancel", cancelled);
         };
         const done = async function() {
+            store_trace("sources_store", "picker change", {files: el.files.length});
             cleanup();
             let files = [...el.files];
             el.value = "";                          // let the same pick fire again
@@ -1130,7 +1141,10 @@ function scan(id, force)
     let next = scan_queue.then(run_it, run_it);
     /*  The chain must survive a scan that threw, or every folder picked
         after it would be dropped on the floor. */
-    scan_queue = next.catch(() => 0);
+    scan_queue = next.catch(function(e) {
+        log_error(`sources_store: a scan threw: ${(e && e.stack) || e}`);
+        return 0;
+    });
     return next;
 }
 
@@ -1164,6 +1178,7 @@ async function scan_now(id, force)
             files = source.files || [];
         }
     } catch(e) {
+        log_warning(`sources_store: reading ${source.name} failed: ${(e && e.name) || e}`);
         r.error = (e && e.name === "NotAllowedError") ? "permission denied" : "could not be read";
         r.scanning = false;
         /*  Store it even though the read failed. The source is real —
@@ -1218,8 +1233,10 @@ async function scan_now(id, force)
 
     source.by_path = null;      // rebuilt on demand from the new file list
 
-    /*  A rescan replaces this source's tracks; it never doubles them. */
-    drop_source_tracks(id);
+    /*  A rescan replaces this source's tracks in the library; it never
+        doubles them. The deck keeps its own until relink_source() puts
+        them back on the new ones, below. */
+    unlist_source_tracks(id);
 
     /*  What was parsed last time, by path. A hit means the file is not
         opened at all, so a reload costs a directory walk instead of
@@ -1246,6 +1263,7 @@ async function scan_now(id, force)
         return 0;
     }
 
+    relink_source(id);
     source.count = (res && res.count) || 0;
     r.scanning = false;
     S.stopping = false;
@@ -1345,6 +1363,20 @@ function scanning_source()
 }
 
 
+
+/*  What the interface calls, traced (see trace.js): the store's own
+    calls to these stay untraced. */
+const __t_load_sources = traced("sources_store", "load_sources", load_sources);
+const __t_stop_scan = traced("sources_store", "stop_scan", stop_scan);
+const __t_add_dir = traced("sources_store", "add_dir", add_dir);
+const __t_add_files = traced("sources_store", "add_files", add_files);
+const __t_dismiss_notice = traced("sources_store", "dismiss_notice", dismiss_notice);
+const __t_accept_notice = traced("sources_store", "accept_notice", accept_notice);
+const __t_authorize = traced("sources_store", "authorize", authorize);
+const __t_authorize_all = traced("sources_store", "authorize_all", authorize_all);
+const __t_scan = traced("sources_store", "scan", scan);
+const __t_remove_source = traced("sources_store", "remove_source", remove_source);
+
 export {
     subscribe_sources,
     fsa_supported,
@@ -1354,20 +1386,20 @@ export {
     is_blocked,
     diagnose,
     is_preparing,
-    stop_scan,
+    __t_stop_scan as stop_scan,
     is_stopping,
-    load_sources,
+    __t_load_sources as load_sources,
     all_sources,
     source_name,
     scanning_source,
-    add_dir,
-    add_files,
+    __t_add_dir as add_dir,
+    __t_add_files as add_files,
     source_notice,
-    dismiss_notice,
-    accept_notice,
-    authorize,
-    authorize_all,
+    __t_dismiss_notice as dismiss_notice,
+    __t_accept_notice as accept_notice,
+    __t_authorize as authorize,
+    __t_authorize_all as authorize_all,
     pending_authorisation,
-    scan,
-    remove_source,
+    __t_scan as scan,
+    __t_remove_source as remove_source,
 };

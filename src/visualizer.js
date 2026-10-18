@@ -60,6 +60,7 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {store_trace} from "./trace.js";
 import {createElement2} from "@yuneta/gobj-js";
 import {t} from "i18next";
 
@@ -303,7 +304,10 @@ function create_visualizer(opts)
     }
 
     if(tap) {
-        $el.addEventListener("click", () => cycle(V));
+        $el.addEventListener("click", function() {
+            store_trace("visualizer", "tap: next mode");
+            cycle(V);
+        });
         $el.addEventListener("keydown", function(ev) {
             if(ev.key === "Enter" || ev.key === " " || ev.code === "Space") {
                 /*  Space is the app's play/pause, listened for on the
@@ -311,6 +315,7 @@ function create_visualizer(opts)
                     one never reaches it. */
                 ev.preventDefault();
                 ev.stopPropagation();
+                store_trace("visualizer", "key: next mode");
                 cycle(V);
             }
         });
@@ -326,10 +331,16 @@ function create_visualizer(opts)
         is there. ResizeObserver catches the wrap to its own line on a
         phone, which no window resize reports. */
     if(window.ResizeObserver) {
-        V.ro = new ResizeObserver(() => resize(V));
+        V.ro = new ResizeObserver(function() {
+            store_trace("visualizer", "resize");
+            resize(V);
+        });
         V.ro.observe($el);
     } else {
-        V.on_resize = () => resize(V);
+        V.on_resize = function() {
+            store_trace("visualizer", "resize");
+            resize(V);
+        };
         window.addEventListener("resize", V.on_resize);
     }
 
@@ -447,6 +458,7 @@ function show_tag(V)
         clearTimeout(V.tag_timer);
     }
     V.tag_timer = setTimeout(function() {
+        store_trace("visualizer", "label timer");
         $tag.classList.remove("is-on");
         V.tag_timer = 0;
     }, TAG_MS);
@@ -462,11 +474,17 @@ function start(V)
         return;
     }
     V.running = true;
+    /*  The frames themselves are drawing, not decisions: the loop's
+        start and stop are what the trace says. */
+    store_trace("visualizer", `drawing ${V.mode}`);
     tick(V);
 }
 
 function stop(V)
 {
+    if(V.running) {
+        store_trace("visualizer", "stopped");
+    }
     V.running = false;
     if(V.raf) {
         cancelAnimationFrame(V.raf);
@@ -1469,7 +1487,10 @@ function wave_start(W)
     if(W.timer || !W.ctx) {
         return;
     }
-    W.timer = setInterval(() => wave_sample(W), WAVE_MS);
+    W.timer = setInterval(function() {
+        store_trace("visualizer", "wave sample", undefined, true);
+        wave_sample(W);
+    }, WAVE_MS);
     wave_sample(W);
 }
 

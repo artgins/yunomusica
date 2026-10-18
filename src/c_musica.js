@@ -22,6 +22,8 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {named} from "./a11y.js";
+import {view_trace, store_trace, STORE_TRACE_LEVELS, set_store_tracer} from "./trace.js";
 import {
     SDATA, SDATA_END, data_type_t,
     gclass_create, log_error,
@@ -149,6 +151,16 @@ function mt_create(gobj)
 {
     let priv = gobj.priv;
 
+    /*  The stores, and the views' reactions to them, trace under this
+        gclass's levels (see trace.js). */
+    set_store_tracer(gobj);
+    /*  The user's gestures, too: in this app a click calls a store or
+        repaints a view straight from its DOM callback, with no event in
+        between. One listener, in the capture phase of the document, puts
+        every click, change and typing into the trace under the same
+        level — named by the logical class of what was touched. */
+    trace_gestures();
+
     /*  The frame the shell mounts into (mount_element), so we can dock a
         player below it in the same flex column. */
     let $root = createElement2(["div", {class: "MUS_ROOT"}, []]);
@@ -242,7 +254,10 @@ function mt_start(gobj)
         };
     });
 
+    /*  Straight from the store's callbacks, which is cheap and is fine
+        because it is traced (view_trace, trace.js). */
     priv.unsub = subscribe(function(channel) {
+        view_trace(GCLASS_NAME, "music", channel, channel === "time");
         if(channel === "playing" || channel === "queue") {
             paint_player(gobj);
         } else if(channel === "time") {
@@ -262,7 +277,10 @@ function mt_start(gobj)
     /*  A scan starts before the first file is read (walking a big tree
         takes a while on its own), so the bar has to follow the SOURCE
         state, not only the read counter. */
-    priv.unsub_src = subscribe_sources(() => paint_scan(gobj));
+    priv.unsub_src = subscribe_sources(function() {
+        view_trace(GCLASS_NAME, "sources", "changed");
+        paint_scan(gobj);
+    });
 
     paint_player(gobj);
     paint_scan(gobj);
@@ -368,6 +386,31 @@ async function boot(gobj)
 const KEEP_PLACE_EVERY = 15000;
 
 
+/*  "click MUS_QMETA «Aqualung»": the nearest logical (MUS_*) class of
+    the element, and a little of its text. */
+function trace_gestures()
+{
+    const what = function(el) {
+        let n = el;
+        while(n && n.nodeType === 1) {
+            let cls = String(n.className && n.className.baseVal !== undefined
+                ? n.className.baseVal : n.className || "");
+            let mus = cls.split(/\s+/).find((c) => c.indexOf("MUS_") === 0);
+            if(mus) {
+                let txt = (n.getAttribute("aria-label") || n.textContent || "").trim().slice(0, 40);
+                return txt ? `${mus} «${txt}»` : mus;
+            }
+            n = n.parentNode;
+        }
+        return el && el.tagName ? el.tagName.toLowerCase() : "?";
+    };
+    for(const type of ["click", "change", "input"]) {
+        document.addEventListener(type, function(ev) {
+            store_trace("dom", `${type} ${what(ev.target)}`);
+        }, true);
+    }
+}
+
 function save_queue_soon(gobj)
 {
     let priv = gobj.priv;
@@ -375,6 +418,7 @@ function save_queue_soon(gobj)
         return;
     }
     priv.save_timer = setTimeout(function() {
+        store_trace(GCLASS_NAME, "save timer");
         priv.save_timer = 0;
         priv.saved_at = Date.now();
         store_deck();
@@ -540,31 +584,23 @@ function build_player(gobj)
                 ["button", {
                         class: "MUS_PART",
                         type: "button",
-                        "aria-label": t("player"),
-                        "data-i18n-aria-label": "player"
+                        ...named("player")
                     }, "♪",
                     {click: () => go_to_deck(gobj)}],
                 ["button", {
                         class: "MUS_PMETA",
                         type: "button",
-                        "aria-label": t("player"),
-                        "data-i18n-aria-label": "player"
+                        ...named("player")
                     }, [
                     ["span", {class: "MUS_PTITLE"}, "—"],
                     ["span", {class: "MUS_PARTIST"}, ""]
                 ], {click: () => go_to_deck(gobj)}],
                 ["div", {class: "MUS_PCTL"}, [
-                    ["button", {class: "MUS_PPREV", type: "button",
-                                "aria-label": t("previous"),
-                                "data-i18n-aria-label": "previous"},
+                    ["button", {class: "MUS_PPREV", type: "button", ...named("previous")},
                         svg(P.prev, 20), {click: () => prev()}],
-                    ["button", {class: "MUS_PPLAY is-primary", type: "button",
-                                "aria-label": t("play"),
-                                "data-i18n-aria-label": "play"},
+                    ["button", {class: "MUS_PPLAY is-primary", type: "button", ...named("play")},
                         svg(P.play, 19), {click: () => toggle()}],
-                    ["button", {class: "MUS_PNEXT", type: "button",
-                                "aria-label": t("next"),
-                                "data-i18n-aria-label": "next"},
+                    ["button", {class: "MUS_PNEXT", type: "button", ...named("next")},
                         svg(P.next, 20), {click: () => step(1)}]
                 ]]
             ]]
@@ -607,8 +643,7 @@ function build_player(gobj)
                             class: "MUS_SCAN_STOP",
                             type: "button",
                             i18n: "stop",
-                            "aria-label": t("stop"),
-                            "data-i18n-aria-label": "stop"
+                            ...named("stop")
                         }, t("stop"), {click: () => stop_scan()}]
                 ]],
                 ["div", {class: "MUS_BAR"}, [["i", {class: "MUS_BAR_FILL"}]]],
@@ -661,9 +696,11 @@ function build_player(gobj)
     /*  The position moves without any event worth storing on, and the
         tab can go away at any moment. */
     window.addEventListener("pagehide", function() {
+        store_trace(GCLASS_NAME, "pagehide");
         store_deck();
     });
     document.addEventListener("visibilitychange", function() {
+        store_trace(GCLASS_NAME, `visibility ${document.visibilityState}`);
         if(document.visibilityState === "hidden") {
             store_deck();
         }
@@ -675,9 +712,17 @@ function build_player(gobj)
         if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
             return;
         }
-        if(e.code === "Space") { e.preventDefault(); toggle(); }
-        else if(e.code === "ArrowRight") { step(1); }
-        else if(e.code === "ArrowLeft") { prev(); }
+        if(e.code === "Space") {
+            store_trace(GCLASS_NAME, "key Space");
+            e.preventDefault();
+            toggle();
+        } else if(e.code === "ArrowRight") {
+            store_trace(GCLASS_NAME, "key ArrowRight");
+            step(1);
+        } else if(e.code === "ArrowLeft") {
+            store_trace(GCLASS_NAME, "key ArrowLeft");
+            prev();
+        }
     });
 }
 
@@ -760,8 +805,11 @@ function paint_player(gobj)
     let $play = priv.$player.querySelector(".MUS_PPLAY");
     if($play) {
         $play.innerHTML = svg(playing ? P.pause : P.play, 19);
-        $play.setAttribute("aria-label", t(playing ? "pause" : "play"));
-        $play.setAttribute("data-i18n-aria-label", playing ? "pause" : "play");
+        let key = playing ? "pause" : "play";
+        $play.setAttribute("aria-label", t(key));
+        $play.setAttribute("data-i18n-aria-label", key);
+        $play.setAttribute("title", t(key));
+        $play.setAttribute("data-i18n-title", key);
     }
 
     tint_from(gobj, track.key, url);
@@ -825,6 +873,7 @@ function paint_said(gobj)
     refresh_language(priv.$said, t);
     priv.$said.classList.add("is-on");
     priv.said_timer = setTimeout(function() {
+        store_trace(GCLASS_NAME, "said timer");
         priv.said_timer = 0;
         clear_said();
     }, 2400);
@@ -861,7 +910,10 @@ function paint_scan(gobj)
         the whole of the first one. */
     if(on && !priv.scan_timer) {
         priv.scan_t0 = Date.now();
-        priv.scan_timer = setInterval(() => paint_scan_clock(gobj), 500);
+        priv.scan_timer = setInterval(function() {
+            store_trace(GCLASS_NAME, "scan clock", undefined, true);
+            paint_scan_clock(gobj);
+        }, 500);
     } else if(!on && priv.scan_timer) {
         clearInterval(priv.scan_timer);
         priv.scan_timer = 0;
@@ -1096,6 +1148,7 @@ function tint_from(gobj, key, url)
     }
     let img = new Image();
     img.onload = function() {
+        store_trace(GCLASS_NAME, "accent picture loaded");
         try {
             let cv = document.createElement("canvas");
             cv.width = cv.height = 12;
@@ -1272,7 +1325,7 @@ function create_gclass(gclass_name)
         PRIVATE_DATA,
         0,
         0,
-        0,
+        STORE_TRACE_LEVELS,
         0
     );
     if(!__gclass__) {

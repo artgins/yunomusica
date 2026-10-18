@@ -20,6 +20,8 @@ import {createElement2, refresh_language} from "@yuneta/gobj-js";
 import {
     yui_shell_register_overlay,
     yui_shell_overlay_dismissed,
+    yui_shell_push_escape,
+    yui_shell_pop_escape,
 } from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {queue_length, queue_origin} from "./music_store.js";
@@ -58,11 +60,13 @@ function confirm_replace(shell_gobj)
                 $open.parentNode.removeChild($open);
             }
             $open = null;
+            yui_shell_pop_escape(shell_gobj, on_escape);
             if(overlay && !from_history) {
                 yui_shell_overlay_dismissed(shell_gobj, overlay);
             }
             resolve(answer);
         };
+        const on_escape = () => done(null);
 
         let origin = queue_origin();
 
@@ -110,6 +114,10 @@ function confirm_replace(shell_gobj)
         $open = $backdrop;
 
         overlay = yui_shell_register_overlay(shell_gobj, () => done(null, true));
+        /*  The overlay buys the Back button; Escape is the shell's to route
+            (its own stack, LIFO), asked for while this is up and given back
+            when it goes. Without it Escape did nothing here. */
+        yui_shell_push_escape(shell_gobj, "modal", on_escape, () => done(null, true));
         refresh_language($backdrop, t);
 
         /*  Cancel takes the focus, not the destructive button. */

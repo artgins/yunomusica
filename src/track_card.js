@@ -35,11 +35,14 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {named, named_for} from "./a11y.js";
 import {createElement2, refresh_language, html_markup} from "@yuneta/gobj-js";
 
 import {
     yui_shell_register_overlay,
     yui_shell_overlay_dismissed,
+    yui_shell_push_escape,
+    yui_shell_pop_escape,
 } from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {source_name} from "./sources_store.js";
@@ -94,18 +97,29 @@ function open_track(shell_gobj, track)
             $open.parentNode.removeChild($open);
         }
         $open = null;
+        yui_shell_pop_escape(shell_gobj, on_escape);
         if(overlay && !from_history) {
             yui_shell_overlay_dismissed(shell_gobj, overlay);
         }
     };
+    const on_escape = () => done();
 
     /*  The numbers live in their own node so that tapping a heart
-        repaints four spans rather than the whole card — a card that
-        rebuilds under the finger loses the button that was pressed. */
+        repaints that node rather than the whole card. The heart buttons
+        are IN it, though, so the one that was pressed is found again
+        after the repaint and given the focus back — or the finger, and
+        a reader, lose their place on every tap. A button that is gone
+        (the last heart taken back disables "take one back") hands the
+        focus to "give a heart". */
     const $counts = createElement2(["div", {class: "MUS_TCARD_COUNTS"}]);
 
     const repaint = function() {
         const s = stats_of(track);
+        const $had = document.activeElement;
+        const had = ($had && $counts.contains($had))
+            ? ["MUS_TCARD_HADD", "MUS_TCARD_HSUB", "MUS_TCARD_HZERO", "MUS_TCARD_FORGET"]
+                .find((c) => $had.classList.contains(c))
+            : null;
         clear($counts);
         $counts.appendChild(createElement2(
             ["div", {class: "MUS_TCARD_COUNT"}, [
@@ -149,13 +163,23 @@ function open_track(shell_gobj, track)
             (s.plays || s.full || s.hearts)
                 ? ["button", {
                         class: "MUS_TCARD_FORGET", type: "button",
-                        i18n: "forget these counts"
+                        i18n: "forget these counts",
+                        title: t("forget these counts"), "data-i18n-title": "forget these counts",
+                        "aria-label": t("forget these counts"),
+                        "data-i18n-aria-label": "forget these counts"
                     }, t("forget these counts"), {click: () => {
                         stats_reset(track);
                         repaint();
                     }}]
                 : ["span", {}]));
         refresh_language($counts, t);
+        if(had) {
+            const $back = $counts.querySelector("." + had + ":not([disabled])") ||
+                          $counts.querySelector(".MUS_TCARD_HADD");
+            if($back) {
+                $back.focus();
+            }
+        }
     };
 
     const facts = [
@@ -176,6 +200,7 @@ function open_track(shell_gobj, track)
                 ["h2", {class: "MUS_TCARD_TITLE"}, track.title],
                 ["button", {
                         class: "MUS_TCARD_CLOSE", type: "button",
+                        title: t("close"), "data-i18n-title": "close",
                         "aria-label": t("close"), "data-i18n-aria-label": "close"
                     }, "✕", {click: () => done()}]
             ]],
@@ -203,6 +228,10 @@ function open_track(shell_gobj, track)
     $open = $backdrop;
 
     overlay = yui_shell_register_overlay(shell_gobj, () => done(true));
+    /*  The overlay buys the Back button; Escape is the shell's to route
+        (its own stack, LIFO), asked for while this is up and given back
+        when it goes. Without it Escape did nothing here. */
+    yui_shell_push_escape(shell_gobj, "modal", on_escape, () => done(true));
     refresh_language($backdrop, t);
 
     let $close = $backdrop.querySelector(".MUS_TCARD_CLOSE");
@@ -262,7 +291,7 @@ function clear($node)
  *  build their rows as one nested literal and neither of them
  *  wants a document fragment in the middle of it.
  ***************************************************************/
-function track_counts(track)
+function track_counts(track, text_id)
 {
     const s = stats_of(track);
 
@@ -279,11 +308,12 @@ function track_counts(track)
             ["span", {class: "MUS_ICO"}, svg("M8 5v14l11-7z", 11)],
             ["span", {class: "MUS_CNT_N"}, s.plays ? String(s.plays) : ""]
         ]],
+        /*  `text_id`: the row's title, so a reader hears "Give a heart
+            Aqualung" and not the same three words on every row. */
         ["button", {
                 class: "MUS_CNT MUS_CNT_HEART" + (s.hearts ? " is-on" : ""),
                 type: "button",
-                "aria-label": t("give a heart"), "data-i18n-aria-label": "give a heart",
-                title: t("give a heart"), "data-i18n-title": "give a heart"
+                ...(text_id ? named_for("give a heart", text_id) : named("give a heart"))
             }, [
             ["span", {class: "MUS_ICO"}, svg(HEART, 12)],
             ["span", {class: "MUS_CNT_N"}, s.hearts ? String(s.hearts) : ""]

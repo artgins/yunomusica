@@ -17,6 +17,8 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {log_warning} from "@yuneta/gobj-js";
+import {traced, trace_emit, store_trace} from "./trace.js";
 import {attach as attach_analyser, release as release_tap, tapped} from "./analyser.js";
 import {diag} from "./diag.js";
 import {pref_set} from "./idb.js";
@@ -47,6 +49,7 @@ function subscribe(fn)
 
 function emit(channel)
 {
+    trace_emit("music_store", channel);
     for(const fn of listeners) {
         try {
             fn(channel);
@@ -239,6 +242,7 @@ async function read_tags(f)
         }
     } catch(e) {
         /*  Unreadable head: the ID3v1 tail and the path guess remain. */
+        log_warning(`music_store: cannot read the tags of ${f.name}: ${(e && e.name) || e}`);
     }
     if(!tag.title && f.size > 128) {
         try {
@@ -246,6 +250,7 @@ async function read_tags(f)
             tag = Object.assign(parseID3v1(tail), tag);
         } catch(e) {
             /*  Unreadable tail: fall back to the path guess. */
+            log_warning(`music_store: cannot read the ID3v1 tail of ${f.name}: ${(e && e.name) || e}`);
         }
     }
     return tag;
@@ -924,6 +929,7 @@ async function resolve_file(t)
         /*  A folder still waiting to be authorised is not a broken file,
             and must not be reported as one. */
         S.resolve_denied = !!e && e.name === "NotAllowedError";
+        log_warning(`music_store: cannot reach ${t.path}: ${(e && e.name) || e}`);
         t.file = null;
     }
     return t.file;
@@ -951,11 +957,11 @@ function drop_source_tracks(source_id)
     if(!source_id) {
         return;
     }
+    /*  The deck is looked at even when the library had none of it: a
+        source removed during a rescan has already left the library
+        (unlist_source_tracks) but not the deck. */
     let before = S.tracks.length;
     S.tracks = S.tracks.filter((t) => t.source_id !== source_id);
-    if(S.tracks.length === before) {
-        return;
-    }
 
     let cur = S.queue[S.qi] || null;
     let kept = S.queue.filter((t) => t.source_id !== source_id);
@@ -966,6 +972,73 @@ function drop_source_tracks(source_id)
             stop_playback();
         }
         emit("queue");
+    }
+    if(S.tracks.length !== before) {
+        emit("library");
+    }
+}
+
+/***************************************************************
+ *  A rescan: the source's tracks leave the LIBRARY, and come back
+ *  as new objects when the walk is read in. The deck and the
+ *  temporary list keep theirs meanwhile, and relink_source() puts
+ *  them back on the new ones, by path — a rescan used to strip the
+ *  deck of that source's tracks, stop the one sounding and, the
+ *  deck left empty, refill it with the whole folder in walk order.
+ ***************************************************************/
+function unlist_source_tracks(source_id)
+{
+    if(!source_id) {
+        return;
+    }
+    S.tracks = S.tracks.filter((t) => t.source_id !== source_id);
+}
+
+function relink_source(source_id)
+{
+    const fresh = (t) => (t && t.source_id === source_id) ? find_track(source_id, t.path) : t;
+
+    /*  What is on the element is carried over to its new object: the
+        same file, already loaded, and the same place in it. */
+    const cur = S.queue[S.qi] || null;
+    const cur_now = fresh(cur);
+    if(cur && cur_now && cur_now !== cur) {
+        cur_now.file = cur_now.file || cur.file;
+        if(S.loaded_uid === cur.uid) {
+            S.loaded_uid = cur_now.uid;
+        }
+        if(S.resume_uid === cur.uid) {
+            S.resume_uid = cur_now.uid;
+        }
+    }
+    const queue = S.queue.map(fresh).filter(Boolean);
+    if(queue.length !== S.queue.length || queue.some((t, i) => t !== S.queue[i])) {
+        if(queue.length !== S.queue.length) {
+            mark_edited();
+        }
+        S.queue = queue;
+        if(cur_now) {
+            S.qi = queue.indexOf(cur_now);
+        } else if(cur) {
+            /*  The track the deck was on is not in the folder any more:
+                the next one is cued, nothing sounds. */
+            S.qi = queue.length ? Math.min(S.qi, queue.length - 1) : -1;
+            stop_playback();
+        }
+        emit("queue");
+    }
+
+    if(S.temp) {
+        const t_now = fresh(S.temp);
+        S.temp_list = S.temp_list.map(fresh).filter(Boolean);
+        if(!t_now) {
+            back_to_deck();
+        } else {
+            t_now.file = t_now.file || S.temp.file;
+            S.temp = t_now;
+            S.temp_i = S.temp_list.indexOf(t_now);
+            emit("temp");
+        }
     }
     emit("library");
 }
@@ -1638,7 +1711,12 @@ function wire_temp_audio(audio)
 {
     S.temp_ac = new AbortController();
     const signal = S.temp_ac.signal;
-    const on = (ev, fn) => audio.addEventListener(ev, fn, {signal});
+    /*  What the element says is a line of the trace before anything is
+        done about it (timeupdate under the clock level). */
+    const on = (ev, fn) => audio.addEventListener(ev, function(e) {
+        store_trace("music_store", `temp audio ${ev}`, undefined, ev === "timeupdate");
+        fn(e);
+    }, {signal});
     /*  Same channel as the deck's clock: whoever is painting a
         position repaints, and each asks for the one it owns. */
     /*  What comes out of here is also something that is sounding,
@@ -1717,7 +1795,7 @@ async function temp_go(i)
     if(stale) {
         setTimeout(() => URL.revokeObjectURL(stale), 1000);
     }
-    a.play().catch(() => {});
+    play_el(a);
     emit("temp");
 }
 
@@ -1779,7 +1857,7 @@ function back_to_deck()
         return;
     }
     if(S.audio && S.audio.src) {
-        S.audio.play().catch(() => {});
+        play_el(S.audio);
         emit("playing");
     } else {
         toggle();
@@ -1805,7 +1883,7 @@ function temp_toggle()
         return;
     }
     if(S.temp_audio.paused) {
-        S.temp_audio.play().catch(() => {});
+        play_el(S.temp_audio);
     } else {
         S.temp_audio.pause();
     }
@@ -1952,6 +2030,7 @@ function apply_resume()
         S.audio.currentTime = Math.max(0, Math.min(S.resume_at, dur - 0.25));
     } catch(e) {
         /*  Not seekable; the position is simply lost. */
+        log_warning(`music_store: cannot resume at ${S.resume_at}: ${(e && e.name) || e}`);
     }
     S.resume_at = 0;
     S.resume_uid = 0;
@@ -1996,7 +2075,12 @@ function wire_audio(audio)
 {
     S.audio_ac = new AbortController();
     const signal = S.audio_ac.signal;
-    const on = (ev, fn) => audio.addEventListener(ev, fn, {signal});
+    /*  What the element says is a line of the trace before anything is
+        done about it (timeupdate under the clock level). */
+    const on = (ev, fn) => audio.addEventListener(ev, function(e) {
+        store_trace("music_store", `audio ${ev}`, undefined, ev === "timeupdate");
+        fn(e);
+    }, {signal});
     /*  The tap is RETRIED here, not only taken on `play`.
      *
      *  Taking it needs the AudioContext to be running, and the
@@ -2066,6 +2150,20 @@ function wire_audio(audio)
         }
         S.notice = "that file could not be read";
         emit("library");
+    });
+}
+
+/*  play() answers with a promise, and its refusals are worth a line:
+    NotAllowedError is a browser that wants a gesture first. AbortError
+    is not a failure — a newer load took the element over. */
+function play_el(el)
+{
+    el.play().catch(function(e) {
+        if(e && e.name === "AbortError") {
+            return;                     // superseded by a newer load
+        }
+        diag("play_refused", {name: (e && e.name) || ""});
+        log_warning(`music_store: play() refused: ${(e && e.name) || e}`);
     });
 }
 
@@ -2153,7 +2251,7 @@ async function load_current(autoplay)
         setTimeout(() => URL.revokeObjectURL(stale), 1000);
     }
     if(autoplay) {
-        audio.play().catch(() => {});
+        play_el(audio);
     }
     update_media_session(t);
     emit("playing");
@@ -2178,7 +2276,7 @@ function toggle()
         return;
     }
     if(audio.paused) {
-        audio.play().catch(() => {});
+        play_el(audio);
     } else {
         audio.pause();
     }
@@ -2376,6 +2474,7 @@ function setup_media_session()
 function setup_background_audio()
 {
     document.addEventListener("visibilitychange", function() {
+        store_trace("music_store", `visibility ${document.visibilityState}`);
         if(document.visibilityState === "hidden") {
             untap_for_background("audio");
             untap_for_background("temp_audio");
@@ -2490,35 +2589,76 @@ function fmt_time(s)
 /***************************************************************
  *              Exports
  ***************************************************************/
+
+/*  What the interface calls, traced (see trace.js): the store's own
+    calls to these stay untraced. */
+const __t_ingest = traced("music_store", "ingest", ingest);
+const __t_begin_read = traced("music_store", "begin_read", begin_read);
+const __t_cancel_ingest = traced("music_store", "cancel_ingest", cancel_ingest);
+const __t_prime_covers = traced("music_store", "prime_covers", prime_covers);
+const __t_restore_tracks = traced("music_store", "restore_tracks", restore_tracks);
+const __t_drop_source_tracks = traced("music_store", "drop_source_tracks", drop_source_tracks);
+const __t_unlist_source_tracks = traced("music_store", "unlist_source_tracks", unlist_source_tracks);
+const __t_relink_source = traced("music_store", "relink_source", relink_source);
+const __t_clear_notice = traced("music_store", "clear_notice", clear_notice);
+const __t_open_in_library = traced("music_store", "open_in_library", open_in_library);
+const __t_add_cover = traced("music_store", "add_cover", add_cover);
+const __t_set_queue_origin = traced("music_store", "set_queue_origin", set_queue_origin);
+const __t_queue_add = traced("music_store", "queue_add", queue_add);
+const __t_clear_said = traced("music_store", "clear_said", clear_said);
+const __t_queue_remove_at = traced("music_store", "queue_remove_at", queue_remove_at);
+const __t_queue_move = traced("music_store", "queue_move", queue_move);
+const __t_queue_clear = traced("music_store", "queue_clear", queue_clear);
+const __t_queue_play_at = traced("music_store", "queue_play_at", queue_play_at);
+const __t_play_list = traced("music_store", "play_list", play_list);
+const __t_toggle = traced("music_store", "toggle", toggle);
+const __t_step = traced("music_store", "step", step);
+const __t_prev = traced("music_store", "prev", prev);
+const __t_seek_fraction = traced("music_store", "seek_fraction", seek_fraction);
+const __t_seek_by = traced("music_store", "seek_by", seek_by);
+const __t_set_shuffle = traced("music_store", "set_shuffle", set_shuffle);
+const __t_set_repeat = traced("music_store", "set_repeat", set_repeat);
+const __t_play_temp = traced("music_store", "play_temp", play_temp);
+const __t_temp_next = traced("music_store", "temp_next", temp_next);
+const __t_temp_prev = traced("music_store", "temp_prev", temp_prev);
+const __t_back_to_deck = traced("music_store", "back_to_deck", back_to_deck);
+const __t_temp_toggle = traced("music_store", "temp_toggle", temp_toggle);
+const __t_seek_temp_fraction = traced("music_store", "seek_temp_fraction", seek_temp_fraction);
+const __t_store_deck = traced("music_store", "store_deck", store_deck);
+const __t_restore_queue = traced("music_store", "restore_queue", restore_queue);
+const __t_reload_current = traced("music_store", "reload_current", reload_current);
+
 export {
     subscribe,
     /*  library */
     has_library,
     track_count,
-    ingest,
-    begin_read,
-    cancel_ingest,
+    __t_ingest as ingest,
+    __t_begin_read as begin_read,
+    __t_cancel_ingest as cancel_ingest,
     scan_elapsed,
     is_audio,
     tags_of_source,
     covers_snapshot,
-    prime_covers,
-    restore_tracks,
+    __t_prime_covers as prime_covers,
+    __t_restore_tracks as restore_tracks,
     set_file_resolver,
-    drop_source_tracks,
-    clear_notice,
+    __t_drop_source_tracks as drop_source_tracks,
+    __t_unlist_source_tracks as unlist_source_tracks,
+    __t_relink_source as relink_source,
+    __t_clear_notice as clear_notice,
     groups_for,
     albums,
     albums_of,
     folder_level,
     source_root_path,
-    open_in_library,
+    __t_open_in_library as open_in_library,
     take_open_request,
     all_tracks_sorted,
     search,
     cover_url,
     retained_covers,
-    add_cover,
+    __t_add_cover as add_cover,
     albums_missing_cover,
     tracks_of_source,
     find_track,
@@ -2527,29 +2667,29 @@ export {
     /*  queue */
     queue_tracks,
     queue_origin,
-    set_queue_origin,
+    __t_set_queue_origin as set_queue_origin,
     queue_index,
     queue_length,
-    queue_add,
+    __t_queue_add as queue_add,
     last_said,
-    clear_said,
-    queue_remove_at,
-    queue_move,
-    queue_clear,
-    queue_play_at,
-    play_list,
+    __t_clear_said as clear_said,
+    __t_queue_remove_at as queue_remove_at,
+    __t_queue_move as queue_move,
+    __t_queue_clear as queue_clear,
+    __t_queue_play_at as queue_play_at,
+    __t_play_list as play_list,
     /*  playback */
     get_audio,
     current_track,
     is_playing,
-    toggle,
-    step,
-    prev,
-    seek_fraction,
-    seek_by,
-    set_shuffle,
+    __t_toggle as toggle,
+    __t_step as step,
+    __t_prev as prev,
+    __t_seek_fraction as seek_fraction,
+    __t_seek_by as seek_by,
+    __t_set_shuffle as set_shuffle,
     get_shuffle,
-    set_repeat,
+    __t_set_repeat as set_repeat,
     get_repeat,
     progress,
     queue_position,
@@ -2557,21 +2697,21 @@ export {
     setup_background_audio,
     fmt_time,
     /*  the temporary list */
-    play_temp,
-    temp_next,
-    temp_prev,
-    back_to_deck,
+    __t_play_temp as play_temp,
+    __t_temp_next as temp_next,
+    __t_temp_prev as temp_prev,
+    __t_back_to_deck as back_to_deck,
     temp_track,
     temp_playing,
-    temp_toggle,
+    __t_temp_toggle as temp_toggle,
     temp_position,
     temp_tracks,
     temp_progress,
-    seek_temp_fraction,
+    __t_seek_temp_fraction as seek_temp_fraction,
     /*  the deck across a reload */
     queue_snapshot,
-    store_deck,
+    __t_store_deck as store_deck,
     set_deck_ready,
-    restore_queue,
-    reload_current,
+    __t_restore_queue as restore_queue,
+    __t_reload_current as reload_current,
 };

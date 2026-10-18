@@ -21,6 +21,8 @@ import {createElement2, refresh_language} from "@yuneta/gobj-js";
 import {
     yui_shell_register_overlay,
     yui_shell_overlay_dismissed,
+    yui_shell_push_escape,
+    yui_shell_pop_escape,
 } from "@yuneta/gobj-ui/src/c_yui_shell.js";
 
 import {pref_get, pref_set} from "./idb.js";
@@ -32,6 +34,7 @@ const PREF_SEEN = "welcome_dismissed";
 
 let $dialog = null;         // the open dialog, if any
 let overlay = null;         // its shell overlay handle
+let on_escape = null;       // its handler on the shell's Escape stack
 let on_closed = null;       // what the caller wants doing afterwards
 
 
@@ -96,6 +99,11 @@ function open_about(shell_gobj, first_run, on_close)
 
     /*  Back button and Escape, courtesy of the shell. */
     overlay = yui_shell_register_overlay(shell_gobj, () => close_about(shell_gobj, true));
+    /*  The overlay buys the Back button; Escape is the shell's to route
+        (its own stack, LIFO), asked for while this is up and given back
+        when it goes. Without it Escape did nothing here. */
+    on_escape = () => close_about(shell_gobj);
+    yui_shell_push_escape(shell_gobj, "modal", on_escape, () => close_about(shell_gobj, true));
 
     refresh_language($backdrop, t);
 
@@ -196,6 +204,10 @@ function close_about(shell_gobj, from_history)
     }
     $dialog = null;
 
+    if(on_escape) {
+        yui_shell_pop_escape(shell_gobj, on_escape);
+        on_escape = null;
+    }
     if(overlay && !from_history) {
         yui_shell_overlay_dismissed(shell_gobj, overlay);
     }

@@ -109,6 +109,11 @@ function setup_locale()
         fallbackLng:   "en",
         resources:     LOCALES,
         initImmediate: false,
+        /*  i18next escapes what it interpolates for HTML by default, and
+            here nothing it returns is ever HTML: every text goes into a
+            Text node (set_strings_are_text). Escaped, a folder called
+            "Simon & Garfunkel" is said as "Simon &amp;amp; Garfunkel". */
+        interpolation: {escapeValue: false},
     });
 
     apply_direction(code);

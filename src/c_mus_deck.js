@@ -20,9 +20,11 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
+import {new_id, named, named_for} from "./a11y.js";
+import {view_trace, store_trace} from "./trace.js";
 import {
     SDATA, SDATA_END, data_type_t,
-    gclass_create, log_error,
+    gclass_create, log_error, log_warning,
     gobj_parent,
     gobj_read_attr, gobj_read_pointer_attr, gobj_write_attr,
     gobj_subscribe_event,
@@ -68,11 +70,8 @@ import {t} from "i18next";
  ***************************************************************/
 const GCLASS_NAME = "C_MUS_DECK";
 
-/*  How long a fact stays on the banner before the next one fades in. */
+/*  How long a fact stays on the banner before the next one replaces it. */
 const FACT_MS = 4500;
-
-/*  How long the fade of a leaving fact lasts — must match the CSS. */
-const FACT_FADE_MS = 420;
 
 /*  Follow: how long the scroll has to sit still before the playing row
     is brought back to the middle. Configurable in seconds, because ten
@@ -84,9 +83,9 @@ const FOLLOW_MS_DEFAULT = 10000;
 /*  Close enough to the middle that scrolling again would be fidgeting. */
 const FOLLOW_SLACK_PX = 24;
 
-/*  A smooth scroll of ours emits scroll events exactly like a finger
-    does. Without a window in which they are ignored, our own scroll
-    re-arms the idle timer and the deck follows itself for ever. */
+/*  A scroll of ours emits a scroll event exactly like a finger does,
+    a frame later. Without a window in which it is ignored, our own
+    scroll re-arms the idle timer and the deck follows itself for ever. */
 const FOLLOW_SETTLE_MS = 900;
 
 /*  How far the two skip buttons jump. Ten seconds is enough to get past
@@ -167,14 +166,12 @@ let PRIVATE_DATA = {
     naming:     false,  // the "save as list" row is open
     drag_from:  -1,
 
-    /*  The banner is built ONCE and updated in place. Rebuilding it on
-        every repaint is what made it impossible to fade anything: a
-        node that is thrown away and made again has no previous state
-        to animate from. */
+    /*  The banner is built ONCE and updated in place: a repaint never
+        throws away the cover being shown, nor the focus. */
     $art:       null,   // the cover tile
-    $art_l:     [],     // its two <img> layers, for the crossfade
+    $art_l:     [],     // its two <img> layers: the next one decodes behind
     $bg_l:      [],     // the two blurred backdrop layers
-    $meta:      null,   // title + subtitle, faded as a block
+    $meta:      null,   // title + subtitle
     $title:     null,
     $sub:       null,
     $facts:     null,   // the rotating line under the title
@@ -233,7 +230,12 @@ function mt_start(gobj)
 {
     let priv = gobj.priv;
 
+    /*  Straight from the stores' callbacks, which is cheap and is fine
+        because it is traced (view_trace, trace.js). */
     priv.unsub = subscribe(function(channel) {
+        if(channel === "queue" || channel === "library" || channel === "playing" || channel === "time") {
+            view_trace(GCLASS_NAME, "music", channel, channel === "time");
+        }
         if(channel === "queue" || channel === "library") {
             paint_queue(gobj);
             paint_now(gobj);
@@ -249,14 +251,21 @@ function mt_start(gobj)
 
     start_follow(gobj);
 
-    priv.unsub_st = subscribe_stats(() => paint_queue_counts(gobj));
+    priv.unsub_st = subscribe_stats(function() {
+        view_trace(GCLASS_NAME, "stats", "counts");
+        paint_queue_counts(gobj);
+    });
 
     /*  The authorisation banner lives on this screen, so it has to
         follow the sources too. */
-    priv.unsub_src = subscribe_sources(() => paint_now(gobj));
-    priv.unsub_upd = subscribe_update(() => paint_now(gobj));
-    priv.unsub_ins = subscribe_install(() => paint_now(gobj));
-    priv.unsub_cov = subscribe_covers(() => paint_now(gobj));
+    const now_on = (store) => function() {
+        view_trace(GCLASS_NAME, store, "changed");
+        paint_now(gobj);
+    };
+    priv.unsub_src = subscribe_sources(now_on("sources"));
+    priv.unsub_upd = subscribe_update(now_on("update"));
+    priv.unsub_ins = subscribe_install(now_on("install"));
+    priv.unsub_cov = subscribe_covers(now_on("covers"));
 
     /*  A question left hanging when the deck was left is not still being
         asked when it is come back to. */
@@ -375,7 +384,7 @@ function build_ui(gobj)
                 rel: "noopener noreferrer",
                 i18n: "made with yuneta"
             }, t("made with yuneta")],
-            ["button", {class: "MUS_CREDITS_HELP", type: "button", i18n: "help"},
+            ["button", {class: "MUS_CREDITS_HELP", type: "button", i18n: "help", ...named("help")},
                 t("help"), {click: () => open_help(gobj)}],
             ["span", {class: "MUS_CREDITS_COPY"}, "© 2026 ArtGins"]
         ]]
@@ -458,20 +467,18 @@ async function load_onto_deck(pick)
  *  changes on its own — year, genre, track number, where this
  *  one sits in the queue.
  *
- *  This is also the only place in the app that fades anything.
- *  Everywhere else the DOM is swapped outright, which is right
- *  for a list being edited under a finger; here nothing is being
- *  operated, so a cut between two covers is just abrupt. Fading
- *  needs the node to survive, though — a node thrown away and
- *  made again has no previous state to animate from — hence the
- *  handles kept in priv and the update-in-place below.
+ *  Nothing in it fades: covers, title and facts change at once,
+ *  as every state change in a Yuneta GUI does. It is still built
+ *  once and updated in place — the handles kept in priv — so a
+ *  repaint never blanks the cover on screen.
  ***************************************************************/
 function build_card(gobj)
 {
     let priv = gobj.priv;
 
-    /*  Two of everything that crossfades: the outgoing image has to
-        still be on screen while the incoming one arrives. */
+    /*  Two of every picture: the outgoing one stays on screen while the
+        incoming one decodes, and the cut happens when it is ready —
+        never through a blank frame. */
     priv.$bg_l = [
         createElement2(["div", {class: "MUS_DECKBG_L"}]),
         createElement2(["div", {class: "MUS_DECKBG_L"}])
@@ -644,10 +651,10 @@ function tr(value)
 }
 
 /***************************************************************
- *  The cover, crossfaded. Two <img> layers in the tile and two
- *  more behind the whole card; the incoming pair is only
- *  revealed once it has decoded, or the fade goes through a
- *  blank frame.
+ *  The cover, swapped at once. Two <img> layers in the tile and
+ *  two more behind the whole card; the incoming pair is only
+ *  revealed once it has decoded, or the cut goes through a blank
+ *  frame.
  ***************************************************************/
 function update_cover(gobj, url)
 {
@@ -723,7 +730,6 @@ function update_meta(gobj, track)
             priv.$title.textContent = t("nothing cued");
             priv.$sub.textContent = "";
         }
-        flash(priv.$meta);
     }
 
     let facts = facts_of(track);
@@ -732,20 +738,11 @@ function update_meta(gobj, track)
         if(changed || priv.fact_i >= facts.length) {
             priv.fact_i = 0;
         }
-        show_fact(gobj, priv.fact_i, false);
+        show_fact(gobj, priv.fact_i);
         start_facts(gobj);
     }
 }
 
-/*  Restart a CSS animation on a node that is already in the document:
-    without the reflow the class goes off and on inside one frame and
-    the browser sees no change at all. */
-function flash($node)
-{
-    $node.classList.remove("is-swap");
-    void $node.offsetWidth;
-    $node.classList.add("is-swap");
-}
 
 /*  What the banner has to say beyond the title and the artist. The
     album is not here: it is in the subtitle, where it stays put — the
@@ -784,7 +781,7 @@ function same_facts(a, b)
     return a.every((f, i) => f.k === b[i].k && f.v === b[i].v);
 }
 
-function show_fact(gobj, i, animate)
+function show_fact(gobj, i)
 {
     let priv = gobj.priv;
     let $box = priv.$facts;
@@ -814,29 +811,10 @@ function show_fact(gobj, i, animate)
                 unknown ? t(fact.v) : fact.v]
         ]]);
 
-    if(!animate) {
-        clear($box);
-        $box.appendChild($new);
-        $new.classList.add("is-on");
-        return;
-    }
-
-    let $old = $box.lastElementChild;
-    if($old) {
-        /*  Both classes at once would leave the outgoing fact relying on
-            which rule the stylesheet happens to declare last. */
-        $old.classList.remove("is-on");
-        $old.classList.add("is-leaving");
-        setTimeout(function() {
-            if($old.parentNode) {
-                $old.parentNode.removeChild($old);
-            }
-        }, FACT_FADE_MS);
-    }
+    /*  The next fact replaces the last one at once: a state change
+        appears, it does not slide (the Yuneta GUI rule). */
+    clear($box);
     $box.appendChild($new);
-    /*  Appending a node and giving it its final class in the same frame
-        never transitions: there is no start value to come from. */
-    requestAnimationFrame(() => $new.classList.add("is-on"));
 }
 
 function start_facts(gobj)
@@ -844,7 +822,10 @@ function start_facts(gobj)
     let priv = gobj.priv;
     stop_facts(gobj);
     if(priv.facts.length > 1) {
-        priv.fact_timer = setInterval(() => next_fact(gobj), FACT_MS);
+        priv.fact_timer = setInterval(function() {
+            store_trace(GCLASS_NAME, "fact timer");
+            next_fact(gobj);
+        }, FACT_MS);
     }
 }
 
@@ -869,7 +850,7 @@ function next_fact(gobj)
         return;
     }
     priv.fact_i = (priv.fact_i + 1) % priv.facts.length;
-    show_fact(gobj, priv.fact_i, true);
+    show_fact(gobj, priv.fact_i);
 }
 
 function update_transport(gobj)
@@ -913,7 +894,7 @@ function paint_bars(gobj)
                     ["span", {class: "MUS_AUTHBAR_WHICH"}, latest_version()]
                 ]],
                 ["button", {class: "MUS_QBTN button is-primary", type: "button",
-                            i18n: "reload"},
+                            i18n: "reload", ...named("reload")},
                     t("reload"), {click: () => reload_keeping_place()}]
             ]]));
     }
@@ -933,7 +914,7 @@ function paint_bars(gobj)
                         pending.map((p) => p.name).join(" · ")]
                 ]],
                 ["button", {class: "MUS_QBTN button is-primary", type: "button",
-                            i18n: "authorise"},
+                            i18n: "authorise", ...named("authorise")},
                     t("authorise"), {click: () => authorize_all()}]
             ]]));
     }
@@ -953,7 +934,7 @@ function paint_bars(gobj)
                         t("install so folders stay")]
                 ]],
                 ["button", {class: "MUS_QBTN button is-primary", type: "button",
-                            i18n: "install"},
+                            i18n: "install", ...named("install")},
                     t("install"), {click: () => open_install(yui_shell_of(gobj))}],
                 ["button", {class: "MUS_NOTICE_X", type: "button",
                             "aria-label": t("close"),
@@ -1159,14 +1140,14 @@ function paint_queue(gobj)
                      *  line to itself. */
                     ? [
                         ["button", {class: "MUS_QBTN MUS_QCLEAR_YES button is-danger",
-                                    type: "button", i18n: "empty the queue?"},
+                                    type: "button", i18n: "empty the queue?", ...named("empty the queue?")},
                             t("empty the queue?"),
                             {click: () => {
                                 priv.confirm_clear = false;
                                 queue_clear();
                             }}],
                         ["button", {class: "MUS_QBTN MUS_QCLEAR_NO button is-ghost",
-                                    type: "button", i18n: "cancel"},
+                                    type: "button", i18n: "cancel", ...named("cancel")},
                             t("cancel"),
                             {click: () => { priv.confirm_clear = false; paint_queue(gobj); }}]
                       ]
@@ -1225,7 +1206,8 @@ function paint_queue(gobj)
                             class: "MUS_QBTN MUS_MAXQ button is-primary" +
                                 (priv.maxq ? " is-on" : ""),
                             type: "button",
-                            "aria-pressed": priv.maxq ? "true" : "false"
+                            "aria-pressed": priv.maxq ? "true" : "false",
+                            ...named(priv.maxq ? "show the player" : "maximise the queue")
                         },
                         [ico(priv.maxq ? P.collapse : P.expand, 16),
                          ["span", {i18n: priv.maxq ? "show the player" : "maximise the queue"},
@@ -1248,7 +1230,7 @@ function paint_queue(gobj)
                 ["p", {class: "MUS_DIM", i18n: "load something to start"},
                     t("load something to start")],
                 ["div", {class: "MUS_QACTIONS"}, [
-                    ["button", {class: "MUS_QBTN button", type: "button"},
+                    ["button", {class: "MUS_QBTN button", type: "button", ...named("add music in sources")},
                         [ico(P.folder, 16),
                          ["span", {i18n: "add music in sources"},
                             t("add music in sources")]],
@@ -1280,6 +1262,8 @@ function label_attrs(key)
 
 function queue_row(gobj, track, i, cur, total)
 {
+    /*  The title's node names every control of the row (see a11y.js). */
+    const tid = new_id();
     return ["li", {
             class: "MUS_QROW" + (i === cur ? " is-playing" : ""),
             "data-qi": String(i),
@@ -1302,33 +1286,37 @@ function queue_row(gobj, track, i, cur, total)
                 ["div", {class: "MUS_QTXT"}, [
                     ["button", {
                             class: "MUS_QMETA", type: "button",
-                            "aria-haspopup": "dialog"
+                            "aria-haspopup": "dialog", ...named_for("open the card", tid)
                         }, [
-                        ["span", {class: "MUS_T1"}, track.title]
+                        ["span", {class: "MUS_T1", id: tid}, track.title]
                     ], {click: () => open_track(yui_shell_of(gobj), track)}],
                     ["div", {class: "MUS_QSUB"}, [
                         ["span", {class: "MUS_T2"}, track.artist,
                             {click: () => open_track(yui_shell_of(gobj), track)}],
-                        track_counts(track)
+                        track_counts(track, tid)
                     ]]
                 ]]
             ]],
             ["div", {class: "MUS_QCTL"}, [
                 icon_button(P.play, 16, "play this", true,
-                    () => queue_play_at(i)),
+                    () => queue_play_at(i), tid),
                 icon_button(P.up, 16, "move up", i > 0,
-                    () => queue_move(i, i - 1)),
+                    () => queue_move(i, i - 1), tid),
                 icon_button(P.down, 16, "move down", i < total - 1,
-                    () => queue_move(i, i + 1)),
+                    () => queue_move(i, i + 1), tid),
                 icon_button(P.cross, 14, "remove from queue", true,
-                    () => queue_remove_at(i))
+                    () => queue_remove_at(i), tid)
             ]]
         ], {
             dragstart: (ev) => {
                 gobj.priv.drag_from = i;
                 ev.dataTransfer.effectAllowed = "move";
                 /*  Firefox refuses to start a drag without payload. */
-                try { ev.dataTransfer.setData("text/plain", String(i)); } catch(e) {}
+                try {
+                    ev.dataTransfer.setData("text/plain", String(i));
+                } catch(e) {
+                    log_warning(`${GCLASS_NAME}: the drag carries no payload: ${(e && e.name) || e}`);
+                }
             },
             dragover: (ev) => { ev.preventDefault(); },
             drop: (ev) => {
@@ -1342,15 +1330,13 @@ function queue_row(gobj, track, i, cur, total)
         }];
 }
 
-function icon_button(path, size, key, enabled, on_click)
+/*  `text_id`: the node with the row's title, which names it too. */
+function icon_button(path, size, key, enabled, on_click, text_id)
 {
     let attrs = {
         class: "MUS_IBTN",
         type: "button",
-        "aria-label": t(key),
-        "data-i18n-aria-label": key,
-        title: t(key),
-        "data-i18n-title": key
+        ...(text_id ? named_for(key, text_id) : named(key))
     };
     if(!enabled) {
         attrs.disabled = "disabled";
@@ -1412,8 +1398,8 @@ function paint_queue_highlight(gobj)
  *
  *    - ANY scroll of the user's re-arms the wait from zero. While
  *      they are looking at something, the page is theirs.
- *    - Our own smooth scroll emits the same scroll events a
- *      finger does, so it is fenced off with `self_scroll`.
+ *    - Our own scroll emits the same scroll event a finger
+ *      does, so it is fenced off with `self_scroll`.
  *      Without that fence the deck follows itself for ever.
  *
  *  Ten seconds is a guess, and how long somebody needs depends on
@@ -1435,6 +1421,8 @@ function set_follow_on(on)
     try {
         localStorage.setItem("yunomusica:follow", on ? "1" : "0");
     } catch(e) {
+        /*  Private mode: the choice holds for this page load only. */
+        log_warning(`${GCLASS_NAME}: cannot keep the follow choice: ${(e && e.name) || e}`);
     }
 }
 
@@ -1444,6 +1432,9 @@ function follow_delay()
     try {
         secs = parseFloat(localStorage.getItem("yunomusica:follow_delay"));
     } catch(e) {
+        /*  A key that cannot be read is a key that is not set: the
+            default delay. */
+        secs = NaN;
     }
     return (isFinite(secs) && secs > 0) ? secs * 1000 : FOLLOW_MS_DEFAULT;
 }
@@ -1492,7 +1483,10 @@ function arm_follow(gobj)
     if(priv.follow_timer) {
         clearTimeout(priv.follow_timer);
     }
-    priv.follow_timer = setTimeout(() => follow_now(gobj, true), follow_delay());
+    priv.follow_timer = setTimeout(function() {
+        store_trace(GCLASS_NAME, "follow timer");
+        follow_now(gobj, true);
+    }, follow_delay());
 }
 
 function follow_idle(gobj)
@@ -1540,12 +1534,12 @@ function follow_now(gobj, from_timer)
         clearTimeout(priv.settle_timer);
     }
     priv.settle_timer = setTimeout(function() {
+        store_trace(GCLASS_NAME, "follow settled");
         priv.self_scroll = false;
     }, FOLLOW_SETTLE_MS);
 
-    let smooth = !(window.matchMedia &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    $s.scrollBy({top: delta, left: 0, behavior: smooth ? "smooth" : "auto"});
+    /*  At once: the queue jumps to what is sounding, it does not glide. */
+    $s.scrollBy({top: delta, left: 0, behavior: "auto"});
 }
 
 /*  Fold the sleeve and the transport away, or bring them back. Session
