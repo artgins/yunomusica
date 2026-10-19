@@ -6,6 +6,12 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.2 — 2026-10-19
+
+- gobj-ui `^7.27.25` (deploy round): G6 cameras reach a coordinate of 0
+  (`@antv/g-lite` 2.7.2). Dependencies refreshed within their majors:
+  i18next 26.5.2, playwright 1.64.1. `npm audit`: 0 vulnerabilities.
+
 ## 2.37.1 — 2026-10-19
 
 - gobj-ui `^7.27.23` (deploy round). The Developer window has a **Line**
