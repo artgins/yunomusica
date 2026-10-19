@@ -387,6 +387,8 @@ const en = {
         "trace the periodic timer event": "Trace the periodic timer event",
         "trace the start and stop of gobjs": "Trace the start and stop of gobjs",
         "traffic":              "Traffic",
+        "one line": "Line",
+        "traffic one line per message": "Traffic: one line per message",
         "traffic payload folded": "Traffic: payload folded",
         "traffic payload laid out": "Traffic: payload laid out",
         "view":                 "View",

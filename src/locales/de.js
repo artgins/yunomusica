@@ -370,6 +370,8 @@ const de = {
         "trace the periodic timer event": "Das periodische Timer-Ereignis verfolgen",
         "trace the start and stop of gobjs": "Start und Stopp von gobjs verfolgen",
         "traffic":              "Verkehr",
+        "one line": "Zeile",
+        "traffic one line per message": "Verkehr: eine Zeile pro Nachricht",
         "traffic payload folded": "Verkehr: Inhalt eingeklappt",
         "traffic payload laid out": "Verkehr: Inhalt ausgebreitet",
         "view":                 "Ansicht",

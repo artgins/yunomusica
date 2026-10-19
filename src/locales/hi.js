@@ -361,6 +361,8 @@ const hi = {
         "trace the periodic timer event": "आवधिक टाइमर घटना ट्रेस करें",
         "trace the start and stop of gobjs": "gobj का शुरू और बंद होना ट्रेस करें",
         "traffic":              "ट्रैफ़िक",
+        "one line": "पंक्ति",
+        "traffic one line per message": "ट्रैफ़िक: प्रति संदेश एक पंक्ति",
         "traffic payload folded": "ट्रैफ़िक: सामग्री संक्षिप्त",
         "traffic payload laid out": "ट्रैफ़िक: सामग्री विस्तृत",
         "view":                 "दृश्य",

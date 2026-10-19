@@ -382,6 +382,8 @@ const ru = {
         "trace the periodic timer event": "Трассировать периодическое событие таймера",
         "trace the start and stop of gobjs": "Трассировать запуск и остановку gobj",
         "traffic":              "Трафик",
+        "one line": "Строка",
+        "traffic one line per message": "Трафик: одна строка на сообщение",
         "traffic payload folded": "Трафик: содержимое свёрнуто",
         "traffic payload laid out": "Трафик: содержимое развёрнуто",
         "view":                 "Вид",

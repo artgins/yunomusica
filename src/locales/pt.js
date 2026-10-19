@@ -371,6 +371,8 @@ const pt = {
         "trace the periodic timer event": "Rastrear o evento periódico do temporizador",
         "trace the start and stop of gobjs": "Rastrear o início e a parada de gobjs",
         "traffic":              "Tráfego",
+        "one line": "Linha",
+        "traffic one line per message": "Tráfego: uma linha por mensagem",
         "traffic payload folded": "Tráfego: conteúdo recolhido",
         "traffic payload laid out": "Tráfego: conteúdo expandido",
         "view":                 "Vista",

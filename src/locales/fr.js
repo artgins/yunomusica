@@ -372,6 +372,8 @@ const fr = {
         "trace the periodic timer event": "Tracer l'événement périodique du minuteur",
         "trace the start and stop of gobjs": "Tracer le démarrage et l'arrêt des gobjs",
         "traffic":              "Trafic",
+        "one line": "Ligne",
+        "traffic one line per message": "Trafic : une ligne par message",
         "traffic payload folded": "Trafic : contenu replié",
         "traffic payload laid out": "Trafic : contenu déplié",
         "view":                 "Vue",

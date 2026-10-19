@@ -346,6 +346,8 @@ const ja = {
         "trace the periodic timer event": "定期タイマーのイベントをトレース",
         "trace the start and stop of gobjs": "gobj の開始と停止をトレース",
         "traffic":              "トラフィック",
+        "one line": "1行",
+        "traffic one line per message": "トラフィック：メッセージごとに1行",
         "traffic payload folded": "トラフィック：内容を折りたたみ",
         "traffic payload laid out": "トラフィック：内容を展開",
         "view":                 "表示形式",

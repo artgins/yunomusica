@@ -6,6 +6,12 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.1 — 2026-10-19
+
+- gobj-ui `^7.27.23` (deploy round). The Developer window has a **Line**
+  view of the traffic again; its two new keys are added in the ten
+  languages.
+
 ## 2.37.0 — 2026-10-18
 
 The fixes found reviewing yunovídeo, which inherited this code.

@@ -399,6 +399,8 @@ const ar = {
         "trace the periodic timer event": "تتبع حدث المؤقت الدوري",
         "trace the start and stop of gobjs": "تتبع بدء كائنات gobj وإيقافها",
         "traffic":              "حركة المرور",
+        "one line": "سطر",
+        "traffic one line per message": "حركة المرور: سطر واحد لكل رسالة",
         "traffic payload folded": "حركة المرور: المحتوى مطوي",
         "traffic payload laid out": "حركة المرور: المحتوى موسّع",
         "view":                 "العرض",

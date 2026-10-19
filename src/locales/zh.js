@@ -345,6 +345,8 @@ const zh = {
         "trace the periodic timer event": "跟踪周期定时器事件",
         "trace the start and stop of gobjs": "跟踪 gobj 的启动和停止",
         "traffic":              "流量",
+        "one line": "单行",
+        "traffic one line per message": "流量：每条消息一行",
         "traffic payload folded": "流量：内容折叠",
         "traffic payload laid out": "流量：内容展开",
         "view":                 "视图",

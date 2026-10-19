@@ -388,6 +388,8 @@ const es = {
         "trace the periodic timer event": "Trazar el evento del temporizador periódico",
         "trace the start and stop of gobjs": "Trazar el arranque y la parada de gobjs",
         "traffic":              "Tráfico",
+        "one line": "Línea",
+        "traffic one line per message": "Tráfico: una línea por mensaje",
         "traffic payload folded": "Tráfico: contenido plegado",
         "traffic payload laid out": "Tráfico: contenido desplegado",
         "view":                 "Vista",
