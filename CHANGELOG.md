@@ -6,9 +6,13 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.15 — 2026-10-22
+
+- tabulator-tables 6.7.1 in the lockfile (through gobj-ui): 2.37.14 said so and still carried 6.7.0, because gobj-ui's peer range was already met and `npm install` left it. Tabulator 6.7.1 fixes Enter moving two rows with `selectableRange` (not used). Tests pass; deployed; serves the new bundle, console clean.
+
 ## 2.37.14 — 2026-10-22
 
-- i18next `^26.5.6` (range caught up within its major; tabulator-tables 6.7.1 in the lockfile, through gobj-ui). Nothing the app uses changes: i18next 26.5.5/26.5.6 deep-copies the store of `cloneInstance({forkResourceStore: true})` and keeps literal a `{{placeholder}}` inside an unescaped `{{- var}}` value; neither is used. `npm audit` clean; the locales check passes. Deployed; serves the new bundle, console clean.
+- i18next `^26.5.6` (range caught up within its major; tabulator-tables stayed at 6.7.0 in the lockfile, see the next version). Nothing the app uses changes: i18next 26.5.5/26.5.6 deep-copies the store of `cloneInstance({forkResourceStore: true})` and keeps literal a `{{placeholder}}` inside an unescaped `{{- var}}` value; neither is used. `npm audit` clean; the locales check passes. Deployed; serves the new bundle, console clean.
 
 ## 2.37.13 — 2026-10-22
 
