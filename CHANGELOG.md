@@ -6,6 +6,10 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.13 — 2026-10-22
+
+- gobj-ui `^7.27.34` (deploy round): the gobj tree's gclass viewer no longer stays locked when a newer trace set overtakes its read. No code change in this app.
+
 ## 2.37.12 — 2026-10-22
 
 - gobj-ui `^7.27.33` (deploy round): an element looked up by a name that comes from data no longer goes through a CSS selector; the schema graph applies the drag patch. No code change in this app.
