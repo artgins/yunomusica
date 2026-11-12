@@ -92,7 +92,13 @@ while(Date.now() - t0 < PATIENCE) {
     await new Promise((r) => setTimeout(r, 500));
     const st = await page.evaluate(() => ({
         beat:   window.__beat,
-        tracks: document.querySelectorAll(".MUS_QROW").length,
+        /*  The source row's count, not the deck: adding a source does
+            not cue it (2.37.18), so the queue proves nothing here. */
+        tracks: (() => {
+            const n = document.querySelector(".MUS_SRCROW .MUS_T2");
+            const m = n && n.textContent.match(/\d+/);
+            return m ? Number(m[0]) : 0;
+        })(),
         bar:    !!document.querySelector(".MUS_SCANBAR.is-on, .MUS_SCAN.is-on"),
     }));
     if(!beat0) {
@@ -106,7 +112,7 @@ while(Date.now() - t0 < PATIENCE) {
 }
 const secs = (Date.now() - t0) / 1000;
 
-console.log(`2. leído en ${secs.toFixed(1)}s -> pistas en la cola: ${tracks}`);
+console.log(`2. leído en ${secs.toFixed(1)}s -> pistas en la fuente: ${tracks}`);
 console.log(`3. hilo principal vivo durante la espera: ${beat1 > beat0}`);
 
 await page.screenshot({path: `${OUT}/firefox.png`});

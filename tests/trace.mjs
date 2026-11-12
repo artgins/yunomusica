@@ -11,7 +11,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
 let failures = 0;
@@ -33,6 +33,7 @@ page.on("console", (m) => {
 });
 await boot(page);
 await add_source(page, [FIX.root], 1, 3000);
+await cue_source(page);
 check(lines.length === 0, `off, nothing is written: ${lines.length} lines`);
 
 async function chip(level)

@@ -22,7 +22,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
 const browser = await launch();
@@ -34,6 +34,7 @@ const browser = await launch();
 async function enter_preview(page)
 {
     await add_source(page, FIX.longtracks);
+    await cue_source(page);
 
     /*  something on the deck and sounding */
     await route(page, "#/player");

@@ -639,7 +639,7 @@ function build_source_row(gobj, s)
                 [ico(P.refresh, 15), ["span", {i18n: "rescan"}, t("rescan")]],
                 {click: () => scan(s.id, true)}]);
         }
-        actions.push(["button", {class: "MUS_QBTN button", type: "button",
+        actions.push(["button", {class: "MUS_ADDSRC MUS_QBTN button", type: "button",
                                  ...disabled_if(!s.count), ...named_for_src("add to queue")},
             [ico(P.enqueue, 15), ["span", {i18n: "add to queue"}, t("add to queue")]],
             {click: () => queue_add(tracks_of_source(s.id), "append")}]);

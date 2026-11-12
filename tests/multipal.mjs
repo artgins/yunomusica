@@ -27,7 +27,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {launch, new_page, boot, route, add_source, set_theme, set_palette,
+import {launch, new_page, boot, route, add_source, cue_source, set_theme, set_palette,
         contrast, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
@@ -47,6 +47,7 @@ const page = await new_page(browser, {
 });
 await boot(page);
 await add_source(page, [FIX.chords]);
+await cue_source(page);
 await route(page, "#/player", 1000);
 /*  On repeat: the walk below takes longer than the track. */
 await page.click(".MUS_REPEAT");

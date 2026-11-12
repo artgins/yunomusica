@@ -25,7 +25,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {launch, new_page, boot, route, add_source, report, OUT} from "./lib.mjs";
+import {launch, new_page, boot, route, add_source, cue_source, report, OUT} from "./lib.mjs";
 import {join} from "path";
 
 const FIX = ensure_fixtures();
@@ -64,6 +64,7 @@ async function counts(page, row)
 const page = await new_page(browser, {viewport: {width: 1100, height: 950}});
 await boot(page);
 await add_source(page, FIX.music);
+await cue_source(page);
 await route(page, "#/player", 1200);
 
 /*  Nothing has been listened to yet, so no row may claim otherwise. */

@@ -24,7 +24,7 @@
  ***********************************************************************/
 import {readdirSync, statSync} from "fs";
 import {join} from "path";
-import {OUT, launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {OUT, launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 import {ensure_fixtures} from "./fixtures.mjs";
 
 const FIX = ensure_fixtures();
@@ -43,6 +43,7 @@ const page = await new_page(browser, {no_fsa: true});
 
 await boot(page);
 await add_source(page, walk(FIX.music), 2, 2500);
+await cue_source(page);
 await route(page, "#/player", 900);
 
 const rows = () => page.locator(".MUS_QROW").count();

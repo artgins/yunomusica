@@ -12,7 +12,7 @@ import {readdirSync, statSync} from "fs";
 import {join} from "path";
 
 import {ensure_fixtures} from "./fixtures.mjs";
-import {OUT, launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {OUT, launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
 
@@ -39,6 +39,7 @@ await step("01-deck-empty");
 
 /*  the loose-files picker, with every file of the tree */
 await add_source(page, walk(FIX.music), 2, 2500);
+await cue_source(page);
 await route(page, "#/player");
 await step("02-deck-loaded");
 

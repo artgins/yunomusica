@@ -28,7 +28,7 @@ import {readFileSync} from "fs";
 import {join} from "path";
 
 import {ensure_fixtures} from "./fixtures.mjs";
-import {BASE, OUT, launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {BASE, OUT, launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
 
@@ -58,6 +58,7 @@ const page = await new_page(browser, {viewport: {width: 1100, height: 950}});
 
 await boot(page);
 await add_source(page, FIX.longtracks);
+await cue_source(page);
 
 /*  Listen for a few seconds, then leave it paused — which is how the
     app comes back anyway. */
@@ -176,6 +177,7 @@ await phone.evaluate(async (files) => {
 await route(phone, "#/sources", 600);
 await phone.click(".MUS_SECHEAD .MUS_QBTN:nth-child(1)");
 await phone.waitForTimeout(3000);
+await cue_source(phone);            // adding a source does not cue it (2.37.18)
 console.log("3. carpeta añadida, pistas:", await phone.locator(".MUS_QROW").count() ||
             await phone.evaluate(() => document.querySelectorAll(".MUS_QROW").length));
 

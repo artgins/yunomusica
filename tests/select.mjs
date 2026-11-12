@@ -13,7 +13,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {OUT, launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {OUT, launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
 
@@ -22,6 +22,7 @@ const page = await new_page(browser, {viewport: {width: 1100, height: 950}});
 
 await boot(page);
 await add_source(page, FIX.longtracks);
+await cue_source(page);
 
 /*  a queue we care about, playing */
 await route(page, "#/player");

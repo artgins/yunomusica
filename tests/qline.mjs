@@ -22,7 +22,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
 const browser = await launch();
@@ -65,6 +65,7 @@ async function probe(width, height, mobile, locale, tag, maxq)
     const page = await new_page(browser, {viewport: {width, height}, mobile, locale});
     await boot(page);
     await add_source(page, FIX.longtracks);
+    await cue_source(page);
     await route(page, "#/player", 900);
     if(maxq) {
         await page.click(".MUS_MAXQ");

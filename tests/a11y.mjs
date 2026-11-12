@@ -10,7 +10,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {BASE, launch, new_page, route, add_source, report} from "./lib.mjs";
+import {BASE, launch, new_page, route, add_source, cue_source, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
 let failures = 0;
@@ -32,6 +32,8 @@ await page.waitForTimeout(400);
 check(await page.locator(".MUS_ABOUT_CARD").count() === 0, "Escape closes the welcome");
 
 await add_source(page, [FIX.root], 1, 3000);
+
+await cue_source(page);
 await route(page, "#/player", 800);
 
 /*  The buttons of a row, named by the row, the way a reader resolves

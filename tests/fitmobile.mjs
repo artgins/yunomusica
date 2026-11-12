@@ -14,7 +14,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {OUT, launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {OUT, launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
 
@@ -23,6 +23,7 @@ const page = await new_page(browser, {viewport: {width: 390, height: 844}, mobil
 
 await boot(page);
 await add_source(page, FIX.mimusica, 1, 5000);
+await cue_source(page);
 
 /*  force the longest notice there is */
 await page.evaluate(() => {

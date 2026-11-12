@@ -28,7 +28,7 @@
  *          Copyright (c) 2026, ArtGins.
  *          All Rights Reserved.
  ***********************************************************************/
-import {launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 import {dirname, join} from "path";
 import {fileURLToPath} from "url";
 
@@ -48,6 +48,8 @@ await boot(page);
 let bad = [];
 
 await add_source(page, [LONG], 1, 4000);
+
+await cue_source(page);
 await route(page, "#/player", 1200);
 
 const clock = () => page.evaluate(

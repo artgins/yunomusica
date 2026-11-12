@@ -22,7 +22,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 
 const FIX = ensure_fixtures();
 const WAIT = 2;                 // seconds the app waits before following
@@ -65,6 +65,7 @@ async function probe(width, height, tag)
     });
     await boot(page);
     await add_source(page, FIX.mimusica);
+    await cue_source(page);
     await route(page, "#/player", 1200);
 
     /*  Play something from the MIDDLE of the queue. The first row cannot

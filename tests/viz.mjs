@@ -34,7 +34,7 @@
  *          All Rights Reserved.
  ***********************************************************************/
 import {ensure_fixtures} from "./fixtures.mjs";
-import {launch, new_page, boot, route, add_source, report, contrast, OUT} from "./lib.mjs";
+import {launch, new_page, boot, route, add_source, cue_source, report, contrast, OUT} from "./lib.mjs";
 import {join} from "path";
 
 const FIX = ensure_fixtures();
@@ -174,6 +174,7 @@ const page = await new_page(browser, {
 });
 await boot(page);
 await add_source(page, FIX.tones);
+await cue_source(page);
 await route(page, "#/player", 1200);
 
 /*  Play the first tone, from the queue — not a preview. */

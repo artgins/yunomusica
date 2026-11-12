@@ -6,6 +6,13 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.18 — 2026-11-12
+
+- **Adding a source no longer cues it on the deck**, not even an empty one:
+  it stays in Sources and the Library, and what goes to the player is the
+  user's call (Sources' *Add to queue*, the Library, a list). Same change as
+  yunovídeo 1.0.24.
+
 ## 2.37.17 — 2026-10-25
 
 - gobj-ui `^7.28.1`: a chart's Y axis is as wide as its labels (uPlot's fixed

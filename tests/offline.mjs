@@ -20,7 +20,7 @@
  ***********************************************************************/
 import {readdirSync, statSync} from "fs";
 import {join} from "path";
-import {OUT, launch, new_page, boot, route, add_source, report} from "./lib.mjs";
+import {OUT, launch, new_page, boot, route, add_source, cue_source, report} from "./lib.mjs";
 import {ensure_fixtures} from "./fixtures.mjs";
 
 const FIX = ensure_fixtures();
@@ -85,6 +85,7 @@ await page.screenshot({path: `${OUT}/offline-boot.png`});
 let played = false;
 if(booted) {
     await add_source(page, walk(FIX.music), 2, 2500);
+    await cue_source(page);
     await route(page, "#/player", 800);
     const n = await page.locator(".MUS_QROW").count();
     console.log("3. sin red -> pistas en la cola:", n);
