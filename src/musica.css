@@ -575,12 +575,19 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 .MUS_NOWCARD { flex: none; }
+/*  ...as long as there is room for both. On a short screen (a phone, a
+    laptop's window) the card took nearly all of it and the queue got a
+    row and a half to scroll in. So the queue keeps a floor of its own,
+    and when the card and the floor do not fit, the whole deck scrolls:
+    down to the queue, back up to the transport. The follow scroll is
+    not affected: it moves the queue's box, never the deck. */
 .MUS_DECKSCROLL {
     flex: 1 1 auto;
-    min-height: 0;
+    min-height: min(20rem, 100%);
     overflow-y: auto;
     overflow-x: hidden;
     padding-bottom: 1.5rem;

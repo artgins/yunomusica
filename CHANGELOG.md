@@ -6,6 +6,15 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.20 — 2026-11-12
+
+- **The queue is always in reach at 100% zoom.** On a short screen the card
+  took nearly all of the deck and the queue, which scrolled only inside what
+  was left, showed a row and a half. The queue now keeps a floor of its own
+  (20rem) and the whole deck scrolls instead; where there is room for both,
+  nothing changes, and following still moves only the queue. New test:
+  `queuereach`. Same change as yunovídeo 1.0.26.
+
 ## 2.37.19 — 2026-11-12
 
 - Tests: the phone-sized ones (`qline`, `fitmobile`, `preview` and `follow`) hung in `setFiles`. Chrome

@@ -171,7 +171,10 @@ claim is that it opens what it plays and nothing else.
 
 **The banner does not scroll — only the list does.** The deck is a column as
 tall as the shell zone, and the queue is the box inside it that moves. What is
-sounding should never be something you scroll back up to find.
+sounding should never be something you scroll back up to find — while the
+screen has room for both. On a short screen (a phone, a laptop's window) the
+queue keeps a few rows' worth of height and the whole deck scrolls instead, so
+the queue is always in reach at 100% zoom.
 
 That is also what makes **following** possible: when the scroll has been still
 for ten seconds, the playing row comes back to the middle of the list and stays
@@ -464,6 +467,7 @@ if it is missing, generates the fixtures if they are missing, starts
 | `storage` | a second tab costs the first one its storage |
 | `firefox` | Firefox reads no music at all |
 | `fitmobile` | something runs off the side of a phone |
+| `queuereach` | on a short screen the queue gets a sliver and its rows cannot be reached |
 | `preview` | the listening strip is unreadable, or its clock is the queue's |
 | `resume` | the track you come back to has no duration and does not sound |
 | `listplace` | ±10 s does not move the clock, a list played again starts from its first track, or a second reload loses the place |

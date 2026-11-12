@@ -57,6 +57,7 @@ const TESTS = [
     {name: "storage",   what: "otra pestaña no deja sin almacenamiento"},
     {name: "firefox",   what: "Firefox lee la música sin contestar al permiso"},
     {name: "fitmobile", what: "nada se sale del ancho del móvil"},
+    {name: "queuereach", what: "en una pantalla baja la cola sigue al alcance"},
     {name: "preview",   what: "la tira de escucha se lee y su reloj avanza"},
     {name: "resume",    what: "al volver, la canción trae su duración y suena"},
     {name: "follow",    what: "el banner no scrollea y la cola sigue a la música"},
