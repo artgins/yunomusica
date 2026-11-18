@@ -64,6 +64,7 @@ const TESTS = [
     {name: "viz",       what: "el banner dibuja la nota que suena, y sigue sonando"},
     {name: "multipal",  what: "paletas multicolor: tres tonos en el deck y en el visualizador, legibles"},
     {name: "counts",    what: "escuchas y corazones: se cuentan, se ordenan en Listas y aguantan una recarga"},
+    {name: "longlisten", what: "un fichero largo o\u00eddo en varias sesiones es una sola escucha"},
     {name: "locked",    what: "con la pantalla bloqueada suena sin Web Audio, y al volver se recupera"},
     {name: "keepplace", what: "el sitio dentro de una pista larga sobrevive a que maten la app"},
     {name: "listplace", what: "\u00b110 s, cada lista vuelve a su sitio, y dos recargas no lo pierden"},

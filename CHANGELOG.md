@@ -6,6 +6,17 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.27 — 2026-11-18
+
+- A long file heard over several sittings counts as ONE listen. Each time the app came back
+  (reloaded, or killed by the phone and opened again) the deck was restored at its place,
+  play started a "new" listen and twenty seconds later the count went up: a mix of three or
+  four hours reached six or seven plays in one evening. The store now keeps the key of the
+  last counted track (one key, in localStorage): taking that track up again further in than
+  5 s carries the same listen on; starting it again from the beginning still counts. New
+  test `longlisten` (red on 2.37.26: 2 plays after a reload). Tests green except `firefox`,
+  which fails the same on 2.37.26 (the scan never reads the files), unrelated; deployed.
+
 ## 2.37.26 — 2026-11-17
 
 - gobj-ui `^7.31.6`: the treedb admin views show each topic by its own name, untranslated

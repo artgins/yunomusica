@@ -26,7 +26,10 @@
  *      thing to do quietly. Nothing here is a history. There are no
  *      timestamps, no order, nothing that reconstructs an evening —
  *      just a count per track, shown on the track itself, and erasable
- *      from the same card that shows it.
+ *      from the same card that shows it. The one thing kept outside
+ *      that count is the key of the last track counted, so that coming
+ *      back to it after a reload carries the same listen on instead of
+ *      starting another (see tick()).
  *
  *      Keyed by source and path, like a saved list, because that is the
  *      identity that survives a reload: uids are handed out afresh on
@@ -61,6 +64,18 @@ const TICK_MAX_S = 1.5;
 
 /*  Writes are coalesced: a heart tapped four times is one record. */
 const WRITE_MS = 400;
+
+/*  A listen that picks the track up further in than this has not
+    started it again: it is the same listen, carried on. Going back to
+    the start of a track is how people play it again; coming back to
+    the middle of it is how they finish it. */
+const RESUME_S = 5;
+
+/*  Which track the last counted listen belongs to, kept where a reload
+    and a killed app can find it again. ONE key, overwritten — not a
+    list, not a time: the deck snapshot already says what is playing,
+    and this says no more than that. */
+const LISTEN_KEY = "yunomusica:listen";
 
 
 /***************************************************************
@@ -99,6 +114,8 @@ const S = {
     heard:   0,             // seconds that really sounded
     at:      0,             // where the clock was last seen
     counted: false,         // this listen already went into `plays`
+    from:    -1,            // where it first really sounded, -1 not yet
+    last:    null,          // key of the last counted listen (LISTEN_KEY)
     watching: null
 };
 
@@ -321,6 +338,9 @@ function drop_source_stats(source_id)
     let gone = false;
     for(const key of Array.from(S.by_key.keys())) {
         if(key.indexOf(prefix) === 0) {
+            if(key === last_listen()) {
+                set_last_listen("");
+            }
             S.by_key.delete(key);
             idb_del(STORE_STATS, key);
             gone = true;
@@ -379,6 +399,7 @@ function tick()
         S.heard = 0;
         S.at = p.current || 0;
         S.counted = false;
+        S.from = -1;
         return;
     }
     if(p.duration) {
@@ -386,17 +407,61 @@ function tick()
     }
 
     const delta = (p.current || 0) - S.at;
-    S.at = p.current || 0;
     if(delta > 0 && delta <= TICK_MAX_S) {
+        if(S.from < 0) {
+            S.from = S.at;
+        }
         S.heard += delta;
     }
+    S.at = p.current || 0;
 
     if(!S.counted && S.key && S.heard >= threshold(S.dur)) {
         S.counted = true;
+        /*  The same track, picked up where it was left, is the listen
+            that was already counted — not another one.
+
+            A mix of four hours is not heard in one sitting. Each time
+            the app came back (reloaded, or killed by the phone and
+            opened again) the deck was restored at its place, the play
+            button started a "new" listen, and twenty seconds later the
+            count went up: six or seven plays for one evening with one
+            file. Where the listen BEGAN is what tells the two apart,
+            because it is the one thing a reload does not change. */
+        if(S.key === last_listen() && S.from > RESUME_S) {
+            return;
+        }
+        set_last_listen(S.key);
         const row = row_of(S.key, true);
         row.plays++;
         touch(S.key);
         emit();
+    }
+}
+
+function last_listen()
+{
+    if(S.last === null) {
+        try {
+            S.last = window.localStorage.getItem(LISTEN_KEY) || "";
+        } catch(e) {
+            S.last = "";
+        }
+    }
+    return S.last;
+}
+
+function set_last_listen(key)
+{
+    S.last = key || "";
+    try {
+        if(S.last) {
+            window.localStorage.setItem(LISTEN_KEY, S.last);
+        } else {
+            window.localStorage.removeItem(LISTEN_KEY);
+        }
+    } catch(e) {
+        /*  No storage: it holds for this session, which still covers a
+            track that comes and goes inside it. */
     }
 }
 
