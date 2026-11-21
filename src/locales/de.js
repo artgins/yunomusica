@@ -220,6 +220,11 @@ const de = {
         "stopping":                 "Wird gestoppt…",
         "stopped":              "Vor dem Ende des Ordners gestoppt",
         "waiting for permission": "Warten auf Freigabe",
+        "choose again":         "Erneut wählen",
+        "browser did not answer":
+            "Der Browser antwortet nicht. Wähle diesen Ordner erneut.",
+        "not the same folder":
+            "Du hast „{{name}}“ gewählt, nicht „{{other}}“. Nichts wurde geändert: Wähle „{{other}}“ erneut.",
         "permission denied":    "Freigabe verweigert",
         "no audio here":        "Dort sind keine Audiodateien.",
         "that file could not be read":

@@ -48,7 +48,7 @@ import {
 } from "./music_store.js";
 
 import {
-    subscribe_sources, pending_authorisation, authorize_all,
+    subscribe_sources, pending_authorisation, authorize_all, repick,
 } from "./sources_store.js";
 import {create_visualizer, create_seek_wave} from "./visualizer.js";
 import {open_track, track_counts, refresh_counts} from "./track_card.js";
@@ -904,7 +904,24 @@ function paint_bars(gobj)
         is put the button where the user already is instead of making
         them go and find it in Sources. */
     let pending = pending_authorisation();
-    if(pending.length) {
+    /*  A browser that did not answer the permission check gets the
+        folder picker instead (repick): Authorise did nothing there.
+        One folder per tap, the one named, because the picker returns
+        one folder. */
+    let hung = pending.find((p) => p.hang);
+    if(hung) {
+        $now.appendChild(createElement2(
+            ["div", {class: "MUS_AUTHBAR", role: "status"}, [
+                ["div", {class: "MUS_AUTHBAR_TXT"}, [
+                    ["span", {i18n: "browser did not answer"},
+                        t("browser did not answer")],
+                    ["span", {class: "MUS_AUTHBAR_WHICH"}, hung.name]
+                ]],
+                ["button", {class: "MUS_QBTN MUS_REPICK button is-primary", type: "button",
+                            i18n: "choose again", ...named("choose again")},
+                    t("choose again"), {click: () => repick(hung.id)}]
+            ]]));
+    } else if(pending.length) {
         $now.appendChild(createElement2(
             ["div", {class: "MUS_AUTHBAR", role: "status"}, [
                 ["div", {class: "MUS_AUTHBAR_TXT"}, [

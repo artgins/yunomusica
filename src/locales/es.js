@@ -234,6 +234,11 @@ const es = {
         "stopping":                 "Parando…",
         "stopped":              "Parado antes de acabar la carpeta",
         "waiting for permission": "Esperando permiso",
+        "choose again":         "Elegir otra vez",
+        "browser did not answer":
+            "El navegador no contesta. Vuelve a elegir esta carpeta.",
+        "not the same folder":
+            "Has elegido «{{name}}», no «{{other}}». No ha cambiado nada: elige otra vez «{{other}}».",
         "permission denied":    "Permiso denegado",
         "no audio here":        "Ahí no hay ficheros de audio.",
         "that file could not be read":

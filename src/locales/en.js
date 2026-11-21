@@ -235,6 +235,11 @@ const en = {
         "stopping":                 "Stopping…",
         "stopped":              "Stopped before the end of the folder",
         "waiting for permission": "Waiting for permission",
+        "choose again":         "Choose again",
+        "browser did not answer":
+            "The browser did not answer. Choose this folder again.",
+        "not the same folder":
+            "You chose “{{name}}”, not “{{other}}”. Nothing changed: choose “{{other}}” again.",
         "permission denied":    "Permission denied",
         "no audio here":        "No audio files in there.",
         "that file could not be read":

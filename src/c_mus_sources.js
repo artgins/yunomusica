@@ -36,7 +36,7 @@ import {yui_shell_of, yui_shell_navigate} from "@yuneta/gobj-ui/src/c_yui_shell.
 import {
     subscribe_sources, all_sources, fsa_supported, is_persistent,
     is_durable, write_failed, is_blocked, diagnose,
-    add_dir, add_files, authorize, scan, remove_source,
+    add_dir, add_files, authorize, repick, scan, remove_source,
     source_notice, dismiss_notice, accept_notice,
 } from "./sources_store.js";
 
@@ -604,7 +604,8 @@ function build_source_row(gobj, s)
         $state = ["div", {class: "MUS_SRCSTATE MUS_DIM", i18n: "waiting its turn"},
             t("waiting its turn")];
     } else if(needs_auth) {
-        let k = (s.permission === "denied") ? "permission denied" : "waiting for permission";
+        let k = s.perm_hang ? "browser did not answer"
+            : ((s.permission === "denied") ? "permission denied" : "waiting for permission");
         $state = ["div", {class: "MUS_SRCSTATE is-warn", i18n: k}, t(k)];
     } else if(s.error) {
         $state = ["div", {class: "MUS_SRCSTATE is-warn", i18n: s.error}, t(s.error)];
@@ -632,7 +633,15 @@ function build_source_row(gobj, s)
                 }
             }}]);
     }
-    if(needs_auth) {
+    if(needs_auth && s.perm_hang) {
+        /*  This browser did not answer the permission check, and on the
+            phone where that happened Authorise did nothing either. The
+            folder picker still works, so that is the action offered. */
+        actions.push(["button", {class: "MUS_QBTN MUS_REPICK button is-primary", type: "button",
+                                 ...named_for_src("choose again")},
+            [ico(P.folder, 15), ["span", {i18n: "choose again"}, t("choose again")]],
+            {click: () => repick(s.id)}]);
+    } else if(needs_auth) {
         actions.push(["button", {class: "MUS_QBTN button is-primary", type: "button", ...named_for_src("authorise")},
             [ico(P.key, 15), ["span", {i18n: "authorise"}, t("authorise")]],
             {click: () => authorize(s.id)}]);

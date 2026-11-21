@@ -219,6 +219,11 @@ const fr = {
         "stopping":                 "Arrêt…",
         "stopped":              "Arrêté avant la fin du dossier",
         "waiting for permission": "En attente d'autorisation",
+        "choose again":         "Choisir à nouveau",
+        "browser did not answer":
+            "Le navigateur ne répond pas. Choisissez à nouveau ce dossier.",
+        "not the same folder":
+            "Vous avez choisi « {{name}} », pas « {{other}} ». Rien n'a changé : choisissez à nouveau « {{other}} ».",
         "permission denied":    "Autorisation refusée",
         "no audio here":        "Aucun fichier audio là-dedans.",
         "that file could not be read":

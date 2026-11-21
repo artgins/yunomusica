@@ -227,6 +227,11 @@ const ru = {
         "stopping":                 "Останавливаю…",
         "stopped":              "Остановлено, не дойдя до конца папки",
         "waiting for permission": "Ожидание разрешения",
+        "choose again":         "Выбрать снова",
+        "browser did not answer":
+            "Браузер не отвечает. Выберите эту папку снова.",
+        "not the same folder":
+            "Вы выбрали «{{name}}», а не «{{other}}». Ничего не изменилось: выберите «{{other}}» снова.",
         "permission denied":    "Доступ запрещён",
         "no audio here":        "Там нет аудиофайлов.",
         "that file could not be read":

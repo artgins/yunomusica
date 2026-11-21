@@ -17,13 +17,18 @@
  *      Act 1: queryPermission() never settles. The bar must come up,
  *      the folder must still be in Sources with its tracks, and
  *      Diagnostics must finish and name the call that did not answer.
- *      Authorising (requestPermission, which still answers) brings the
- *      music back.
+ *      On that phone requestPermission did nothing either, so the bar
+ *      offers "Choose again" (the folder picker), and choosing the same
+ *      folder brings the music back.
  *
  *      Act 2: queryPermission() says "granted", but reading through the
  *      handle fails with NotAllowedError. The first read (the restored
  *      track, or play) must bring up the bar, not leave a player that
  *      does nothing.
+ *
+ *      Act 3: "Choose again" from Sources, and the wrong folder chosen.
+ *      Nothing changes and Sources says which folder to choose. Then
+ *      the right one.
  *
  *      The handles are real (origin private file system); only the
  *      permission calls and the picker are replaced, as in resume.mjs.
@@ -89,7 +94,7 @@ function folder_init()
     guard(FileSystemDirectoryHandle.prototype, "getDirectoryHandle");
     window.showDirectoryPicker = async function() {
         let root = await navigator.storage.getDirectory();
-        return await root.getDirectoryHandle("Mi música", {create: true});
+        return await root.getDirectoryHandle(window.__pick || "Mi música", {create: true});
     };
 }
 
@@ -185,11 +190,12 @@ check("y dice qué llamada no contestó",
 console.log(diag.split("\n").filter((l) => /source|readable|handle/.test(l)).map((l) => "      " + l).join("\n"));
 
 await route(page, "#/player", 600);
+check("la barra ofrece elegir la carpeta otra vez", await bar_of(page).locator(".MUS_REPICK").count() === 1);
 if(await bar_of(page).count()) {
     await bar_of(page).locator(".MUS_QBTN").click();
     await page.waitForTimeout(2500);
 }
-check("autorizar quita la barra", await bar_of(page).count() === 0);
+check("elegir la misma carpeta quita la barra", await bar_of(page).count() === 0);
 const tot1 = await page.locator(".MUS_TTOT").textContent();
 check(`y carga la pista: ${tot1}`, secs(tot1) > 0);
 
@@ -220,6 +226,40 @@ if(await bar_of(page).count()) {
 }
 const tot2 = await page.locator(".MUS_TTOT").textContent();
 check(`autorizar la carga: ${tot2}`, secs(tot2) > 0);
+
+
+
+                    /***************************
+                     *  Act 3: the wrong folder, then the right one
+                     ***************************/
+console.log("3. elegir otra vez desde Fuentes: primero la carpeta equivocada");
+await page.evaluate(async () => {
+    let root = await navigator.storage.getDirectory();
+    await root.getDirectoryHandle("Otra", {create: true});
+    sessionStorage.setItem("perm", "hang");
+});
+await page.reload({waitUntil: "networkidle"});
+await page.waitForTimeout(6000);
+await route(page, "#/sources", 700);
+await page.evaluate(() => { window.__pick = "Otra"; });
+await page.click(".MUS_SRCROW .MUS_REPICK");
+await page.waitForTimeout(1500);
+const note = await page.evaluate(() => {
+    const n = document.querySelector(".MUS_SRCNOTE_TEXT");
+    return n ? n.textContent.trim() : "";
+});
+check(`dice qué carpeta hay que elegir: “${note.slice(0, 70)}”`, note.includes("Otra") && note.includes("Mi música"));
+check("y la carpeta sigue esperando", await page.locator(".MUS_SRCROW .MUS_REPICK").count() === 1);
+rows = await source_rows(page);
+check(`no se ha añadido ninguna carpeta: ${rows.map((r) => r.name).join(", ")}`, rows.length === 1);
+
+await page.evaluate(() => { window.__pick = "Mi música"; });
+await page.click(".MUS_SRCROW .MUS_REPICK");
+await page.waitForTimeout(2500);
+check("con la buena, deja de esperar", await page.locator(".MUS_SRCROW .MUS_REPICK").count() === 0);
+await route(page, "#/player", 600);
+const tot3 = await page.locator(".MUS_TTOT").textContent();
+check(`y la pista se carga: ${tot3}`, secs(tot3) > 0);
 
 const bad = report(page);
 await browser.close();
