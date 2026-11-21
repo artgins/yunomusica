@@ -313,11 +313,14 @@ function build_diagnostics(gobj)
 
 function fill_diagnostics(gobj, $body)
 {
+    const text = (lines) => lines.map((l) => l.k.padEnd(22) + " " + l.v).join("\n");
     $body.textContent = "…";
-    diagnose().then(function(lines) {
-        gobj.priv.diag_text = lines
-            .map((l) => l.k.padEnd(22) + " " + l.v)
-            .join("\n");
+    /*  Line by line, with "…" under the last one while the next check
+        runs: a check that takes long is then on screen, by name. */
+    diagnose(function(lines) {
+        $body.textContent = text(lines) + "\n…";
+    }).then(function(lines) {
+        gobj.priv.diag_text = text(lines);
         $body.textContent = gobj.priv.diag_text;
     });
 }

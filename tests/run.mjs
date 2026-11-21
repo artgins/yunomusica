@@ -60,6 +60,7 @@ const TESTS = [
     {name: "queuereach", what: "en una pantalla baja la cola sigue al alcance"},
     {name: "preview",   what: "la tira de escucha se lee y su reloj avanza"},
     {name: "resume",    what: "al volver, la canción trae su duración y suena"},
+    {name: "permhang",  what: "un permiso que no contesta, o miente, acaba en la barra de autorizar"},
     {name: "follow",    what: "el banner no scrollea y la cola sigue a la música"},
     {name: "viz",       what: "el banner dibuja la nota que suena, y sigue sonando"},
     {name: "multipal",  what: "paletas multicolor: tres tonos en el deck y en el visualizador, legibles"},
