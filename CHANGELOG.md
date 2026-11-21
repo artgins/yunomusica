@@ -6,6 +6,23 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.31 — 2026-11-21
+
+- "Add folder" with the folder that is waiting for its permission takes the place of the
+  waiting one. Before, it first compared the new folder with the stored ones
+  (`isSameEntry`, `resolve`) without a time limit. On a browser that does not answer the
+  stored handle, the app waited for ever after the user chose "Allow". Those comparisons
+  now have a 4 s limit. If a waiting folder has the same name, the app re-binds it, unless
+  the old handle says outright that it is another folder. Nothing is added twice.
+- "Choose again" accepts the folder when its name matches. `isSameEntry` goes to the
+  Session log only, and the app does not wait for it. Before, a stored handle that answered
+  "not the same" for its own folder gave the notice "You chose “Music”, not “Music”", and a
+  handle that did not answer cost 4 s.
+- The player also shows the notice for a wrong folder. "Choose again" is on the player, and
+  from there the notice in Sources was not visible.
+- `permhang` Act 4: "Add folder" with the waiting folder, with `isSameEntry` and `resolve`
+  not answering. On 2.37.30 it is red.
+
 ## 2.37.30 — 2026-11-21
 
 - On the same phone, the "Authorise" button did nothing: Chrome 158 does not answer `requestPermission`

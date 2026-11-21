@@ -49,6 +49,7 @@ import {
 
 import {
     subscribe_sources, pending_authorisation, authorize_all, repick,
+    source_notice, dismiss_notice,
 } from "./sources_store.js";
 import {create_visualizer, create_seek_wave} from "./visualizer.js";
 import {open_track, track_counts, refresh_counts} from "./track_card.js";
@@ -909,6 +910,21 @@ function paint_bars(gobj)
         One folder per tap, the one named, because the picker returns
         one folder. */
     let hung = pending.find((p) => p.hang);
+    /*  "Choose again" is pressed here, so a wrong folder is said here
+        too. Shown only in Sources, from the player it looked like the
+        button did nothing. */
+    let note = source_notice();
+    if(note && note.kind === "not the same folder") {
+        $now.appendChild(createElement2(
+            ["div", {class: "MUS_AUTHBAR MUS_WRONGBAR", role: "status"}, [
+                ["div", {class: "MUS_AUTHBAR_TXT"}, [
+                    ["span", {}, t("not the same folder", {name: note.name, other: note.other})]
+                ]],
+                ["button", {class: "MUS_QBTN button is-ghost", type: "button",
+                            i18n: "understood", ...named("understood")},
+                    t("understood"), {click: () => dismiss_notice()}]
+            ]]));
+    }
     if(hung) {
         $now.appendChild(createElement2(
             ["div", {class: "MUS_AUTHBAR", role: "status"}, [
