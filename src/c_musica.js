@@ -30,6 +30,7 @@ import {
     gobj_read_attr, gobj_write_attr,
     gobj_create_pure_child,
     gobj_subscribe_event,
+    gobj_send_event,
     gobj_stop_children,
     gobj_start_tree,
     createElement2, refresh_language,
@@ -74,7 +75,8 @@ import {diagnostics as viz_diagnostics} from "./analyser.js";
 import {pref_get} from "./idb.js";
 import {diag_watch} from "./diag.js";
 
-import {switch_locale, current_locale} from "./locales/locales.js";
+import {switch_locale, current_locale, locale_list} from "./locales/locales.js";
+import {yui_preferences_setup} from "@yuneta/gobj-ui/src/yui_preferences.js";
 import {open_about, welcome_dismissed, about_bind_shell} from "./about_dialog.js";
 import {open_developer} from "./dev_dialog.js";
 import {start_update_watch} from "./update_check.js";
@@ -150,6 +152,24 @@ let __gclass__ = null;
 function mt_create(gobj)
 {
     let priv = gobj.priv;
+
+    /*  The Preferences page (C_YUI_PREFERENCES at /preferences, gobj-ui's,
+        the same in every app): how this app reads and changes its theme
+        and its language. The theme is applied here and the toolbar says
+        it (show_choices); the language goes through EV_SET_LOCALE, which
+        also re-translates the deck. */
+    yui_preferences_setup({
+        current_theme:    current_theme,
+        set_theme:        function(theme) {
+            apply_theme(theme);
+            show_choices(gobj);
+        },
+        languages:        locale_list().map((l) => ({value: l.code, text: l.name})),
+        current_language: current_locale,
+        set_language:     function(locale) {
+            gobj_send_event(gobj, "EV_SET_LOCALE", {locale: locale}, gobj);
+        },
+    });
 
     /*  The stores, and the views' reactions to them, trace under this
         gclass's levels (see trace.js). */

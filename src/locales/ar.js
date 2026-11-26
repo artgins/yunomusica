@@ -17,6 +17,13 @@ const ar = {
 
     translation: {
         "player":               "مشغّل الموسيقى",
+        "preferences": "التفضيلات",
+        "appearance": "المظهر",
+        "light theme": "السمة الفاتحة",
+        "dark theme": "السمة الداكنة",
+        "stacked strips": "أشرطة متراكبة",
+        "back to parent": "العودة إلى المستوى الأعلى",
+        "breadcrumb": "مسار التنقل",
         "library":              "المكتبة",
         "sources":              "المصادر",
         "lists":                "القوائم",

@@ -24,6 +24,13 @@ const en = {
     translation: {
         /* ---- navigation and toolbar ---- */
         "player":               "Player",
+        "preferences": "Preferences",
+        "appearance": "Appearance",
+        "light theme": "Light theme",
+        "dark theme": "Dark theme",
+        "stacked strips": "Stacked strips",
+        "back to parent": "Back to parent",
+        "breadcrumb": "Breadcrumb",
         "library":              "Library",
         "sources":              "Sources",
         "lists":                "Lists",

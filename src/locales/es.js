@@ -14,6 +14,13 @@ const es = {
     translation: {
         /* ---- navegación y barra ---- */
         "player":               "Reproductor",
+        "preferences": "Preferencias",
+        "appearance": "Apariencia",
+        "light theme": "Tema claro",
+        "dark theme": "Tema oscuro",
+        "stacked strips": "Tiras apiladas",
+        "back to parent": "Volver al padre",
+        "breadcrumb": "Miga de pan",
         "library":              "Biblioteca",
         "sources":              "Fuentes",
         "lists":                "Listas",

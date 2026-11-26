@@ -13,6 +13,13 @@ const de = {
 
     translation: {
         "player":               "Player",
+        "preferences": "Einstellungen",
+        "appearance": "Darstellung",
+        "light theme": "Helles Design",
+        "dark theme": "Dunkles Design",
+        "stacked strips": "Gestapelte Leisten",
+        "back to parent": "Zurück zur Ebene darüber",
+        "breadcrumb": "Brotkrumen",
         "library":              "Bibliothek",
         "sources":              "Quellen",
         "lists":                "Listen",

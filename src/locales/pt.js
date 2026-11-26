@@ -13,6 +13,13 @@ const pt = {
 
     translation: {
         "player":               "Reprodutor",
+        "preferences": "Preferências",
+        "appearance": "Aparência",
+        "light theme": "Tema claro",
+        "dark theme": "Tema escuro",
+        "stacked strips": "Faixas empilhadas",
+        "back to parent": "Voltar ao nível acima",
+        "breadcrumb": "Trilha de navegação",
         "library":              "Biblioteca",
         "sources":              "Fontes",
         "lists":                "Listas",

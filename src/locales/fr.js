@@ -13,6 +13,13 @@ const fr = {
 
     translation: {
         "player":               "Lecteur",
+        "preferences": "Préférences",
+        "appearance": "Apparence",
+        "light theme": "Thème clair",
+        "dark theme": "Thème sombre",
+        "stacked strips": "Bandes empilées",
+        "back to parent": "Retour au parent",
+        "breadcrumb": "Fil d'Ariane",
         "library":              "Bibliothèque",
         "sources":              "Sources",
         "lists":                "Listes",

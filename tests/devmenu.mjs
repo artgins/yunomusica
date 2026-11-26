@@ -1,13 +1,14 @@
 /***********************************************************************
  *          devmenu.mjs
  *
- *      The toolbar's "more" menu, and the three doors behind it.
+ *      The toolbar's "more" menu, and the doors behind it.
  *
  *      What is checked, and why each one is worth a test:
  *
- *        1. The menu offers exactly developer, site map, help — in that
- *           order. A dropdown whose items come from app_config.json is
- *           one typo away from a menu that opens and offers nothing.
+ *        1. The menu offers exactly preferences, developer, site map,
+ *           help — in that order. A dropdown whose items come from
+ *           app_config.json is one typo away from a menu that opens and
+ *           offers nothing.
  *
  *        2. "Help and credits" links to the source. The dialog says MIT,
  *           and a licence with no address is a claim nobody can act on.
@@ -56,8 +57,8 @@ await open_menu();
 const items = await page.locator(".yui-toolbar-dropdown-panel .yui-toolbar-dropdown-label")
     .allTextContents();
 console.log("menu:", items.join(" | "));
-if(items.join("|") !== "Developer|Site map|Help and credits") {
-    bad.push("the menu does not offer developer, site map and help, in that order");
+if(items.join("|") !== "Preferences|Developer|Site map|Help and credits") {
+    bad.push("the menu does not offer preferences, developer, site map and help, in that order");
 }
 await shot("devmenu-menu");
 
