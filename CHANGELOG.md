@@ -6,6 +6,11 @@ Each release of `@yuneta/gobj-ui` reaches this app through gobj-ui's deploy
 round, which raises the range and the third number of the app's version, and
 builds, tests and deploys it; the line of each round is written here after it.
 
+## 2.37.37 — 2026-11-26
+
+- gobj-ui `^7.32.8`. The icons of the menu entries and of the tabs are 20px, the size of the
+  toolbar icons. They took the 16px of their text. No row changes its height.
+
 ## 2.37.36 — 2026-11-25
 
 - gobj-ui `^7.32.6`. Every icon is 1em tall: the language, theme, bug and site map icons of
