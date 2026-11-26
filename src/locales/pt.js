@@ -25,7 +25,7 @@ const pt = {
         "lists":                "Listas",
         "add folder":           "Adicionar pasta",
         "add files":            "Adicionar ficheiros",
-        "theme":                "Tema claro / escuro",
+        "theme":                "Tema",
         "to dark theme":        "Mudar para tema escuro",
         "to light theme":       "Mudar para tema claro",
         "colours":              "Cor",

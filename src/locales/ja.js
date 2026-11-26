@@ -25,7 +25,7 @@ const ja = {
         "lists":                "リスト",
         "add folder":           "フォルダーを追加",
         "add files":            "ファイルを追加",
-        "theme":                "ライト / ダークテーマ",
+        "theme":                "テーマ",
         "to dark theme":        "ダークテーマに切り替え",
         "to light theme":       "ライトテーマに切り替え",
         "colours":              "色",

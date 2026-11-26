@@ -25,7 +25,7 @@ const fr = {
         "lists":                "Listes",
         "add folder":           "Ajouter un dossier",
         "add files":            "Ajouter des fichiers",
-        "theme":                "Thème clair / sombre",
+        "theme":                "Thème",
         "to dark theme":        "Passer au thème sombre",
         "to light theme":       "Passer au thème clair",
         "colours":              "Couleur",

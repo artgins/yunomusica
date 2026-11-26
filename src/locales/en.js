@@ -36,7 +36,7 @@ const en = {
         "lists":                "Lists",
         "add folder":           "Add folder",
         "add files":            "Add files",
-        "theme":                "Light / dark theme",
+        "theme":                "Theme",
         "to dark theme":        "Switch to dark theme",
         "to light theme":       "Switch to light theme",
         "colours":              "Colour",

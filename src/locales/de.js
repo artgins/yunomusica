@@ -25,7 +25,7 @@ const de = {
         "lists":                "Listen",
         "add folder":           "Ordner hinzufügen",
         "add files":            "Dateien hinzufügen",
-        "theme":                "Helles / dunkles Design",
+        "theme":                "Design",
         "to dark theme":        "Zum dunklen Design wechseln",
         "to light theme":       "Zum hellen Design wechseln",
         "colours":              "Farbe",
